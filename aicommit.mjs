@@ -35,11 +35,12 @@ const response = await fetch("https://api.openai.com/v1/completions", {
 
 const json = await response.json();
 const aiCommit = json.choices[0].text;
+let cleanedUpAiCommit = aiCommit.replace(/(\r\n|\n|\r)/gm, "");
 
-echo(aiCommit);
+echo(cleanedUpAiCommit);
 
 let confirmationMessage = await question(
-  "\nWould you like to use this commit message? " + chalk.yellow("(Y/n) "),
+  "\nWould you like to use this commit message? " + chalk.yellow("(Y/n) \n"),
   {
     choices: ["Y", "n"],
   }
@@ -48,5 +49,5 @@ let confirmationMessage = await question(
 $.verbose = true;
 
 if (confirmationMessage !== "n") {
-  await $`git commit -m ${aiCommit}`;
+  await $`git commit -m ${cleanedUpAiCommit}`;
 }
