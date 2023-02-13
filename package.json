@@ -1,6 +1,6 @@
 {
   "name": "aicommits",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "Writes your git commit messages for you with AI",
   "main": "bin/index.js",
   "bin": {
@@ -19,6 +19,6 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "inquirer": "^8.0.0",
-    "node-fetch": "^3.3.0"
+    "node-fetch": "^2.6.9"
   }
 }
