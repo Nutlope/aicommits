@@ -13,6 +13,8 @@ Install the CLI then grab your [OpenAI key](https://openai.com/api/) and add it 
 
 Then after running a `git add .` command in a git repo, use this CLI by simply running `aicommits` to generate your commit.
 
+> Note: If you get a EACCESS error on mac/linux when running the first command, try running it with `sudo npm install -g aicommits` and putting in your password.
+
 ## How it works
 
 This CLI tool runs a `git diff` command to grab all the latest changes, sends this to OpenAI's GPT-3, then returns the AI generated commit message. Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
