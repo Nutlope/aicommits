@@ -76,7 +76,7 @@ async function main() {
   });
 }
 
-async function generateCommitMessage(prompt) {
+async function generateCommitMessage(prompt: string) {
   const payload = {
     model: "text-davinci-003",
     prompt,
@@ -97,7 +97,7 @@ async function generateCommitMessage(prompt) {
     body: JSON.stringify(payload),
   });
 
-  const json = await response.json();
+  const json: any = await response.json();
   const aiCommit = json.choices[0].text;
 
   return aiCommit.replace(/(\r\n|\n|\r)/gm, "");
