@@ -1,5 +1,5 @@
 {
-  "name": "autocommit",
+  "name": "aicommits",
   "version": "0.0.3",
   "description": "generates ai commit",
   "main": "aicommit.js",
@@ -12,9 +12,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nutlope/ai-commit.git"
+    "url": "git+https://github.com/Nutlope/aicommits.git"
   },
-  "author": "hassan",
+  "author": "Hassan El Mghari (@nutlope)",
   "license": "ISC",
-  "homepage": "https://github.com/Nutlope/ai-commit#readme"
+  "homepage": "https://github.com/Nutlope/aicommits#readme"
 }
