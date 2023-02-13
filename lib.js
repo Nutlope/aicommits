@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-const { execSync, spawn } = require("child_process");
-let OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-import inquirer from "inquirer";
 
-export async function main() {
+import { execSync } from "child_process";
+import inquirer from "inquirer";
+let OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+async function main() {
   console.log("Welcome to AICommit!");
   if (!OPENAI_API_KEY) {
     console.error(
@@ -91,3 +92,5 @@ async function generateCommitMessage(prompt) {
 
   return aiCommit.replace(/(\r\n|\n|\r)/gm, "");
 }
+
+await main();
