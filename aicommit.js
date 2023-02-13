@@ -3,8 +3,6 @@
 void (async function () {
   $.verbose = false;
 
-  // TODO: Figure out how to fail gracefully instead of exit 1
-
   let conventionalCommit = false;
 
   console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommit!"));

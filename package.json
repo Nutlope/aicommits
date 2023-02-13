@@ -1,20 +1,15 @@
 {
   "name": "aicommits",
-  "version": "0.0.3",
-  "description": "generates ai commit",
-  "main": "aicommit.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "./aicommit.js"
-  },
+  "version": "0.0.4",
+  "description": "Writes your git commit messages for you with AI",
+  "main": "cli.js",
   "bin": {
-    "gpt-commit": "./aicommit.js"
+    "gpt-commit": "./index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Nutlope/aicommits.git"
-  },
+  "repository": "https://github.com/Nutlope/aicommits",
   "author": "Hassan El Mghari (@nutlope)",
-  "license": "ISC",
-  "homepage": "https://github.com/Nutlope/aicommits#readme"
+  "license": "MIT",
+  "dependencies": {
+    "inquirer": "^9.1.4"
+  }
 }

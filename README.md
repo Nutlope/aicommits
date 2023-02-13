@@ -4,11 +4,11 @@ AI Commits is a tool that writes your git commit messages for you. Never write a
 
 [![AI Commit Screenshot](https://github.com/Nutlope/aicommits/blob/main/screenshot.png)](https://twitter.com/nutlope/status/1624646872890589184)
 
-## How to install
+## Installation and usage
 
-1. `npm install -g autocommit`
-2. `export OPENAIKEY=sk-xxxxxxxxxxxxxxxx`
-3. `autocommit` after you run `git add .`
+1. `npm install -g autocommit` to install the CLI
+2. `export OPENAI_KEY=sk-xxxxxxxxxxxxxxxx` to specify your OpenAI API Key
+3. `autocommit` after you run `git add .` to generate your commit
 
 ## How it works
 
@@ -23,7 +23,6 @@ It currently can only support git diffs of up to 200 lines of code. I'm working 
 Now:
 
 - Rewrite this in node to publish as an npm package
-  - Figure out how to fail gracefully instead of exit 1
 
 Future tasks:
 
