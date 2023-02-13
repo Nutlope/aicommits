@@ -17,14 +17,10 @@ Have AI Commit write your git commit messages for you so you never have to write
 
 This project uses a command line interface tool called zx that's developed by google. In the script, it runs a `git diff` command to grab all the latest changes, sends this to OpenAI's GPT-3, then returns the AI generated commit message. Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI. Fully privacy friendly as commands only run on your local machine using your OpenAI account.
 
-Uses conventional commits by default. If you don't want this and want to return a full sentence with the commit message, set the conventionalCommit to false at the top of the script.
+This CLI also supports conventional commits. If you want conventional commits, simply set the `conventionalCommit` variable at the top of the script to `true`.
 
 ## Remaining tasks
 
-- [x] Get a working first version with zx
-- [x] pwd trick to get rid of /Users/hassan from the code
-- [x] Add better error handling for missing git add . and commit msgs about a certain amount of chars
-- [x] Add support for conventional commits by default
 - [ ] Figure out how to fail gracefully instead of exit 1
 - [ ] Go over other CLI repos to see what I can add
 - [ ] Test on Windows and Mac

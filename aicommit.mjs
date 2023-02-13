@@ -3,7 +3,7 @@ $.verbose = false;
 
 // TODO: Figure out how to fail gracefully instead of exit 1
 
-let conventionalCommit = true;
+let conventionalCommit = false;
 
 console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommit!"));
 
@@ -31,9 +31,11 @@ if (diff.stdout.length === 0) {
 // limit of 4k tokens = 8k characters
 // 200 lines of code
 
-let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message${
-  conventionalCommit ? " in the style of conventional commits." : "."
-} Preface the commit with 'feat:' if it is a feature or 'fix:' if it is a bug, return a complete sentence, and do not repeat yourself: ${diff}`;
+let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. ${
+  conventionalCommit
+    ? "Preface the commit with 'feat:' if it is a feature or 'fix:' if it is a bug."
+    : "Do not preface the commit with anything."
+} Return a complete sentence and do not repeat yourself: ${diff}`;
 
 const payload = {
   model: "text-davinci-003",
