@@ -2,6 +2,8 @@
 
 import { execSync } from "child_process";
 import inquirer from "inquirer";
+import fetch from "node-fetch";
+
 let OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 async function main() {
