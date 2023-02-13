@@ -1,17 +1,39 @@
 #!/usr/bin/env zx
 $.verbose = false;
 
-// Add console.log with "no git diff"
+// TODO: Figure out how to fail gracefully instead of exit 1
+
+let conventionalCommit = true;
 
 console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommit!"));
 
-let { OPENAI_API_KEY } = await fs.readJson(
-  "/Users/hassan/dev/ai-commit/.env.json"
-);
-let diff = await quiet($`git diff --cached`);
+let pwd = await $`cd ~ && pwd;`;
 
-let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, do not repeat yourself, and return a complete sentence: ${diff}`;
-// let prompt = `Write one detailed commit message based on the following commit. Do not preface the commit with anything, write it right away: `;
+let { OPENAI_API_KEY } = await fs.readJson(
+  `${pwd.stdout.trim()}/ai-commit/.env.json`
+);
+let diff = await $`git diff --cached`;
+
+// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
+if (diff.stdout.length > 8000) {
+  console.log("The diff is too large to write a commit message.");
+  await $`exit 1`;
+}
+
+if (diff.stdout.length === 0) {
+  console.log(
+    "No staged changes found. Make sure there are changes and run `git add .`"
+  );
+  await $`exit 1`;
+}
+
+// 2371 chars = 1132 tokens = 60 LOC
+// limit of 4k tokens = 8k characters
+// 200 lines of code
+
+let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message${
+  conventionalCommit ? " in the style of conventional commits." : "."
+} Preface the commit with 'feat:' if it is a feature or 'fix:' if it is a bug, return a complete sentence, and do not repeat yourself: ${diff}`;
 
 const payload = {
   model: "text-davinci-003",
