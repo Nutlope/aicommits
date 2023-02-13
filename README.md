@@ -25,6 +25,7 @@ Now:
 - Rewrite this in node to publish as an npm package
 - Fix screenshot on npm
 - add an npm ignore and add demo to README as well
+- make CLI looks nicer
 
 Future tasks:
 
