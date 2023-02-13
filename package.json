@@ -1,6 +1,6 @@
 {
   "name": "aicommits",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Writes your git commit messages for you with AI",
   "main": "index.js",
   "bin": {
@@ -11,6 +11,7 @@
   "author": "Hassan El Mghari (@nutlope)",
   "license": "MIT",
   "dependencies": {
-    "inquirer": "^9.1.4"
+    "inquirer": "^9.1.4",
+    "node-fetch": "^3.3.0"
   }
 }
