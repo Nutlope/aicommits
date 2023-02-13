@@ -1,11 +1,11 @@
 {
-  "name": "ai-commit",
-  "version": "1.0.0",
+  "name": "commitai",
+  "version": "0.0.1",
   "description": "generates ai commit",
-  "main": "index.js",
+  "main": "aicommit.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "preinstall": "npm install -g zx"
+    "start": "./aicommit.js"
   },
   "repository": {
     "type": "git",
@@ -13,8 +13,5 @@
   },
   "author": "hassan",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Nutlope/ai-commit/issues"
-  },
   "homepage": "https://github.com/Nutlope/ai-commit#readme"
 }

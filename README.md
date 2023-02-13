@@ -33,3 +33,7 @@ After:
 - [ ] Look into better conventional commit support, look at other CLIs
 - [ ] Try supporting more than 200 lines by grabbing the diff per file
 - [ ] Build landing page
+
+# How to run new version
+
+`npm install -g zx aicommit`
