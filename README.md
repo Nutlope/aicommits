@@ -2,7 +2,7 @@
 
 AI Commits is a tool that writes your git commit messages for you. Never write a commit message again.
 
-![AI Commit Screenshot](https://github.com/Nutlope/aicommits/blob/main/screenshot.png)]
+![AI Commit Screenshot](https://github.com/Nutlope/aicommits/blob/main/screenshot.png)
 
 ## Installation and Usage
 
@@ -11,7 +11,7 @@ Install the CLI then grab your [OpenAI key](https://openai.com/api/) and add it 
 1. `npm install -g aicommits`
 2. `export OPENAI_KEY=sk-xxxxxxxxxxxxxxxx`
 
-Then after running a `git add .` command in a git repo, use this CLI by simply running `aicommits` to generate your commit.
+After that, use this CLI by simply running `aicommits` to generate your commit.
 
 > Note: If you get a EACCESS error on mac/linux when running the first command, try running it with `sudo npm install -g aicommits` and putting in your password.
 
