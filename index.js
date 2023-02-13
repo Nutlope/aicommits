@@ -27,8 +27,6 @@ async function main() {
     process.exit(1);
   }
 
-  let conventionalCommit = false;
-
   const diff = execSync("git diff --cached", { encoding: "utf8" });
 
   if (!diff) {
@@ -47,11 +45,7 @@ async function main() {
     process.exit(1);
   }
 
-  let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. ${
-    conventionalCommit
-      ? "Preface the commit with 'feat:' if it is a feature or 'fix:' if it is a bug."
-      : "Do not preface the commit with anything."
-  } Return a complete sentence and do not repeat yourself: ${diff}`;
+  let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, return a complete sentence, and do not repeat yourself: ${diff}`;
 
   console.log(
     chalk.white("▲ ") + chalk.gray("Generating your AI commit message...\n")
@@ -59,9 +53,8 @@ async function main() {
   const aiCommitMessage = await generateCommitMessage(prompt);
 
   console.log(
-    chalk.white("▲ ") + chalk.bold("Commit message: ") + aiCommitMessage
+    chalk.white("▲ ") + chalk.bold("Commit message: ") + aiCommitMessage + "\n"
   );
-  console.log("\n");
 
   const confirmationMessage = await inquirer.prompt([
     {
