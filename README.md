@@ -1,14 +1,17 @@
-# AI Commits - work in progress
+# AI Commits
 
 AI Commits is a tool that writes your git commit messages for you. Never write a commit message again.
 
-[![AI Commit Screenshot](https://github.com/Nutlope/aicommits/blob/main/screenshot.png)](https://twitter.com/nutlope/status/1624646872890589184)
+![AI Commit Screenshot](https://github.com/Nutlope/aicommits/blob/main/screenshot.png)]
 
-## Installation and usage
+## Installation and Usage
 
-1. `npm install -g autocommit` to install the CLI
-2. `export OPENAI_KEY=sk-xxxxxxxxxxxxxxxx` to specify your OpenAI API Key
-3. `autocommit` after you run `git add .` to generate your commit
+Install the CLI then grab your [OpenAI key](https://openai.com/api/) and add it as an environment variable.
+
+1. `npm install -g aicommits`
+2. `export OPENAI_KEY=sk-xxxxxxxxxxxxxxxx`
+
+Then after running a `git add .` command in a git repo, use this CLI by simply running `aicommits` to generate your commit.
 
 ## How it works
 
@@ -16,21 +19,14 @@ This CLI tool runs a `git diff` command to grab all the latest changes, sends th
 
 ## Limitations
 
-It currently can only support git diffs of up to 200 lines of code. I'm working on version 2.0 which will be TypeScript-first, support conventional commits, and support long diffs.
+- Only supports git diffs of up to 200 lines of code for now
+- Does not support conventional commits
 
-## Remaining tasks
+The next version of the CLI, v2, will address both of these limitations!
 
-Now:
+## Future tasks
 
-- Rewrite this in node to publish as an npm package
-- Fix screenshot on npm
-- add an npm ignore and add demo to README as well
-- make CLI looks nicer
-
-Future tasks:
-
-- Experiment with openai curie and/or codex
-- Add conventional commit support
+- Add support for conventional commits as a flag that users can enable
 - Try supporting more than 200 lines by grabbing the diff per file
-- Rewrite in TypeScript
+- Experiment with openai curie and codex as opposed to dacinvi
 - Build landing page for the 2.0 launch
