@@ -23,6 +23,8 @@ It currently can only support git diffs of up to 200 lines of code. I'm working 
 Now:
 
 - Rewrite this in node to publish as an npm package
+- Fix screenshot on npm
+- add an npm ignore and add demo to README as well
 
 Future tasks:
 

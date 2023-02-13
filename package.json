@@ -1,10 +1,10 @@
 {
   "name": "aicommits",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Writes your git commit messages for you with AI",
   "main": "cli.js",
   "bin": {
-    "gpt-commit": "./index.js"
+    "aicommits": "./cli.js"
   },
   "repository": "https://github.com/Nutlope/aicommits",
   "author": "Hassan El Mghari (@nutlope)",
