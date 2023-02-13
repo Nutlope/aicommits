@@ -7,10 +7,11 @@ import fetch from "node-fetch";
 let OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 async function main() {
-  console.log("Welcome to AICommit!");
+  console.log("▲ Welcome to AICommit!");
+
   if (!OPENAI_API_KEY) {
     console.error(
-      "Please specify an OpenAI key using export OPEN_AI_KEY='YOUR_API_KEY'"
+      "▲ Please specify an OpenAI key using export OPEN_AI_KEY='YOUR_API_KEY'"
     );
     process.exit(1);
   }
@@ -21,7 +22,7 @@ async function main() {
       stdio: "ignore",
     });
   } catch (e) {
-    console.error("This is not a git repository");
+    console.error("▲ This is not a git repository");
     process.exit(1);
   }
 
@@ -31,14 +32,14 @@ async function main() {
 
   if (!diff) {
     console.log(
-      "No staged changes found. Make sure there are changes and run `git add .`"
+      "▲ No staged changes found. Make sure there are changes and run `git add .`"
     );
     process.exit(1);
   }
 
   // Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
   if (diff.length > 8000) {
-    console.log("The diff is too large to write a commit message.");
+    console.log("▲ The diff is too large to write a commit message.");
     process.exit(1);
   }
 
@@ -48,6 +49,7 @@ async function main() {
       : "Do not preface the commit with anything."
   } Return a complete sentence and do not repeat yourself: ${diff}`;
 
+  console.log("▲ Generating your AI commit message...\n");
   const aiCommitMessage = await generateCommitMessage(prompt);
 
   console.log(aiCommitMessage);
@@ -61,11 +63,16 @@ async function main() {
     },
   ]);
 
-  if (confirmationMessage !== "n") {
-    execSync(`git commit -m "${cleanedUpAiCommit}"`, {
-      encoding: "utf8",
-    });
+  console.log("Confirmation message is: ", confirmationMessage);
+
+  if (confirmationMessage === "n") {
+    console.log("▲ Commit message has not been commited.`");
+    process.exit(1);
   }
+
+  execSync(`git commit -m "${aiCommitMessage}"`, {
+    encoding: "utf8",
+  });
 }
 
 async function generateCommitMessage(prompt) {
