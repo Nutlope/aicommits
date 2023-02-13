@@ -6,10 +6,7 @@ Have AI Commit write your git commit messages for you so you never have to write
 
 ## How to install
 
-1. Run `npm i -g zx` (this CLI uses zx)
-2. Run `git clone github.com/nutlope/aicommit` in your root directory
-3. Add a file called `.env.json` in the folder with your OpenAI API key. You can get this by [signing up](https://openai.com/api/)
-4. [Optional] If you're on mac, add `alias aicommit="zx ~/ai-commit/aicommit.mjs"` to your `.zshrc` so you can trigger the program simply by typing `aicommit`
+`npm install -g autocommit`
 
 **Note:** The process to install this will get vastly simplified when I rewrite this CLI and publish it as an npm package to be run with `npx`.
 
@@ -35,5 +32,3 @@ After:
 - [ ] Build landing page
 
 # How to run new version
-
-`npm install -g zx aicommit`

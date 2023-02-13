@@ -1,11 +1,14 @@
 {
-  "name": "commitai",
-  "version": "0.0.1",
+  "name": "autocommit",
+  "version": "0.0.3",
   "description": "generates ai commit",
   "main": "aicommit.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "./aicommit.js"
+  },
+  "bin": {
+    "gpt-commit": "./aicommit.js"
   },
   "repository": {
     "type": "git",
