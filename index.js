@@ -15,7 +15,6 @@ async function main() {
     );
     process.exit(1);
   }
-  // Check to see if the user is in a git repo
   try {
     execSync("git rev-parse --is-inside-work-tree", {
       encoding: "utf8",
@@ -63,14 +62,13 @@ async function main() {
     },
   ]);
 
-  console.log("Confirmation message is: ", confirmationMessage);
-
-  if (confirmationMessage === "n") {
+  if (confirmationMessage.useCommitMessage === "n") {
     console.log("▲ Commit message has not been commited.`");
     process.exit(1);
   }
 
   execSync(`git commit -m "${aiCommitMessage}"`, {
+    stdio: "inherit",
     encoding: "utf8",
   });
 }
