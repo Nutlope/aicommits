@@ -1,6 +1,6 @@
 {
   "name": "aicommits",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Writes your git commit messages for you with AI",
   "main": "bin/index.js",
   "bin": {
@@ -10,6 +10,7 @@
   "author": "Hassan El Mghari (@nutlope)",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^18.13.0",
     "typescript": "^4.9.5"
   },
   "scripts": {
