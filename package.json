@@ -1,6 +1,6 @@
 {
   "name": "aicommits",
-  "version": "0.1.7",
+  "version": "0.2.1",
   "description": "Writes your git commit messages for you with AI",
   "main": "bin/index.js",
   "bin": {
