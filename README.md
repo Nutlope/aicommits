@@ -21,11 +21,14 @@ This CLI also supports conventional commits. If you want conventional commits, s
 
 ## Remaining tasks
 
-- [ ] Figure out how to fail gracefully instead of exit 1
-- [ ] Go over other CLI repos to see what I can add
-- [ ] Test on Windows and Mac
+Now:
 
-- [ ] Try openai curie And/OR codex
+- [ ] Rewrite this in node to publish as an npm package
+  - [ ] Figure out how to fail gracefully instead of exit 1
+  - [ ] Try openai curie And/OR codex
+
+After:
+
+- [ ] Look into better conventional commit support, look at other CLIs
 - [ ] Try supporting more than 200 lines by grabbing the diff per file
-- [ ] Rewrite this CLI tool using a Node framework and publish on npm to simplify the process
-- [ ] Build landing page w/ demo
+- [ ] Build landing page
