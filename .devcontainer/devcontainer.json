@@ -1,0 +1,6 @@
+{
+    "name": "Node.js",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:0-16",
+    "postCreateCommand": "npm install",
+    "remoteUser": "node"
+}
