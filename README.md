@@ -23,6 +23,10 @@ It's recommended to add the line in #2 to your `.zshrc` or `.bashrc` so it persi
 
 After doing the two steps above, generate your commit by running `aicommits`.
 
+### Options
+
+- `-c | --concise`: Use concise output with short commit messages.
+
 > Note: If you get a EACCESS error on mac/linux when running the first command, try running it with `sudo npm install -g aicommits`.
 
 ## How it works

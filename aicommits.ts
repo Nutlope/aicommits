@@ -6,6 +6,7 @@ import inquirer from "inquirer";
 import fetch from "node-fetch";
 
 let OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY;
+let isConcise = false;
 
 export async function main() {
   console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommits!"));
@@ -50,10 +51,25 @@ export async function main() {
     process.exit(1);
   }
 
-  let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself: ${diff}`;
+  const args = process.argv.slice(2);
+
+  args.forEach((arg) => {
+    if (arg === "--concise" || arg === "-c") {
+      isConcise = true;
+    }
+  });
+
+  let prompt = isConcise
+    ? `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful, short, and concise commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself: ${diff}`
+    : `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself: ${diff}`;
 
   console.log(
-    chalk.white("▲ ") + chalk.gray("Generating your AI commit message...\n")
+    chalk.white("▲ ") +
+      chalk.white(
+        `Generating your AI commit message ${
+          isConcise ? "with consice mode on" : ""
+        } ...\n`
+      )
   );
 
   try {
