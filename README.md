@@ -1,11 +1,10 @@
 <div align="center">
   <div>
-    <img src="/screenshot.png" alt="AI Commits"/>
+    <img src="https://raw.githubusercontent.com/Nutlope/aicommits/main/screenshot.png?token=GHSAT0AAAAAABPRWK4L2SO2P7OQARQ3YCF6Y7K3XWA" alt="AI Commits"/>
     <h1 align="center">AI Commits</h1>
   </div>
 	<p>A CLI that writes your git commit messages for you. Never write a commit message again.</p>
-	<a href="https://packagephobia.com/result?p=aicommits"><img src="https://badgen.net/packagephobia/install/aicommits" alt="Current version"></a>
-	<a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/v/aicommits" alt="Install size"></a>
+	<a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/v/aicommits" alt="Current version"></a>
   <a href="https://twitter.com/nutlope">
     <img src="https://img.shields.io/twitter/follow/nutlope?style=flat&label=nutlope&logo=twitter&color=0bf&logoColor=fff" alt="Hassan Twitter follower count" />
   </a>
