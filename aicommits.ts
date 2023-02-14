@@ -66,7 +66,7 @@ export async function main() {
   if (commitTypeConfirmation.useCommitTypeConfirmation !== "n") {
     commitType = await inquirer.prompt([
       {
-        name: "commitType",
+        name: "useCommitType",
         type: "list",
         message: "What type commit is this?",
         choices: [
@@ -83,7 +83,8 @@ export async function main() {
           "Revert",
         ],
       },
-    ]).commitType;
+    ]).useCommitType;
+    console.log(commitType)
   }
 
   console.log(
