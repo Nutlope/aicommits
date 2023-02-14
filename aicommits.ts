@@ -50,7 +50,7 @@ export async function main() {
     process.exit(1);
   }
 
-  let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, return a complete sentence, and do not repeat yourself: ${diff}`;
+  let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use present tense, return a complete sentence, and do not repeat yourself: ${diff}`;
 
   console.log(
     chalk.white("▲ ") + chalk.gray("Generating your AI commit message...\n")
