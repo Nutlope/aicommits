@@ -52,13 +52,53 @@ export async function main() {
 
   let prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself: ${diff}`;
 
+  const commitTypeConfirmation = await inquirer.prompt([
+    {
+      name: "useCommitTypeConfirmation",
+      message: "Would you like to add a commit type?",
+      choices: ["Y", "y", "n"],
+      default: "n",
+    },
+  ]);
+
+  let commitType: string | undefined;
+  
+  if (commitTypeConfirmation.useCommitTypeConfirmation !== "n") {
+    commitType = await inquirer.prompt([
+      {
+        name: "commitType",
+        message: "What type commit is this?",
+        choices: [
+          "Feat",
+          "Fix",
+          "Refactor",
+          "Chore",
+          "Docs",
+          "Style",
+          "Test",
+          "Perf",
+          "CI",
+          "Build",
+          "Revert",
+        ],
+      },
+    ]);
+  }
+
   console.log(
     chalk.white("▲ ") + chalk.gray("Generating your AI commit message...\n")
   );
   const aiCommitMessage = await generateCommitMessage(prompt);
 
-  console.log(
-    chalk.white("▲ ") + chalk.bold("Commit message: ") + aiCommitMessage + "\n"
+  const commitMessage = !commitType
+    ? aiCommitMessage
+    : `${commitType}: ${aiCommitMessage}`;
+
+  let commit = console.log(
+    chalk.white("▲ ") +
+      chalk.bold("Commit message: ") +
+      `${commitMessage}` +
+      "\n"
   );
 
   const confirmationMessage = await inquirer.prompt([
@@ -75,7 +115,7 @@ export async function main() {
     process.exit(1);
   }
 
-  execSync(`git commit -m "${aiCommitMessage}"`, {
+  execSync(`git commit -m "${commitMessage}"`, {
     stdio: "inherit",
     encoding: "utf8",
   });
