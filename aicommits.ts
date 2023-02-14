@@ -60,9 +60,9 @@ export async function main() {
     },
   ]);
 
-  let commitType: string | undefined;
+  let commitType;
 
-  if (commitTypeConfirmation.useCommitTypeConfirmation !== "n") {
+  if (commitTypeConfirmation.useCommitTypeConfirmation.toLowerCase() === "y") {
     commitType = await inquirer.prompt([
       {
         name: "useCommitType",
@@ -82,8 +82,7 @@ export async function main() {
           "Revert",
         ],
       },
-    ]).useCommitType;
-    console.log(commitType);
+    ]);
   }
 
   console.log(
@@ -94,7 +93,7 @@ export async function main() {
   const commitMessage =
     commitTypeConfirmation.useCommitTypeConfirmation === "n"
       ? aiCommitMessage
-      : `${commitType}: ${aiCommitMessage}`;
+      : `${commitType.useCommitType}: ${aiCommitMessage}`;
 
   console.log(
     chalk.white("▲ ") +
