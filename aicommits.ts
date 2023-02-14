@@ -103,6 +103,13 @@ async function generateCommitMessage(prompt: string) {
   });
 
   const json: any = await response.json();
+
+  if (json.error && json.error.message) {
+    console.log(chalk.white("▲ ") + json.error.message);
+    process.exit(1);
+  }
+
+
   const aiCommit = json.choices[0].text;
 
   return aiCommit.replace(/(\r\n|\n|\r)/gm, "");
