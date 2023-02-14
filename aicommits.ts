@@ -28,7 +28,7 @@ export async function main() {
   }
 
   const diff = execSync(
-    "git diff --cached ':!package-lock.json' ':!yarn.lock'",
+    "git diff --cached . ':(exclude)package-lock.json' ':(exclude)yarn.lock'",
     {
       encoding: "utf8",
     }
@@ -83,7 +83,7 @@ export async function main() {
 
 async function generateCommitMessage(prompt: string) {
   const payload = {
-    model: "text-curie-001",
+    model: "text-davinci-003",
     prompt,
     temperature: 0.7,
     top_p: 1,
