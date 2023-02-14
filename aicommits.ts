@@ -91,9 +91,8 @@ export async function main() {
   );
   const aiCommitMessage = await generateCommitMessage(prompt);
 
-  const commitMessage = !commitType
-    ? aiCommitMessage
-    : `${commitType}: ${aiCommitMessage}`;
+  const commitMessage =
+    commitType === "n" ? aiCommitMessage : `${commitType}: ${aiCommitMessage}`;
 
   console.log(
     chalk.white("▲ ") +
