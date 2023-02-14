@@ -55,9 +55,9 @@ export async function main() {
   const commitTypeConfirmation = await inquirer.prompt([
     {
       name: "useCommitTypeConfirmation",
-      message: "Would you like to add a commit type?",
+      message: "Would you like to add a commit type? (Y / n)",
       choices: ["Y", "y", "n"],
-      default: "y/n",
+      default: "n",
     },
   ]);
 
@@ -95,7 +95,7 @@ export async function main() {
     ? aiCommitMessage
     : `${commitType}: ${aiCommitMessage}`;
 
-  let commit = console.log(
+  console.log(
     chalk.white("▲ ") +
       chalk.bold("Commit message: ") +
       `${commitMessage}` +
