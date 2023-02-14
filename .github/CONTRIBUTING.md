@@ -3,7 +3,12 @@
 
 ## Setting up the project
 
-Simply install the dependencies using pnpm:
+Use nvm to set the appropriate Node.js version:
+```
+nvm i
+```
+
+Install the dependencies using pnpm:
 ```
 pnpm i
 ```
