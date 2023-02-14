@@ -20,5 +20,10 @@
     "chalk": "^4.1.2",
     "inquirer": "^8.0.0",
     "node-fetch": "^2.6.9"
-  }
+  },
+  "keywords": [
+    "ai",
+    "git",
+    "commit"
+  ]
 }
