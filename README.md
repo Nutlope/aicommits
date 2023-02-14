@@ -19,7 +19,9 @@ Install the CLI then grab your [OpenAI key](https://openai.com/api/) and add it 
 1. `npm install -g aicommits`
 2. `export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx`
 
-After that, generate your commit running `aicommits`.
+It's recommended to add the line in #2 to your `.zshrc` or `.bashrc` so it persists instead of having to define it in each terminal session.
+
+After doing the two steps above, generate your commit by running `aicommits`.
 
 > Note: If you get a EACCESS error on mac/linux when running the first command, try running it with `sudo npm install -g aicommits`.
 
