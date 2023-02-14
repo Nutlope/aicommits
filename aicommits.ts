@@ -57,7 +57,6 @@ export async function main() {
       name: "useCommitTypeConfirmation",
       message: "Would you like to add a commit type? (Y / n)",
       choices: ["Y", "y", "n"],
-      default: "n",
     },
   ]);
 
@@ -84,7 +83,7 @@ export async function main() {
         ],
       },
     ]).useCommitType;
-    console.log(commitType)
+    console.log(commitType);
   }
 
   console.log(
@@ -93,7 +92,9 @@ export async function main() {
   const aiCommitMessage = await generateCommitMessage(prompt);
 
   const commitMessage =
-    commitType === "n" ? aiCommitMessage : `${commitType}: ${aiCommitMessage}`;
+    commitTypeConfirmation.useCommitTypeConfirmation === "n"
+      ? aiCommitMessage
+      : `${commitType}: ${aiCommitMessage}`;
 
   console.log(
     chalk.white("▲ ") +
