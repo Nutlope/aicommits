@@ -5,7 +5,7 @@ import { execSync } from "child_process";
 import inquirer from "inquirer";
 import fetch from "node-fetch";
 
-let OPENAI_KEY = process.env.OPENAI_KEY;
+let OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY;
 
 export async function main() {
   console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommits!"));
