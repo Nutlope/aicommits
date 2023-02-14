@@ -57,16 +57,17 @@ export async function main() {
       name: "useCommitTypeConfirmation",
       message: "Would you like to add a commit type?",
       choices: ["Y", "y", "n"],
-      default: "n",
+      default: "y/n",
     },
   ]);
 
   let commitType: string | undefined;
-  
+
   if (commitTypeConfirmation.useCommitTypeConfirmation !== "n") {
     commitType = await inquirer.prompt([
       {
         name: "commitType",
+        type: "list",
         message: "What type commit is this?",
         choices: [
           "Feat",
@@ -82,7 +83,7 @@ export async function main() {
           "Revert",
         ],
       },
-    ]);
+    ]).commitType;
   }
 
   console.log(
