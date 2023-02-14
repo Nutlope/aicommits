@@ -1,7 +1,7 @@
 import { execa } from 'execa';
 import { Configuration, OpenAIApi } from 'openai';
 
-const promptTemplate = 'Write an insightful but concise Git commit message in present tense for the following diff without prefacing it with anything:';
+const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
 export const getCommitMessages = async (
 	apiKey: string,
@@ -30,7 +30,7 @@ export const getCommitMessages = async (
 
 		return completion.data.choices
 			.filter(choice => choice.text)
-			.map(choice => choice.text!.trim());
+			.map(choice => choice.text!.trim().replace(/[\n\r]/g, ''));
 	} catch (error) {
 		const errorAsAny = error as any;
 		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
