@@ -27,7 +27,12 @@ export async function main() {
     process.exit(1);
   }
 
-  const diff = execSync("git diff --cached", { encoding: "utf8" });
+  const diff = execSync(
+    "git diff --cached ':!package-lock.json' ':!yarn.lock'",
+    {
+      encoding: "utf8",
+    }
+  );
 
   if (!diff) {
     console.log(
@@ -78,7 +83,7 @@ export async function main() {
 
 async function generateCommitMessage(prompt: string) {
   const payload = {
-    model: "text-davinci-003",
+    model: "text-curie-001",
     prompt,
     temperature: 0.7,
     top_p: 1,

@@ -35,11 +35,13 @@ This CLI tool runs a `git diff` command to grab all the latest changes, sends th
 
 The next version of the CLI, v2, will address both of these limitations!
 
-## Future tasks
+## Tasks now
 
-- Ignore package-lock and yarn.lock files
 - Experiment with openai curie and codex as opposed to dacinvi
   - Figure out the price per commit
+
+## Future tasks
+
 - Add support for conventional commits as a flag that users can enable
 - Try supporting more than 200 lines by grabbing the diff per file
 - Build landing page for the 2.0 launch
