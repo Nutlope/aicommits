@@ -26,7 +26,9 @@ After that, generate your commit running `aicommits`.
 
 ## How it works
 
-This CLI tool runs a `git diff` command to grab all the latest changes, sends this to OpenAI's GPT-3, then returns the AI generated commit message. Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
+This CLI tool runs a `git diff` command to grab all the latest changes, sends this to OpenAI's GPT-3, then returns the AI generated commit message. I also want to note that it does cost money since data gets sent to OpenAI for a commit message to be generated. However, OpenAI gives folks $18 of free credits and commit message generations are cheap so it should be free for a long time.
+
+Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
 
 ## Limitations
 
@@ -34,11 +36,6 @@ This CLI tool runs a `git diff` command to grab all the latest changes, sends th
 - Does not support conventional commits
 
 The next version of the CLI, v2, will address both of these limitations!
-
-## Tasks now
-
-- Experiment with openai curie and codex as opposed to dacinvi
-  - Figure out the price per commit
 
 ## Future tasks
 
