@@ -14,6 +14,21 @@ import {
 } from './utils.js';
 
 (async () => {
+	if (process.argv.includes('--help')) {
+		console.log(`
+		aicommits
+
+		https://npmjs.com/package/aicommits
+
+		Usage:
+		Run \`aicommits\` for an AI generated commit message based on the staged files.
+		
+		Prerequisites:
+		\`OPENAI_KEY\` environment variable containing the OpenAI API key (.env supported)
+		`.replace(/^\t+/gm, '').trim());
+		return;
+	}
+
 	intro(bgCyan(black(' aicommits ')));
 
 	const { OPENAI_KEY } = process.env;
