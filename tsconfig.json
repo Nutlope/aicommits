@@ -1,10 +1,11 @@
 {
 	"compilerOptions": {
-		"target": "es2016",
-		"module": "commonjs",
-		"outDir": "./bin",
+		"noEmit": true,
+		"isolatedModules": true,
 		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"skipLibCheck": true /* Skip type checking all .d.ts files. */
+		"moduleResolution": "Node16",
+		"resolveJsonModule": true,
+		"strict": true,
+		"skipLibCheck": true,
 	},
 }

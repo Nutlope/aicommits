@@ -65,7 +65,7 @@ import {
 
 	const { stdout: commitOutput } = await execa('git', ['commit', '-m', editedCommitMessage]);
 
-	outro(`${green('✔')} Successfully committed!\n\n${dim(commitOutput)})}`);
+	outro(`${green('✔')} Successfully committed!\n\n${dim(commitOutput)}`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	process.exit(1);

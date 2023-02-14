@@ -10,24 +10,39 @@
 	"license": "MIT",
 	"repository": "Nutlope/aicommits",
 	"author": "Hassan El Mghari (@nutlope)",
+	"type": "module",
 	"files": [
 		"dist"
 	],
-	"bin": "dist/index.js",
+	"bin": "dist/cli.mjs",
 	"scripts": {
-		"build": "pkgroll",
-		"lint": "eslint --cache ."
+		"prepare": "simple-git-hooks",
+		"build": "pkgroll --minify",
+		"lint": "eslint --cache .",
+		"type-check": "tsc",
+		"prepack": "pnpm build && clean-pkg-json"
+	},
+	"simple-git-hooks": {
+		"pre-commit": "pnpm lint-staged"
+	},
+	"lint-staged": {
+		"*.ts": "eslint --cache"
+	},
+	"dependencies": {
+		"openai": "^3.1.0"
 	},
 	"devDependencies": {
 		"@clack/prompts": "link:/Users/osame/Documents/public-github/natemoo-re/clack/packages/prompts",
 		"@pvtnbr/eslint-config": "^0.33.0",
 		"@types/node": "^18.13.0",
+		"clean-pkg-json": "^1.2.0",
 		"dotenv": "^16.0.3",
 		"eslint": "^8.34.0",
 		"execa": "^7.0.0",
 		"kolorist": "^1.7.0",
-		"openai": "^3.1.0",
+		"lint-staged": "^13.1.2",
 		"pkgroll": "^1.9.0",
+		"simple-git-hooks": "^2.8.1",
 		"typescript": "^4.9.5"
 	},
 	"eslintConfig": {
