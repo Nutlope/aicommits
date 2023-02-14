@@ -1,6 +1,6 @@
 {
   "name": "aicommits",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Writes your git commit messages for you with AI",
   "files": [
     "bin"

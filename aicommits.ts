@@ -5,15 +5,15 @@ import { execSync } from "child_process";
 import inquirer from "inquirer";
 import fetch from "node-fetch";
 
-let OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+let OPENAI_KEY = process.env.OPENAI_KEY;
 
 export async function main() {
   console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommits!"));
 
-  if (!OPENAI_API_KEY) {
+  if (!OPENAI_KEY) {
     console.error(
       chalk.white("▲ ") +
-        "Please save your OpenAI API key as an env variable by doing 'export OPENAI_API_KEY=YOUR_API_KEY'"
+        "Please save your OpenAI API key as an env variable by doing 'export OPENAI_KEY=YOUR_API_KEY'"
     );
     process.exit(1);
   }
@@ -28,7 +28,7 @@ export async function main() {
   }
 
   const diff = execSync(
-    "git diff --cached . ':(exclude)package-lock.json' ':(exclude)yarn.lock'",
+    `git diff --cached . ":(exclude)package-lock.json" ":(exclude)yarn.lock" ":(exclude)pnpm-lock.yaml"`,
     {
       encoding: "utf8",
     }
@@ -96,7 +96,7 @@ async function generateCommitMessage(prompt: string) {
   const response = await fetch("https://api.openai.com/v1/completions", {
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY ?? ""}`,
+      Authorization: `Bearer ${OPENAI_KEY ?? ""}`,
     },
     method: "POST",
     body: JSON.stringify(payload),
