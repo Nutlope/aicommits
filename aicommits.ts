@@ -55,30 +55,35 @@ export async function main() {
   console.log(
     chalk.white("▲ ") + chalk.gray("Generating your AI commit message...\n")
   );
-  const aiCommitMessage = await generateCommitMessage(prompt);
+  try {
+    const aiCommitMessage = await generateCommitMessage(prompt);
+    console.log(
+      chalk.white("▲ ") + chalk.bold("Commit message: ") + aiCommitMessage + "\n"
+    );
 
-  console.log(
-    chalk.white("▲ ") + chalk.bold("Commit message: ") + aiCommitMessage + "\n"
-  );
+    const confirmationMessage = await inquirer.prompt([
+      {
+        name: "useCommitMessage",
+        message: "Would you like to use this commit message? (Y / n)",
+        choices: ["Y", "y", "n"],
+        default: "y",
+      },
+    ]);
 
-  const confirmationMessage = await inquirer.prompt([
-    {
-      name: "useCommitMessage",
-      message: "Would you like to use this commit message? (Y / n)",
-      choices: ["Y", "y", "n"],
-      default: "y",
-    },
-  ]);
+    if (confirmationMessage.useCommitMessage === "n") {
+      console.log(chalk.white("▲ ") + "Commit message has not been commited.");
+      process.exit(1);
+    }
+  
+    execSync(`git commit -m "${aiCommitMessage}"`, {
+      stdio: "inherit",
+      encoding: "utf8",
+    });
 
-  if (confirmationMessage.useCommitMessage === "n") {
-    console.log(chalk.white("▲ ") + "Commit message has not been commited.");
+  } catch(e) {
+    console.error(chalk.white("▲ ") + chalk.red(e.message));
     process.exit(1);
   }
-
-  execSync(`git commit -m "${aiCommitMessage}"`, {
-    stdio: "inherit",
-    encoding: "utf8",
-  });
 }
 
 async function generateCommitMessage(prompt: string) {
@@ -101,6 +106,10 @@ async function generateCommitMessage(prompt: string) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  if(response.status !== 200) {
+    const errorJson: any = await response.json();  
+    throw new Error(`OpenAI API failed while processing the request '${errorJson?.error?.message}'`);
+  }
 
   const json: any = await response.json();
   const aiCommit = json.choices[0].text;
