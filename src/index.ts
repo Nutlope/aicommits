@@ -1,107 +1,68 @@
-import { execSync } from 'child_process';
-import chalk from 'chalk';
-import inquirer from 'inquirer';
-import fetch from 'node-fetch';
-
-const { OPENAI_API_KEY } = process.env;
-
-async function generateCommitMessage(prompt: string) {
-	const payload = {
-		model: 'text-davinci-003',
-		prompt,
-		temperature: 0.7,
-		top_p: 1,
-		frequency_penalty: 0,
-		presence_penalty: 0,
-		max_tokens: 200,
-		stream: false,
-		n: 1,
-	};
-	const response = await fetch('https://api.openai.com/v1/completions', {
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${OPENAI_API_KEY ?? ''}`,
-		},
-		method: 'POST',
-		body: JSON.stringify(payload),
-	});
-
-	const json: any = await response.json();
-	const aiCommit = json.choices[0].text;
-
-	return aiCommit.replace(/(\r\n|\n|\r)/g, '');
-}
+import 'dotenv/config.js';
+import { dim, black, green, red, bgCyan } from 'kolorist';
+import { intro, outro, spinner, select, text, isCancel } from '@clack/prompts';
+import { execa } from 'execa';
+import {
+	assertGitRepo,
+	getStagedDiff,
+	getDetectedMessage,
+	getCommitMessages,
+} from './utils';
 
 (async () => {
-	console.log(chalk.white('▲ ') + chalk.green('Welcome to AICommits!'));
+	intro(bgCyan(black(' aicommits ')));
 
-	if (!OPENAI_API_KEY) {
-		console.error(
-			`${chalk.white('▲ ')
-         }Please save your OpenAI API key as an env variable by doing 'export OPENAI_API_KEY=YOUR_API_KEY'`,
-		);
-		process.exit(1);
-	}
-	try {
-		execSync('git rev-parse --is-inside-work-tree', {
-			encoding: 'utf8',
-			stdio: 'ignore',
-		});
-	} catch {
-		console.error(`${chalk.white('▲ ')}This is not a git repository`);
-		process.exit(1);
+	const { OPENAI_KEY } = process.env;
+
+	if (!OPENAI_KEY) {
+		throw new Error('Environment variable OPENAI_KEY not found!');
 	}
 
-	const diff = execSync(
-		'git diff --cached . ":(exclude)package-lock.json" ":(exclude)yarn.lock" ":(exclude)pnpm-lock.yaml"',
-		{
-      encoding: 'utf8',
-		},
-	);
+	await assertGitRepo();
 
-	if (!diff) {
-		console.log(
-			`${chalk.white('▲ ')
-         }No staged changes found. Make sure there are changes and run \`git add .\``,
-		);
-		process.exit(1);
+	const detectingFiles = spinner();
+	detectingFiles.start('Detecting staged files');
+	const stagedDiff = await getStagedDiff();
+
+	if (!stagedDiff) {
+		throw new Error('No staged changes found. Make sure to stage your changes with `git add`.');
 	}
 
-	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
-	if (diff.length > 8000) {
-		console.log(
-			`${chalk.white('▲ ')}The diff is too large to write a commit message.`,
-		);
-		process.exit(1);
-	}
+	detectingFiles.stop(`${getDetectedMessage(stagedDiff.files)}:\n${
+		stagedDiff.files.map(file => `     ${file}`).join('\n')
+	}`);
 
-	const prompt = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself: ${diff}`;
+	const s = spinner();
+	s.start('Generating commit messages');
+	const messages = await getCommitMessages(OPENAI_KEY, stagedDiff.diff);
+	s.stop('Generated commit messages');
 
-	console.log(
-		chalk.white('▲ ') + chalk.gray('Generating your AI commit message...\n'),
-	);
-	const aiCommitMessage = await generateCommitMessage(prompt);
-
-	console.log(
-		`${chalk.white('▲ ') + chalk.bold('Commit message: ') + aiCommitMessage}\n`,
-	);
-
-	const confirmationMessage = await inquirer.prompt([
-		{
-			name: 'useCommitMessage',
-			message: 'Would you like to use this commit message? (Y / n)',
-			choices: ['Y', 'y', 'n'],
-			default: 'y',
-		},
-	]);
-
-	if (confirmationMessage.useCommitMessage === 'n') {
-		console.log(`${chalk.white('▲ ')}Commit message has not been commited.`);
-		process.exit(1);
-	}
-
-	execSync(`git commit -m "${aiCommitMessage}"`, {
-		stdio: 'inherit',
-		encoding: 'utf8',
+	const commitMessage = await select({
+		message: `Pick a commit message to edit: ${dim('(Ctrl+c to exit)')}`,
+		options: messages.map(value => ({ label: value, value })),
 	});
-})();
+
+	if (isCancel(commitMessage)) {
+		return;
+	}
+
+	const editedCommitMessage = await text({
+		message: `Edit commit message and press Enter to commit: ${dim('(Ctrl+c to exit)')}`,
+		initial: commitMessage,
+	});
+
+	if (isCancel(editedCommitMessage)) {
+		return;
+	}
+
+	if (!editedCommitMessage.trim()) {
+		throw new Error('Commit message cannot be empty');
+	}
+
+	const { stdout: commitOutput } = await execa('git', ['commit', '-m', editedCommitMessage]);
+
+	outro(`${green('✔')} Successfully committed!\n\n${dim(commitOutput)})}`);
+})().catch((error) => {
+	outro(`${red('✖')} ${error.message}`);
+	process.exit(1);
+});
