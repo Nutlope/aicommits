@@ -32,7 +32,7 @@
 		"openai": "^3.1.0"
 	},
 	"devDependencies": {
-		"@clack/prompts": "link:/Users/osame/Documents/public-github/natemoo-re/clack/packages/prompts",
+		"@clack/prompts": "^0.2.1",
 		"@pvtnbr/eslint-config": "^0.33.0",
 		"@types/node": "^18.13.0",
 		"clean-pkg-json": "^1.2.0",

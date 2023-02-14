@@ -67,7 +67,7 @@ import {
 
 	const editedCommitMessage = await text({
 		message: `Edit commit message and press Enter to commit: ${dim('(Ctrl+c to exit)')}`,
-		initial: commitMessage,
+		initialValue: commitMessage,
 	});
 
 	if (isCancel(editedCommitMessage)) {
