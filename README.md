@@ -36,11 +36,14 @@ Video coming soon where I rebuild it from scratch to show you how to easily buil
 - Only supports git diffs of up to 200 lines of code for now
 - Does not support conventional commits
 
-The next version of the CLI, version 2, will address both of these limitations!
+The next version of the CLI, version 2, will address both of these limitations as well as the tasks below!
 
 ## Future tasks
 
+- Add a debugging flag to troubleshoot OpenAI responses
 - Add support for conventional commits as a flag that users can enable
 - Add support for diffs greater than 200 lines by grabbing the diff per file
 - Add support for a flag that can auto-accept
+- Add opt-in emoji and languages flags
+- Add ability to specify a commit message from inside aicommit
 - Build landing page for the 2.0 launch
