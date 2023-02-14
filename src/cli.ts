@@ -1,13 +1,17 @@
 import 'dotenv/config.js';
-import { dim, black, green, red, bgCyan } from 'kolorist';
-import { intro, outro, spinner, select, text, isCancel } from '@clack/prompts';
+import {
+	dim, black, green, red, bgCyan,
+} from 'kolorist';
+import {
+	intro, outro, spinner, select, text, isCancel,
+} from '@clack/prompts';
 import { execa } from 'execa';
 import {
 	assertGitRepo,
 	getStagedDiff,
 	getDetectedMessage,
 	getCommitMessages,
-} from './utils';
+} from './utils.js';
 
 (async () => {
 	intro(bgCyan(black(' aicommits ')));

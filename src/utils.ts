@@ -27,13 +27,16 @@ export const getCommitMessages = async (
 			stream: false,
 			n: 3,
 		});
-	
-		return completion.data.choices.map(choice => choice.text.trim());	
+
+		return completion.data.choices
+			.filter(choice => choice.text)
+			.map(choice => choice.text!.trim());
 	} catch (error) {
-		error.message = `OpenAI API Error: ${error.message} - ${error.response.statusText}`;
-		throw error;
+		const errorAsAny = error as any;
+		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
+		throw errorAsAny;
 	}
-}
+};
 
 export const assertGitRepo = async () => {
 	const { stdout } = await execa('git', ['rev-parse', '--is-inside-work-tree'], { reject: false });
@@ -71,4 +74,4 @@ export const getStagedDiff = async () => {
 	};
 };
 
-export const getDetectedMessage = (files: string[]) =>`Detected ${files.length.toLocaleString()} staged file${files.length > 1 ? 's' : ''}`;
+export const getDetectedMessage = (files: string[]) => `Detected ${files.length.toLocaleString()} staged file${files.length > 1 ? 's' : ''}`;
