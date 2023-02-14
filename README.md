@@ -12,24 +12,34 @@
 
 ---
 
-## Installation and Usage
+## Setup
+This CLI generates the commit message by sending the diff to the [OpenAI API](https://openai.com/api/).
 
-Install the CLI then grab your [OpenAI key](https://openai.com/api/) and add it as an env variable with the two commands below.
+You'll need to sign up for an account to obtain an API key.
 
-1. `npm install -g aicommits`
-2. `export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx`
+Note: The API is not free and costs a few cents per request. However, OpenAI gives you $18 of free credits to get started.
 
-It's recommended to add the line in #2 to your `.zshrc` or `.bashrc` so it persists instead of having to define it in each terminal session.
+## Usage
 
-After doing the two steps above, generate your commit by running `aicommits`.
+When you want to make a commit, stage your changes and run:
+```
+OPENAI_KEY=<token> npx aicommits
+```
 
-> Note: If you get a EACCESS error on mac/linux when running the first command, try running it with `sudo npm install -g aicommits`.
+If you have a `.env` file, you can also set the `OPENAI_KEY` variable there. Alternatively, you can also store it in your `.zshrc` or `.bashrc` files.
 
-## How it works
+### Global install
 
-This CLI tool runs a `git diff` command to grab all the latest changes, sends this to OpenAI's GPT-3, then returns the AI generated commit message. I also want to note that it does cost money since GPT-3 generations aren't free. However, OpenAI gives folks $18 of free credits and commit message generations are cheap so it should be free for a long time.
+By installing the package globally, you can use it without npx:
+```
+npm install -g aicommits
+```
 
-Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
+npx will fetch the latest version for you, but when globally installed, you'll have re-run the command to update the package.
+
+## How does this work?
+
+This tool runs `git diff --cahed` to grab the staged changes, sends them to the OpenAI API, then returns the AI generated commit message.
 
 ## Limitations
 
@@ -48,3 +58,7 @@ The next version of the CLI, version 2, will address both of these limitations a
 - Add opt-in emoji flag
 - Add opt-in languages flag
 - Build landing page for the 2.0 launch
+
+## Contributing
+
+See the [Contributin guide](.github/CONTRIBUTING.md).
