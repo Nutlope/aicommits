@@ -8,12 +8,12 @@ import fetch from "node-fetch";
 let OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 export async function main() {
-  console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommit!"));
+  console.log(chalk.white("▲ ") + chalk.green("Welcome to AICommits!"));
 
   if (!OPENAI_API_KEY) {
     console.error(
       chalk.white("▲ ") +
-        "Please specify an OpenAI key using export OPENAI_API_KEY='YOUR_API_KEY'"
+        "Please save your OpenAI API key as an env variable by doing 'export OPENAI_API_KEY=YOUR_API_KEY'"
     );
     process.exit(1);
   }

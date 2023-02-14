@@ -40,5 +40,6 @@ The next version of the CLI, v2, will address both of these limitations!
 ## Future tasks
 
 - Add support for conventional commits as a flag that users can enable
-- Try supporting more than 200 lines by grabbing the diff per file
+- Add support for diffs greater than 200 lines by grabbing the diff per file
+- Add support for a flag that can auto-accept
 - Build landing page for the 2.0 launch
