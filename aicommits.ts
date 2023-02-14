@@ -64,8 +64,8 @@ export async function main() {
   const confirmationMessage = await inquirer.prompt([
     {
       name: "useCommitMessage",
-      message: "Would you like to use this commit message? (Y / n)",
-      choices: ["Y", "y", "n"],
+      message: "Would you like to use this commit message? (Y / n / s(Sign it))",
+      choices: ["Y", "y", "n", "S", "s"],
       default: "y",
     },
   ]);
@@ -75,7 +75,9 @@ export async function main() {
     process.exit(1);
   }
 
-  execSync(`git commit -m "${aiCommitMessage}"`, {
+  const signCommit = confirmationMessage.useCommitMessage.toLowerCase() === "s";
+
+  execSync(`git commit ${signCommit && '-S '} -m "${aiCommitMessage}"`, {
     stdio: "inherit",
     encoding: "utf8",
   });
