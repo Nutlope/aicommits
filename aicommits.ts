@@ -28,7 +28,7 @@ export async function main() {
   }
 
   const diff = execSync(
-    "git diff --cached . ':(exclude)package-lock.json' ':(exclude)yarn.lock'",
+    `git diff --cached . ":(exclude)package-lock.json" ":(exclude)yarn.lock"`,
     {
       encoding: "utf8",
     }
