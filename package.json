@@ -32,8 +32,5 @@
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr"
-	},
-	"dependencies": {
-		"@clack/root": "link:/Users/osame/Documents/public-github/natemoo-re/clack"
 	}
 }
