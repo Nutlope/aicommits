@@ -1,6 +1,6 @@
 <div align="center">
   <div>
-    <img src="https://raw.githubusercontent.com/Nutlope/aicommits/main/screenshot.png?token=GHSAT0AAAAAABPRWK4LSHNE654RA5GMMKYMY7K4MWQ" alt="AI Commits"/>
+    <img src="https://raw.githubusercontent.com/Nutlope/aicommits/main/screenshot.png" alt="AI Commits"/>
     <h1 align="center">AI Commits</h1>
   </div>
 	<p>A CLI that writes your git commit messages for you with AI. Never write a commit message again.</p>
