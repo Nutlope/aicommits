@@ -13,7 +13,7 @@ export async function main() {
   if (!OPENAI_API_KEY) {
     console.error(
       chalk.white("▲ ") +
-        "Please specify an OpenAI key using export OPEN_AI_KEY='YOUR_API_KEY'"
+        "Please specify an OpenAI key using export OPENAI_API_KEY='YOUR_API_KEY'"
     );
     process.exit(1);
   }
