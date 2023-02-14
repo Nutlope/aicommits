@@ -5,7 +5,10 @@
   "files": [
     "bin"
   ],
-  "bin": "bin/index.js",
+  "bin": {
+    "aicommits": "bin/index.js",
+    "git-aic": "bin/index.js"
+  },
   "repository": "https://github.com/Nutlope/aicommits",
   "author": "Hassan El Mghari (@nutlope)",
   "license": "MIT",
