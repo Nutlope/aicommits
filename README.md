@@ -44,6 +44,7 @@ The next version of the CLI, version 2, will address both of these limitations a
 - Add support for conventional commits as a flag that users can enable
 - Add support for diffs greater than 200 lines by grabbing the diff per file
 - Add support for a flag that can auto-accept
-- Add opt-in emoji and languages flags
 - Add ability to specify a commit message from inside aicommit
+- Add opt-in emoji flag
+- Add opt-in languages flag
 - Build landing page for the 2.0 launch
