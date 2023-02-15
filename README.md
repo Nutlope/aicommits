@@ -25,6 +25,24 @@ After doing the two steps above, generate your commit by running `aicommits`.
 
 > Note: If you get a EACCESS error on mac/linux when running the first command, try running it with `sudo npm install -g aicommits`.
 
+## Using the `--long` or `--verbose` Flag
+
+By default, the AI Commits CLI generates concise commit messages. However, if you want to generate a longer commit message that provides more comprehensive information about the changes, you can use the --long or --verbose flags.
+
+To use the --long or --verbose flag, simply add it to the end of the command:
+
+```bash
+aicommits --long
+```
+
+You can also use the short forms -l and -v:
+
+```bash
+aicommits -v
+```
+
+When the --long or --verbose flag is set, the AI Commits CLI will generate a more detailed commit message that provides comprehensive information about the changes. This can be useful when you want to provide more context for a particular commit.
+
 ## How it works
 
 This CLI tool runs a `git diff` command to grab all the latest changes, sends this to OpenAI's GPT-3, then returns the AI generated commit message. I also want to note that it does cost money since GPT-3 generations aren't free. However, OpenAI gives folks $18 of free credits and commit message generations are cheap so it should be free for a long time.
