@@ -4,6 +4,7 @@ specifiers:
   '@pvtnbr/eslint-config': ^0.33.0
   '@types/node': ^18.13.0
   chalk: ^4.1.2
+  dotenv: ^16.0.3
   eslint: ^8.34.0
   inquirer: ^8.0.0
   openai: ^3.1.0
@@ -11,6 +12,7 @@ specifiers:
 
 dependencies:
   chalk: 4.1.2
+  dotenv: 16.0.3
   inquirer: 8.2.5
   openai: 3.1.0
 
@@ -664,6 +666,11 @@ packages:
     dependencies:
       esutils: 2.0.3
     dev: true
+
+  /dotenv/16.0.3:
+    resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
+    engines: {node: '>=12'}
+    dev: false
 
   /emoji-regex/8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}

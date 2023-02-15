@@ -20,6 +20,7 @@
 	},
 	"dependencies": {
 		"chalk": "^4.1.2",
+		"dotenv": "^16.0.3",
 		"inquirer": "^8.0.0",
 		"openai": "^3.1.0"
 	},
