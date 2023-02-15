@@ -19,7 +19,7 @@ Install the CLI then grab your [OpenAI key](https://openai.com/api/) and add it 
 1. `npm install -g aicommits`
 2. `export OPENAI_KEY=sk-xxxxxxxxxxxxxxxx`
 
-It's recommended to set the token a `.env` file at the root of your project, or your `.zshrc` or `.bashrc` so it persists instead of having to define it in each terminal session.
+It's recommended to set the token a [`.env` file](https://www.npmjs.com/package/dotenv) at the root of your project, or your `.zshrc` or `.bashrc` so it persists instead of having to define it in each terminal session.
 
 After doing the two steps above, generate your commit by running `aicommits`.
 
