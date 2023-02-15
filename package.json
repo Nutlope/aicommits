@@ -10,11 +10,14 @@
   "author": "Hassan El Mghari (@nutlope)",
   "license": "MIT",
   "devDependencies": {
+    "@pvtnbr/eslint-config": "^0.33.0",
     "@types/node": "^18.13.0",
+    "eslint": "^8.34.0",
     "typescript": "^4.9.5"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "eslint --cache ."
   },
   "dependencies": {
     "chalk": "^4.1.2",
@@ -25,5 +28,8 @@
     "ai",
     "git",
     "commit"
-  ]
+  ],
+  "eslintConfig": {
+		"extends": "@pvtnbr"
+	}
 }
