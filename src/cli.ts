@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 
-import 'dotenv/config.js';
+import { config as dotenvConfig } from 'dotenv';
+import path from 'path';
+import os from 'os';
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { Configuration, OpenAIApi } from 'openai';
+
+/**
+ * Read env vars from ~/.aicommits file for a secure but global way
+ * for users to store their OpenAI API key
+ */
+dotenvConfig({ path: path.join(os.homedir(), '.aicommits') });
 
 const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY;
 

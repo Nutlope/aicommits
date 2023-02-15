@@ -2,6 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@pvtnbr/eslint-config': ^0.33.0
+  '@types/dotenv': ^8.2.0
   '@types/node': ^18.13.0
   chalk: ^4.1.2
   dotenv: ^16.0.3
@@ -18,6 +19,7 @@ dependencies:
 
 devDependencies:
   '@pvtnbr/eslint-config': 0.33.0_7kw3g6rralp5ps6mg3uyzz6azm
+  '@types/dotenv': 8.2.0
   '@types/node': 18.13.0
   eslint: 8.34.0
   typescript: 4.9.5
@@ -141,6 +143,13 @@ packages:
       - eslint-import-resolver-webpack
       - supports-color
       - typescript
+    dev: true
+
+  /@types/dotenv/8.2.0:
+    resolution: {integrity: sha512-ylSC9GhfRH7m1EUXBXofhgx4lUWmFeQDINW5oLuS+gxWdfUeW4zJdeVTYVkexEW+e2VUvlZR2kGnGGipAWR7kw==}
+    deprecated: This is a stub types definition. dotenv provides its own type definitions, so you do not need this installed.
+    dependencies:
+      dotenv: 16.0.3
     dev: true
 
   /@types/json-schema/7.0.11:
@@ -670,7 +679,6 @@ packages:
   /dotenv/16.0.3:
     resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
     engines: {node: '>=12'}
-    dev: false
 
   /emoji-regex/8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
