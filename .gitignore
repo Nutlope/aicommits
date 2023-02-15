@@ -23,7 +23,7 @@ lerna-debug.log*
 .vscode
 
 # Distribution
-dist
+bin
 
 # Eslint cache
 .eslintcache
