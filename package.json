@@ -3,9 +3,9 @@
   "version": "1.0.5",
   "description": "Writes your git commit messages for you with AI",
   "files": [
-    "bin"
+    "dist"
   ],
-  "bin": "bin/index.js",
+  "bin": "dist/index.js",
   "repository": "https://github.com/Nutlope/aicommits",
   "author": "Hassan El Mghari (@nutlope)",
   "license": "MIT",
