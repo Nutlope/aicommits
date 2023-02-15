@@ -1,6 +1,6 @@
 #! /usr/bin/env node
-import { main } from "./aicommits";
+import { main } from './aicommits';
 
 (async () => {
-  await main();
+	await main();
 })();

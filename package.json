@@ -1,29 +1,35 @@
 {
-  "name": "aicommits",
-  "version": "1.0.5",
-  "description": "Writes your git commit messages for you with AI",
-  "files": [
-    "dist"
-  ],
-  "bin": "dist/index.js",
-  "repository": "https://github.com/Nutlope/aicommits",
-  "author": "Hassan El Mghari (@nutlope)",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^18.13.0",
-    "typescript": "^4.9.5"
-  },
-  "scripts": {
-    "build": "tsc"
-  },
-  "dependencies": {
-    "chalk": "^4.1.2",
-    "inquirer": "^8.0.0",
-    "node-fetch": "^2.6.9"
-  },
-  "keywords": [
-    "ai",
-    "git",
-    "commit"
-  ]
+	"name": "aicommits",
+	"version": "1.0.5",
+	"description": "Writes your git commit messages for you with AI",
+	"keywords": [
+		"ai",
+		"git",
+		"commit"
+	],
+	"license": "MIT",
+	"repository": "https://github.com/Nutlope/aicommits",
+	"author": "Hassan El Mghari (@nutlope)",
+	"files": [
+		"dist"
+	],
+	"bin": "dist/index.js",
+	"scripts": {
+		"build": "tsc",
+		"lint": "eslint --cache ."
+	},
+	"dependencies": {
+		"chalk": "^4.1.2",
+		"inquirer": "^8.0.0",
+		"node-fetch": "^2.6.9"
+	},
+	"devDependencies": {
+		"@pvtnbr/eslint-config": "^0.33.0",
+		"@types/node": "^18.13.0",
+		"eslint": "^8.34.0",
+		"typescript": "^4.9.5"
+	},
+	"eslintConfig": {
+		"extends": "@pvtnbr"
+	}
 }
