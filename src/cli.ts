@@ -7,7 +7,40 @@ import fetch from 'node-fetch';
 
 const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY;
 
-export async function main() {
+async function generateCommitMessage(prompt: string) {
+	const payload = {
+		model: 'text-davinci-003',
+		prompt,
+		temperature: 0.7,
+		top_p: 1,
+		frequency_penalty: 0,
+		presence_penalty: 0,
+		max_tokens: 200,
+		stream: false,
+		n: 1,
+	};
+	const response = await fetch('https://api.openai.com/v1/completions', {
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${OPENAI_KEY ?? ''}`,
+		},
+		method: 'POST',
+		body: JSON.stringify(payload),
+	});
+	if (response.status !== 200) {
+		const errorJson: any = await response.json();
+		throw new Error(
+      `OpenAI API failed while processing the request '${errorJson?.error?.message}'`,
+		);
+	}
+
+	const json: any = await response.json();
+	const aiCommit = json.choices[0].text;
+
+	return aiCommit.replace(/(\r\n|\n|\r)/g, '');
+}
+
+(async () => {
 	console.log(chalk.white('▲ ') + chalk.green('Welcome to AICommits!'));
 
 	if (!OPENAI_KEY) {
@@ -85,37 +118,4 @@ export async function main() {
 		console.error(chalk.white('▲ ') + chalk.red(error.message));
 		process.exit(1);
 	}
-}
-
-async function generateCommitMessage(prompt: string) {
-	const payload = {
-		model: 'text-davinci-003',
-		prompt,
-		temperature: 0.7,
-		top_p: 1,
-		frequency_penalty: 0,
-		presence_penalty: 0,
-		max_tokens: 200,
-		stream: false,
-		n: 1,
-	};
-	const response = await fetch('https://api.openai.com/v1/completions', {
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${OPENAI_KEY ?? ''}`,
-		},
-		method: 'POST',
-		body: JSON.stringify(payload),
-	});
-	if (response.status !== 200) {
-		const errorJson: any = await response.json();
-		throw new Error(
-      `OpenAI API failed while processing the request '${errorJson?.error?.message}'`,
-		);
-	}
-
-	const json: any = await response.json();
-	const aiCommit = json.choices[0].text;
-
-	return aiCommit.replace(/(\r\n|\n|\r)/g, '');
-}
+})();
