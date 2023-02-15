@@ -3,42 +3,35 @@
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import fetch from 'node-fetch';
+import { Configuration, OpenAIApi } from 'openai';
 
 const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY;
 
-async function generateCommitMessage(prompt: string) {
-	const payload = {
-		model: 'text-davinci-003',
-		prompt,
-		temperature: 0.7,
-		top_p: 1,
-		frequency_penalty: 0,
-		presence_penalty: 0,
-		max_tokens: 200,
-		stream: false,
-		n: 1,
-	};
-	const response = await fetch('https://api.openai.com/v1/completions', {
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${OPENAI_KEY ?? ''}`,
-		},
-		method: 'POST',
-		body: JSON.stringify(payload),
-	});
-	if (response.status !== 200) {
-		const errorJson: any = await response.json();
-		throw new Error(
-      `OpenAI API failed while processing the request '${errorJson?.error?.message}'`,
-		);
+const generateCommitMessage = async (
+	apiKey: string,
+	prompt: string,
+) => {
+	const openai = new OpenAIApi(new Configuration({ apiKey }));
+	try {
+		const completion = await openai.createCompletion({
+			model: 'text-davinci-003',
+			prompt,
+			temperature: 0.7,
+			top_p: 1,
+			frequency_penalty: 0,
+			presence_penalty: 0,
+			max_tokens: 200,
+			stream: false,
+			n: 1,
+		});
+
+		return completion.data.choices[0].text!.trim().replace(/[\n\r]/g, '');
+	} catch (error) {
+		const errorAsAny = error as any;
+		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
+		throw errorAsAny;
 	}
-
-	const json: any = await response.json();
-	const aiCommit = json.choices[0].text;
-
-	return aiCommit.replace(/(\r\n|\n|\r)/g, '');
-}
+};
 
 (async () => {
 	console.log(chalk.white('▲ ') + chalk.green('Welcome to AICommits!'));
@@ -90,7 +83,7 @@ async function generateCommitMessage(prompt: string) {
 	);
 
 	try {
-		const aiCommitMessage = await generateCommitMessage(prompt);
+		const aiCommitMessage = await generateCommitMessage(OPENAI_KEY, prompt);
 		console.log(
 			`${chalk.white('▲ ') + chalk.bold('Commit message: ') + aiCommitMessage
 		}\n`,
