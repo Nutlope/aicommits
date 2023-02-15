@@ -13,7 +13,7 @@
 	"files": [
 		"dist"
 	],
-	"bin": "dist/index.js",
+	"bin": "dist/cli.js",
 	"scripts": {
 		"build": "tsc",
 		"lint": "eslint --cache ."
