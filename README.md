@@ -45,6 +45,7 @@ The next version of the CLI, version 2, will address both of these limitations a
 - Add support for diffs greater than 200 lines by grabbing the diff per file
 - Add support for a flag that can auto-accept
 - Add ability to specify a commit message from inside aicommit
+- Solve latency issue (use a githook to asynchronously run gpt3 call on every git add, store the result in a temp file (or in the .git folder)
 - Use gpt-3-tokenizer
 - Add automated github releases
 - Add opt-in emoji flag
