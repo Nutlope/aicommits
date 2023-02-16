@@ -1,4 +1,25 @@
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+import ini from 'ini';
 import { Configuration, OpenAIApi } from 'openai';
+
+const fileExists = (filePath: string) => fs.access(filePath).then(() => true, () => false);
+
+type ConfigType = {
+	OPENAI_KEY?: string;
+};
+
+export const getConfig = async (): Promise<ConfigType> => {
+	const configPath = path.join(os.homedir(), '.aicommits');
+	const configExists = await fileExists(configPath);
+	if (!configExists) {
+		return {};
+	}
+
+	const configString = await fs.readFile(configPath, 'utf8');
+	return ini.parse(configString);
+};
 
 export const generateCommitMessage = async (
 	apiKey: string,

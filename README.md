@@ -14,20 +14,28 @@
 
 ## Installation and Usage
 
-Install the CLI then grab your [OpenAI key](https://openai.com/api/) and add it as an env variable with the two commands below.
+1. Install the CLI:
 
-1. `npm install -g aicommits`
-2. `export OPENAI_KEY=sk-xxxxxxxxxxxxxxxx`
+    ```sh
+    npm install -g aicommits
+    ```
 
-It's recommended to add the line in #2 to your `.zshrc` or `.bashrc` so it persists instead of having to define it in each terminal session.
+2. Retrieve your API key from [OpenAI](https://platform.openai.com/account/api-keys)
+    > Note: If you haven't already, you'll have to create an account and set up billing.
 
-After doing the two steps above, generate your commit by running `aicommits`.
+3. Set the key so aicommits can use it:
 
-> Note: If you get a EACCESS error on mac/linux when running the first command, try running it with `sudo npm install -g aicommits`.
+    ```sh
+    echo "OPENAI_KEY=<your token>" >> ~/.aicommits
+    ```
+
+4. You're ready to go!
+
+    Run `aicommits` in any Git repo and it will generate a commit message for you.
 
 ## How it works
 
-This CLI tool runs a `git diff` command to grab all the latest changes, sends this to OpenAI's GPT-3, then returns the AI generated commit message. I also want to note that it does cost money since GPT-3 generations aren't free. However, OpenAI gives folks $18 of free credits and commit message generations are cheap so it should be free for a long time.
+This CLI tool runs `git diff` to grab all the latest changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.
 
 Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
 
