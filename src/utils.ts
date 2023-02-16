@@ -22,43 +22,6 @@ export const getConfig = async (): Promise<ConfigType> => {
 	return ini.parse(configString);
 };
 
-const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
-
-export const getCommitMessages = async (
-	apiKey: string,
-	diff: string,
-) => {
-	const prompt = `${promptTemplate}\n${diff}`;
-
-	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
-	if (prompt.length > 8000) {
-		throw new Error('The diff is too large for the OpenAI API');
-	}
-
-	const openai = new OpenAIApi(new Configuration({ apiKey }));
-	try {
-		const completion = await openai.createCompletion({
-			model: 'text-davinci-003',
-			prompt,
-			temperature: 0.7,
-			top_p: 1,
-			frequency_penalty: 0,
-			presence_penalty: 0,
-			max_tokens: 200,
-			stream: false,
-			n: 3,
-		});
-
-		return completion.data.choices
-			.filter(choice => choice.text)
-			.map(choice => choice.text!.trim().replace(/[\n\r]/g, ''));
-	} catch (error) {
-		const errorAsAny = error as any;
-		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
-		throw errorAsAny;
-	}
-};
-
 export const assertGitRepo = async () => {
 	const { stdout } = await execa('git', ['rev-parse', '--is-inside-work-tree'], { reject: false });
 
@@ -96,3 +59,40 @@ export const getStagedDiff = async () => {
 };
 
 export const getDetectedMessage = (files: string[]) => `Detected ${files.length.toLocaleString()} staged file${files.length > 1 ? 's' : ''}`;
+
+const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
+
+export const getCommitMessages = async (
+	apiKey: string,
+	diff: string,
+) => {
+	const prompt = `${promptTemplate}\n${diff}`;
+
+	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
+	if (prompt.length > 8000) {
+		throw new Error('The diff is too large for the OpenAI API');
+	}
+
+	const openai = new OpenAIApi(new Configuration({ apiKey }));
+	try {
+		const completion = await openai.createCompletion({
+			model: 'text-davinci-003',
+			prompt,
+			temperature: 0.7,
+			top_p: 1,
+			frequency_penalty: 0,
+			presence_penalty: 0,
+			max_tokens: 200,
+			stream: false,
+			n: 3,
+		});
+
+		return completion.data.choices
+			.filter(choice => choice.text)
+			.map(choice => choice.text!.trim().replace(/[\n\r]/g, ''));
+	} catch (error) {
+		const errorAsAny = error as any;
+		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
+		throw errorAsAny;
+	}
+};
