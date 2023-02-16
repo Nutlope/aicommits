@@ -3,35 +3,9 @@
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { Configuration, OpenAIApi } from 'openai';
+import { generateCommitMessage } from './utils';
 
 const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY;
-
-const generateCommitMessage = async (
-	apiKey: string,
-	prompt: string,
-) => {
-	const openai = new OpenAIApi(new Configuration({ apiKey }));
-	try {
-		const completion = await openai.createCompletion({
-			model: 'text-davinci-003',
-			prompt,
-			temperature: 0.7,
-			top_p: 1,
-			frequency_penalty: 0,
-			presence_penalty: 0,
-			max_tokens: 200,
-			stream: false,
-			n: 1,
-		});
-
-		return completion.data.choices[0].text!.trim().replace(/[\n\r]/g, '');
-	} catch (error) {
-		const errorAsAny = error as any;
-		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
-		throw errorAsAny;
-	}
-};
 
 (async () => {
 	console.log(chalk.white('▲ ') + chalk.green('Welcome to AICommits!'));
