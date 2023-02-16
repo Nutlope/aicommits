@@ -3,11 +3,15 @@
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { generateCommitMessage } from './utils';
-
-const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY;
+import {
+	getConfig,
+	generateCommitMessage,
+} from './utils';
 
 (async () => {
+	const config = await getConfig();
+	const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
+
 	console.log(chalk.white('▲ ') + chalk.green('Welcome to AICommits!'));
 
 	if (!OPENAI_KEY) {
