@@ -6,7 +6,7 @@ import inquirer from 'inquirer';
 import {
 	getConfig,
 	generateCommitMessage,
-} from './utils';
+} from './utils.js';
 
 (async () => {
 	const config = await getConfig();
@@ -86,7 +86,7 @@ import {
 			encoding: 'utf8',
 		});
 	} catch (error) {
-		console.error(chalk.white('▲ ') + chalk.red(error.message));
+		console.error(chalk.white('▲ ') + chalk.red((error as any).message));
 		process.exit(1);
 	}
 })();
