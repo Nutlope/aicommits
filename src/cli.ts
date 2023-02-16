@@ -52,7 +52,7 @@ import {
 
 	await execa('git', ['commit', '-m', message]);
 
-	outro(`${green('✔')} Successfully committed!}`);
+	outro(`${green('✔')} Successfully committed!`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	process.exit(1);
