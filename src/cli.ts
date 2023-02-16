@@ -31,13 +31,6 @@ import {
 
 	intro(bgCyan(black(' aicommits ')));
 
-	const config = await getConfig();
-	const { OPENAI_KEY } = config;
-
-	if (!OPENAI_KEY) {
-		throw new Error('Environment variable OPENAI_KEY not found!');
-	}
-
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
@@ -51,6 +44,13 @@ import {
 	detectingFiles.stop(`${getDetectedMessage(stagedDiff.files)}:\n${
 		stagedDiff.files.map(file => `     ${file}`).join('\n')
 	}`);
+
+	const config = await getConfig();
+	const { OPENAI_KEY } = config;
+
+	if (!OPENAI_KEY) {
+		throw new Error('Environment variable OPENAI_KEY not found!');
+	}
 
 	const s = spinner();
 	s.start('Generating commit messages');
