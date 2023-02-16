@@ -8,7 +8,7 @@
 		"commit"
 	],
 	"license": "MIT",
-	"repository": "https://github.com/Nutlope/aicommits",
+	"repository": "Nutlope/aicommits",
 	"author": "Hassan El Mghari (@nutlope)",
 	"type": "module",
 	"files": [
