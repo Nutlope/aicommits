@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
+import { execa } from 'execa';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import {
@@ -22,20 +22,15 @@ import {
 		process.exit(1);
 	}
 	try {
-		execSync('git rev-parse --is-inside-work-tree', {
-			encoding: 'utf8',
-			stdio: 'ignore',
-		});
+		await execa('git', ['rev-parse', '--is-inside-work-tree']);
 	} catch {
 		console.error(`${chalk.white('▲ ')}This is not a git repository`);
 		process.exit(1);
 	}
 
-	const diff = execSync(
-		'git diff --cached . ":(exclude)package-lock.json" ":(exclude)yarn.lock" ":(exclude)pnpm-lock.yaml"',
-		{
-			encoding: 'utf8',
-		},
+	const { stdout: diff } = await execa(
+		'git',
+		['diff', '--cached', '.', ':(exclude)package-lock.json', ':(exclude)yarn.lock', ':(exclude)pnpm-lock.yaml'],
 	);
 
 	if (!diff) {
@@ -81,9 +76,8 @@ import {
 			process.exit(1);
 		}
 
-		execSync(`git commit -m "${aiCommitMessage}"`, {
+		await execa('git', ['commit', '-m', aiCommitMessage], {
 			stdio: 'inherit',
-			encoding: 'utf8',
 		});
 	} catch (error) {
 		console.error(chalk.white('▲ ') + chalk.red((error as any).message));
