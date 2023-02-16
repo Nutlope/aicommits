@@ -55,5 +55,5 @@ Video coming soon where I rebuild it from scratch to show you how to easily buil
 
 ## Maintainers
 
-- **Hassan El Mghari** [@nutlope](https://github.com/Nutlope)
-- **Hiroki Osame** [@privatenumber](https://github.com/privatenumber)
+- **Hassan El Mghari**: [GitHub](https://github.com/Nutlope) | [Twitter](https://twitter.com/nutlope)
+- **Hiroki Osame**: [GitHub](https://github.com/privatenumber) | [Twitter](https://twitter.com/privatenumbr)
