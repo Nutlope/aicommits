@@ -35,26 +35,26 @@ import {
 
 	const detectingFiles = spinner();
 	detectingFiles.start('Detecting staged files');
-	const stagedDiff = await getStagedDiff();
+	const staged = await getStagedDiff();
 
-	if (!stagedDiff) {
+	if (!staged) {
 		throw new Error('No staged changes found. Make sure to stage your changes with `git add`.');
 	}
 
-	detectingFiles.stop(`${getDetectedMessage(stagedDiff.files)}:\n${
-		stagedDiff.files.map(file => `     ${file}`).join('\n')
+	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
+		staged.files.map(file => `     ${file}`).join('\n')
 	}`);
 
 	const config = await getConfig();
 	const { OPENAI_KEY } = config;
 
 	if (!OPENAI_KEY) {
-		throw new Error('Environment variable OPENAI_KEY not found!');
+		throw new Error('Please set your OpenAI API key in ~/.aicommits');
 	}
 
 	const s = spinner();
 	s.start('Generating commit messages');
-	const messages = await getCommitMessages(OPENAI_KEY, stagedDiff.diff);
+	const messages = await getCommitMessages(OPENAI_KEY, staged.diff);
 	s.stop('Generated commit messages');
 
 	const commitMessage = await select({
