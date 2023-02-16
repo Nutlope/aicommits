@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { execa } from 'execa';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
