@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import ini from 'ini';
+import { execa } from 'execa';
 import { Configuration, OpenAIApi } from 'openai';
 
 const fileExists = (filePath: string) => fs.access(filePath).then(() => true, () => false);
@@ -21,10 +22,27 @@ export const getConfig = async (): Promise<ConfigType> => {
 	return ini.parse(configString);
 };
 
+export const assertGitRepo = async () => {
+	const { stdout } = await execa('git', ['rev-parse', '--is-inside-work-tree'], { reject: false });
+
+	if (stdout !== 'true') {
+		throw new Error('The current directory must be a Git repository!');
+	}
+};
+
+const promptTemplate = 'I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself:';
+
 export const generateCommitMessage = async (
 	apiKey: string,
-	prompt: string,
+	diff: string,
 ) => {
+	const prompt = `${promptTemplate}\n${diff}`;
+
+	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
+	if (prompt.length > 8000) {
+		throw new Error('The diff is too large for the OpenAI API');
+	}
+
 	const openai = new OpenAIApi(new Configuration({ apiKey }));
 	try {
 		const completion = await openai.createCompletion({
@@ -45,4 +63,32 @@ export const generateCommitMessage = async (
 		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
 		throw errorAsAny;
 	}
+};
+
+const excludeFromDiff = [
+	'package-lock.json',
+	'yarn.lock',
+	'pnpm-lock.yaml',
+].map(file => `:(exclude)${file}`);
+
+export const getStagedDiff = async () => {
+	const diffCached = ['diff', '--cached'];
+	const { stdout: files } = await execa(
+		'git',
+		[...diffCached, '--name-only', ...excludeFromDiff],
+	);
+
+	if (!files) {
+		return;
+	}
+
+	const { stdout: diff } = await execa(
+		'git',
+		[...diffCached, ...excludeFromDiff],
+	);
+
+	return {
+		files: files.split('\n'),
+		diff,
+	};
 };
