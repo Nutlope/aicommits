@@ -1,5 +1,17 @@
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+import ini from 'ini';
 import { execa } from 'execa';
 import { Configuration, OpenAIApi } from 'openai';
+
+export const getConfig = async () => {
+	const configPath = path.join(os.homedir(), '.aicommits');
+	const configString = await fs.readFile(configPath, 'utf8');
+	return ini.parse(configString) as {
+		OPENAI_KEY?: string;
+	};
+};
 
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 

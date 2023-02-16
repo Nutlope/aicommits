@@ -1,4 +1,3 @@
-import 'dotenv/config.js';
 import {
 	dim, black, green, red, bgCyan,
 } from 'kolorist';
@@ -7,6 +6,7 @@ import {
 } from '@clack/prompts';
 import { execa } from 'execa';
 import {
+	getConfig,
 	assertGitRepo,
 	getStagedDiff,
 	getDetectedMessage,
@@ -31,7 +31,8 @@ import {
 
 	intro(bgCyan(black(' aicommits ')));
 
-	const { OPENAI_KEY } = process.env;
+	const config = await getConfig();
+	const OPENAI_KEY = process.env.OPENAI_KEY || config.OPENAI_KEY;
 
 	if (!OPENAI_KEY) {
 		throw new Error('Environment variable OPENAI_KEY not found!');
