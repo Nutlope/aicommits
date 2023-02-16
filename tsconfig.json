@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"outDir": "dist",
+		"noEmit": true,
 		"target": "ES2020",
 		"module": "Node16",
 		"strict": true,
@@ -9,5 +9,4 @@
 		"esModuleInterop": true,
 		"skipLibCheck": true
 	},
-	"include": ["src"]
 }
