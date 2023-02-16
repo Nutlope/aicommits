@@ -1,56 +1,59 @@
 import { execa } from 'execa';
-import chalk from 'chalk';
-import inquirer from 'inquirer';
+import {
+	black, green, red, bgCyan,
+} from 'kolorist';
+import {
+	intro, outro, spinner, confirm, isCancel,
+} from '@clack/prompts';
 import {
 	getConfig,
 	assertGitRepo,
 	getStagedDiff,
+	getDetectedMessage,
 	generateCommitMessage,
 } from './utils.js';
 
 (async () => {
-	console.log(chalk.white('▲ ') + chalk.green('Welcome to AICommits!'));
+	intro(bgCyan(black(' aicommits ')));
 
 	await assertGitRepo();
 
+	const detectingFiles = spinner();
+	detectingFiles.start('Detecting staged files');
 	const staged = await getStagedDiff();
+
 	if (!staged) {
 		throw new Error('No staged changes found. Make sure to stage your changes with `git add`.');
 	}
 
+	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
+		staged.files.map(file => `     ${file}`).join('\n')
+	}`);
+
 	const config = await getConfig();
 	const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
-
 	if (!OPENAI_KEY) {
 		throw new Error('Please set your OpenAI API key in ~/.aicommits');
 	}
 
-	console.log(
-		chalk.white('▲ ') + chalk.gray('Generating your AI commit message...\n'),
-	);
-	const aiCommitMessage = await generateCommitMessage(OPENAI_KEY, staged.diff);
-	console.log(
-		`${chalk.white('▲')} ${chalk.bold('Commit message:')} ${aiCommitMessage}\n`,
-	);
+	const s = spinner();
+	s.start('The AI is analyzing your changes');
+	const message = await generateCommitMessage(OPENAI_KEY, staged.diff);
+	s.stop('The commit message is ready for review');
 
-	const confirmationMessage = await inquirer.prompt([
-		{
-			name: 'useCommitMessage',
-			message: 'Would you like to use this commit message? (Y / n)',
-			choices: ['Y', 'y', 'n'],
-			default: 'y',
-		},
-	]);
+	const confirmed = await confirm({
+		message: `Would you like to commit with this message:\n\n   ${message}\n`,
+	});
 
-	if (confirmationMessage.useCommitMessage === 'n') {
-		console.log(`${chalk.white('▲ ')}Commit message has not been commited.`);
+	if (!confirmed || isCancel(confirmed)) {
+		outro('Commit cancelled');
 		return;
 	}
 
-	await execa('git', ['commit', '-m', aiCommitMessage], {
-		stdio: 'inherit',
-	});
+	await execa('git', ['commit', '-m', message]);
+
+	outro(`${green('✔')} Successfully committed!`);
 })().catch((error) => {
-	console.error(`${chalk.white('▲')} ${error.message}`);
+	outro(`${red('✖')} ${error.message}`);
 	process.exit(1);
 });

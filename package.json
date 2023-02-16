@@ -1,6 +1,6 @@
 {
 	"name": "aicommits",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "Writes your git commit messages for you with AI",
 	"keywords": [
 		"ai",
@@ -8,7 +8,7 @@
 		"commit"
 	],
 	"license": "MIT",
-	"repository": "https://github.com/Nutlope/aicommits",
+	"repository": "Nutlope/aicommits",
 	"author": "Hassan El Mghari (@nutlope)",
 	"type": "module",
 	"files": [
@@ -17,7 +17,7 @@
 	"bin": "dist/cli.mjs",
 	"scripts": {
 		"prepare": "simple-git-hooks",
-		"build": "pkgroll",
+		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc"
 	},
@@ -27,20 +27,18 @@
 	"lint-staged": {
 		"*.ts": "eslint --cache"
 	},
-	"dependencies": {
-		"chalk": "^4.1.2",
-		"execa": "^7.0.0",
-		"ini": "^3.0.1",
-		"inquirer": "^8.0.0",
-		"openai": "^3.1.0"
-	},
 	"devDependencies": {
+		"@clack/prompts": "^0.2.2",
 		"@pvtnbr/eslint-config": "^0.33.0",
 		"@types/ini": "^1.3.31",
 		"@types/inquirer": "^9.0.3",
 		"@types/node": "^18.13.0",
 		"eslint": "^8.34.0",
+		"execa": "^7.0.0",
+		"ini": "^3.0.1",
+		"kolorist": "^1.7.0",
 		"lint-staged": "^13.1.2",
+		"openai": "^3.1.0",
 		"pkgroll": "^1.9.0",
 		"simple-git-hooks": "^2.8.1",
 		"typescript": "^4.9.5"
