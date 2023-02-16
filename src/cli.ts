@@ -50,9 +50,7 @@ import {
 		return;
 	}
 
-	await execa('git', ['commit', '-m', message], {
-		stdio: 'inherit',
-	});
+	await execa('git', ['commit', '-m', message]);
 
 	outro(`${green('✔')} Successfully committed!}`);
 })().catch((error) => {
