@@ -53,4 +53,4 @@ import {
 })().catch((error) => {
 	console.error(`${chalk.white('▲')} ${error.message}`);
 	process.exit(1);
-});;
+});

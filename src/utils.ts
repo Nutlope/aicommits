@@ -22,7 +22,6 @@ export const getConfig = async (): Promise<ConfigType> => {
 	return ini.parse(configString);
 };
 
-
 export const assertGitRepo = async () => {
 	const { stdout } = await execa('git', ['rev-parse', '--is-inside-work-tree'], { reject: false });
 
@@ -31,13 +30,13 @@ export const assertGitRepo = async () => {
 	}
 };
 
-const promptTemplate = `I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself:`;
+const promptTemplate = 'I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself:';
 
 export const generateCommitMessage = async (
 	apiKey: string,
 	diff: string,
 ) => {
-	const prompt = `${promptTemplate}\n${diff};`
+	const prompt = `${promptTemplate}\n${diff}`;
 
 	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
 	if (prompt.length > 8000) {
