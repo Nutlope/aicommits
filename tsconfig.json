@@ -1,11 +1,13 @@
 {
 	"compilerOptions": {
-		"target": "es2016",
-		"module": "commonjs",
 		"outDir": "./dist",
+		"target": "ES2020",
+		"module": "Node16",
+		"strict": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
 		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"skipLibCheck": true /* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
 	},
 	"include": ["src"]
 }
