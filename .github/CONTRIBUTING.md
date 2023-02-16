@@ -1,4 +1,3 @@
-
 # Contributing guide
 
 ## Setting up the project
