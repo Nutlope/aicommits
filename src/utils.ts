@@ -1,7 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import ini from 'ini'; import { Configuration, OpenAIApi } from 'openai';
+import ini from 'ini'; 
+import { Configuration, OpenAIApi } from 'openai';
 
 const fileExists = (filePath: string) => fs.access(filePath).then(() => true, () => false);
 
