@@ -52,3 +52,8 @@ Video coming soon where I rebuild it from scratch to show you how to easily buil
 - Add opt-in languages flag where it returns the commit in different languages
 - Add automated github releases using [this action](https://github.com/manovotny/github-releases-for-automated-package-publishing-action)
 - Build landing page for the 2.0 launch
+
+## Maintainers
+
+- **Hassan El Mghari** [@nutlope](https://github.com/Nutlope)
+- **Hiroki Osame** [@privatenumber](https://github.com/privatenumber)
