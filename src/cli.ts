@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
