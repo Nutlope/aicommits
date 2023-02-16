@@ -1,6 +1,6 @@
 {
 	"name": "aicommits",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "Writes your git commit messages for you with AI",
 	"keywords": [
 		"ai",
@@ -21,10 +21,10 @@
 		"type-check": "tsc"
 	},
 	"dependencies": {
-		"chalk": "^4.1.2",
+		"@clack/prompts": "^0.2.2",
 		"execa": "^7.0.0",
 		"ini": "^3.0.1",
-		"inquirer": "^8.0.0",
+		"kolorist": "^1.7.0",
 		"openai": "^3.1.0"
 	},
 	"devDependencies": {

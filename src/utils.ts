@@ -30,6 +30,36 @@ export const assertGitRepo = async () => {
 	}
 };
 
+const excludeFromDiff = [
+	'package-lock.json',
+	'yarn.lock',
+	'pnpm-lock.yaml',
+].map(file => `:(exclude)${file}`);
+
+export const getStagedDiff = async () => {
+	const diffCached = ['diff', '--cached'];
+	const { stdout: files } = await execa(
+		'git',
+		[...diffCached, '--name-only', ...excludeFromDiff],
+	);
+
+	if (!files) {
+		return;
+	}
+
+	const { stdout: diff } = await execa(
+		'git',
+		[...diffCached, ...excludeFromDiff],
+	);
+
+	return {
+		files: files.split('\n'),
+		diff,
+	};
+};
+
+export const getDetectedMessage = (files: string[]) => `Detected ${files.length.toLocaleString()} staged file${files.length > 1 ? 's' : ''}`;
+
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
 export const generateCommitMessage = async (
@@ -63,32 +93,4 @@ export const generateCommitMessage = async (
 		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
 		throw errorAsAny;
 	}
-};
-
-const excludeFromDiff = [
-	'package-lock.json',
-	'yarn.lock',
-	'pnpm-lock.yaml',
-].map(file => `:(exclude)${file}`);
-
-export const getStagedDiff = async () => {
-	const diffCached = ['diff', '--cached'];
-	const { stdout: files } = await execa(
-		'git',
-		[...diffCached, '--name-only', ...excludeFromDiff],
-	);
-
-	if (!files) {
-		return;
-	}
-
-	const { stdout: diff } = await execa(
-		'git',
-		[...diffCached, ...excludeFromDiff],
-	);
-
-	return {
-		files: files.split('\n'),
-		diff,
-	};
 };
