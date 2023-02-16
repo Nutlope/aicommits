@@ -16,23 +16,23 @@
 	],
 	"bin": "dist/cli.mjs",
 	"scripts": {
-		"build": "pkgroll",
+		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc"
 	},
 	"dependencies": {
-		"@clack/prompts": "^0.2.2",
-		"execa": "^7.0.0",
-		"ini": "^3.0.1",
-		"kolorist": "^1.7.0",
 		"openai": "^3.1.0"
 	},
 	"devDependencies": {
+		"@clack/prompts": "^0.2.2",
 		"@pvtnbr/eslint-config": "^0.33.0",
 		"@types/ini": "^1.3.31",
 		"@types/inquirer": "^9.0.3",
 		"@types/node": "^18.13.0",
 		"eslint": "^8.34.0",
+		"execa": "^7.0.0",
+		"ini": "^3.0.1",
+		"kolorist": "^1.7.0",
 		"pkgroll": "^1.9.0",
 		"typescript": "^4.9.5"
 	},
