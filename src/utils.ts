@@ -87,7 +87,7 @@ export const generateCommitMessage = async (
 			n: 1,
 		});
 
-		return completion.data.choices[0].text!.trim().replace(/[\n\r]/g, '');
+		return completion.data.choices[0].text!.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 	} catch (error) {
 		const errorAsAny = error as any;
 		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
