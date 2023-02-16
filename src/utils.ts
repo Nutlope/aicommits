@@ -30,7 +30,7 @@ export const assertGitRepo = async () => {
 	}
 };
 
-const promptTemplate = 'I want you to act like a git commit message writer. I will input a git diff and your job is to convert it into a useful commit message. Do not preface the commit with anything, use the present tense, return a complete sentence, and do not repeat yourself:';
+const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
 export const generateCommitMessage = async (
 	apiKey: string,
