@@ -16,9 +16,16 @@
 	],
 	"bin": "dist/cli.mjs",
 	"scripts": {
+		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc"
+	},
+	"simple-git-hooks": {
+		"pre-commit": "pnpm lint-staged"
+	},
+	"lint-staged": {
+		"*.ts": "eslint --cache"
 	},
 	"devDependencies": {
 		"@clack/prompts": "^0.2.2",
@@ -30,8 +37,10 @@
 		"execa": "^7.0.0",
 		"ini": "^3.0.1",
 		"kolorist": "^1.7.0",
+		"lint-staged": "^13.1.2",
 		"openai": "^3.1.0",
 		"pkgroll": "^1.9.0",
+		"simple-git-hooks": "^2.8.1",
 		"typescript": "^4.9.5"
 	},
 	"eslintConfig": {
