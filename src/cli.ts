@@ -32,7 +32,7 @@ import {
 	intro(bgCyan(black(' aicommits ')));
 
 	const config = await getConfig();
-	const OPENAI_KEY = process.env.OPENAI_KEY || config.OPENAI_KEY;
+	const { OPENAI_KEY } = config;
 
 	if (!OPENAI_KEY) {
 		throw new Error('Environment variable OPENAI_KEY not found!');

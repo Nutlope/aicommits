@@ -5,12 +5,21 @@ import ini from 'ini';
 import { execa } from 'execa';
 import { Configuration, OpenAIApi } from 'openai';
 
-export const getConfig = async () => {
+const fileExists = (filePath: string) => fs.access(filePath).then(() => true, () => false);
+
+type ConfigType = {
+	OPENAI_KEY?: string;
+};
+
+export const getConfig = async (): Promise<ConfigType> => {
 	const configPath = path.join(os.homedir(), '.aicommits');
+	const configExists = await fileExists(configPath);
+	if (!configExists) {
+		return {};
+	}
+
 	const configString = await fs.readFile(configPath, 'utf8');
-	return ini.parse(configString) as {
-		OPENAI_KEY?: string;
-	};
+	return ini.parse(configString);
 };
 
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
