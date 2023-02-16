@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"noEmit": true,
+		"outDir": "dist",
 		"target": "ES2020",
 		"module": "Node16",
 		"strict": true,

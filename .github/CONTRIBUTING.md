@@ -40,22 +40,3 @@ Or in non UNIX environments, you can use Node.js to run the file:
 ```
 node ./dist/cli.mjs
 ```
-
-## Testing the package
-After commiting your changes, you can create a test release via GitHub using [`git-publish`](https://github.com/privatenumber/git-publish):
-
-```
-$ pnpm dlx git-publish
-✔ Successfully published branch! Install with command:
-  → npm i 'privatenumber/aicommits#npm/main'
-```
-
-You can test it out in any project like this:
-```
-pnpm dlx 'privatenumber/aicommits#npm/main'
-```
-
-Or using npx:
-```
-npx 'privatenumber/aicommits#npm/main'
-```
