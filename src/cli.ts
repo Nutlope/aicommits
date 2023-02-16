@@ -1,10 +1,12 @@
 import { execa } from 'execa';
 import {
-	black, green, red, bgCyan,
+	black, dim, green, red, bgCyan,
 } from 'kolorist';
 import {
-	intro, outro, spinner, confirm, isCancel,
+	intro, outro, spinner, select, confirm, isCancel,
 } from '@clack/prompts';
+import { cli } from 'cleye';
+import { description, version } from '../package.json';
 import {
 	getConfig,
 	assertGitRepo,
@@ -12,6 +14,25 @@ import {
 	getDetectedMessage,
 	generateCommitMessage,
 } from './utils.js';
+
+const argv = cli({
+	name: 'aicommits',
+
+	version,
+
+	flags: {
+		generate: {
+			type: Number,
+			description: 'Number of messages to generate. (Warning: generating multiple costs more)',
+			alias: 'g',
+			default: 1,
+		},
+	},
+
+	help: {
+		description,
+	},
+});
 
 (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -38,16 +59,36 @@ import {
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
-	const message = await generateCommitMessage(OPENAI_KEY, staged.diff);
-	s.stop('The commit message is ready for review');
+	const messages = await generateCommitMessage(
+		OPENAI_KEY,
+		staged.diff,
+		argv.flags.generate,
+	);
+	s.stop('Changes analyzed');
 
-	const confirmed = await confirm({
-		message: `Would you like to commit with this message:\n\n   ${message}\n`,
-	});
+	let message;
+	if (messages.length === 1) {
+		[message] = messages;
+		const confirmed = await confirm({
+			message: `Use this commit message?\n\n   ${message}\n`,
+		});
 
-	if (!confirmed || isCancel(confirmed)) {
-		outro('Commit cancelled');
-		return;
+		if (!confirmed || isCancel(confirmed)) {
+			outro('Commit cancelled');
+			return;
+		}
+	} else {
+		const selected = await select({
+			message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
+			options: messages.map(value => ({ label: value, value })),
+		});
+
+		if (isCancel(selected)) {
+			outro('Commit cancelled');
+			return;
+		}
+
+		message = selected;
 	}
 
 	await execa('git', ['commit', '-m', message]);

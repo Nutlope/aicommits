@@ -60,11 +60,14 @@ export const getStagedDiff = async () => {
 
 export const getDetectedMessage = (files: string[]) => `Detected ${files.length.toLocaleString()} staged file${files.length > 1 ? 's' : ''}`;
 
+const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
+
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
 export const generateCommitMessage = async (
 	apiKey: string,
 	diff: string,
+	completions: number,
 ) => {
 	const prompt = `${promptTemplate}\n${diff}`;
 
@@ -84,10 +87,12 @@ export const generateCommitMessage = async (
 			presence_penalty: 0,
 			max_tokens: 200,
 			stream: false,
-			n: 1,
+			n: completions,
 		});
 
-		return completion.data.choices[0].text!.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
+		return completion.data.choices
+			.filter(choice => choice.text)
+			.map(choice => sanitizeMessage(choice.text!));
 	} catch (error) {
 		const errorAsAny = error as any;
 		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
