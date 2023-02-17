@@ -27,8 +27,10 @@
 3. Set the key so aicommits can use it:
 
    ```sh
-   echo "OPENAI_KEY=<your token>" >> ~/.aicommits
+   aicommits config set OPENAI_KEY=<your token>
    ```
+
+  This will create a `.aicommitsrc` file in your home directory.
 
 4. You're ready to go!
 
