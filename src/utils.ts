@@ -65,7 +65,8 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
 const getTranslatedPrompt = (lang: string) => {
-	const validLangs = ['en', 'es', 'jp', 'zh', 'de', 'fr', 'it', 'pt'];
+	// List obtained by asking chatGPT
+	const validLangs = ['ar', 'bn', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fa', 'fi', 'fr', 'he', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'ms', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sq', 'sr', 'sv', 'th', 'tr', 'uk', 'ur', 'vi', 'zh'];
 
 	if (!validLangs.includes(lang)) {
 		throw new Error('Invalid country code');
