@@ -34,6 +34,9 @@
 
    Run `aicommits` in any Git repo and it will generate a commit message for you.
 
+5. Enable non-interactive mode to use automatically the commit retrieved withot review:
+  `aicommits -y` or `aicommits --noninteractive`
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.

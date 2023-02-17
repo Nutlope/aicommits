@@ -27,6 +27,12 @@ const argv = cli({
 			alias: 'g',
 			default: 1,
 		},
+		noninteractive: {
+			type: Boolean,
+			description: 'Non interactive mode',
+			alias: 'y',
+			default: false,
+		}
 	},
 
 	help: {
@@ -69,7 +75,8 @@ const argv = cli({
 	let message;
 	if (messages.length === 1) {
 		[message] = messages;
-		const confirmed = await confirm({
+		// If non-interactive mode auto confirm the commit
+		const confirmed = argv.flags.noninteractive ? true : await confirm({
 			message: `Use this commit message?\n\n   ${message}\n`,
 		});
 
@@ -78,7 +85,8 @@ const argv = cli({
 			return;
 		}
 	} else {
-		const selected = await select({
+		// If non-interactive mode auto confirm the first commit message
+		const selected = argv.flags.noninteractive ? messages[1] : await select({
 			message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
 			options: messages.map(value => ({ label: value, value })),
 		});
