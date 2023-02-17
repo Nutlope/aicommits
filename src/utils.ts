@@ -62,22 +62,7 @@ export const getDetectedMessage = (files: string[]) => `Detected ${files.length.
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
-const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
-
-const getTranslatedPrompt = (lang: string) => {
-	// List obtained by asking chatGPT
-	// Prompt: "Give me a list from the supported langs of GPT-3.
-	// The list must be in ISO with 2 chars in format of a JS Array"
-	const validLangs = ['ar', 'bn', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fa', 'fi', 'fr', 'he', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'ms', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sq', 'sr', 'sv', 'th', 'tr', 'uk', 'ur', 'vi', 'zh'];
-
-	if (!validLangs.includes(lang)) {
-		throw new Error('Invalid country code');
-	}
-
-	const langPrompt = `, the response must be in the lang ${lang}:`;
-
-	return promptTemplate.replace(':', langPrompt);
-};
+const getPrompt = (lang: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the lang ${lang}:\n${diff}`;
 
 export const generateCommitMessage = async (
 	apiKey: string,
@@ -85,7 +70,7 @@ export const generateCommitMessage = async (
 	completions: number,
 	lang: string,
 ) => {
-	const prompt = `${getTranslatedPrompt(lang)}\n${diff}`;
+	const prompt = getPrompt(lang, diff);
 
 	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
 	if (prompt.length > 8000) {
