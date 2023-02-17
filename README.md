@@ -194,6 +194,9 @@ Default: `10000` (10 seconds)
 aicommits config set timeout=20000 # 20s
 ```
 
+5. Enable non-interactive mode to use automatically the commit retrieved withot review:
+  `aicommits -y` or `aicommits --noninteractive`
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.
