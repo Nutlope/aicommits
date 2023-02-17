@@ -4,6 +4,7 @@ import os from 'os';
 import ini from 'ini';
 import { execa } from 'execa';
 import { Configuration, OpenAIApi } from 'openai';
+import { Command } from 'commander';
 
 const fileExists = (filePath: string) => fs.access(filePath).then(() => true, () => false);
 
@@ -64,12 +65,30 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
+const getTranslatedPrompt = () => {
+	const validLangs = ['en', 'es', 'jp', 'zh', 'de', 'fr', 'it', 'pt'];
+	const program = new Command();
+
+	program.option('-l, --lang <string>', 'ISO code language (2-chars) to use for generating the commit message', 'en');
+	program.parse();
+
+	const args = program.opts();
+
+	if (!validLangs.includes(args.lang.toLowerCase())) {
+		throw new Error('Invalid country code');
+	}
+
+	const langPrompt = `, the response must be in the lang ${args.lang}:`;
+
+	return promptTemplate.replace(':', langPrompt);
+};
+
 export const generateCommitMessage = async (
 	apiKey: string,
 	diff: string,
 	completions: number,
 ) => {
-	const prompt = `${promptTemplate}\n${diff}`;
+	const prompt = `${getTranslatedPrompt()}\n${diff}`;
 
 	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
 	if (prompt.length > 8000) {
