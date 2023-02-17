@@ -27,6 +27,9 @@
 	"lint-staged": {
 		"*.ts": "eslint --cache"
 	},
+	"dependencies": {
+		"commander": "^10.0.0"
+	},
 	"devDependencies": {
 		"@clack/prompts": "^0.2.2",
 		"@pvtnbr/eslint-config": "^0.33.0",
@@ -46,8 +49,5 @@
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr"
-	},
-	"dependencies": {
-		"commander": "^10.0.0"
 	}
 }
