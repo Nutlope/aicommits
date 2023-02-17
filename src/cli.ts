@@ -27,6 +27,12 @@ const argv = cli({
 			alias: 'g',
 			default: 1,
 		},
+		lang: {
+			type: String,
+			description: 'ISO code language (2-chars) to use for generating the commit message',
+			alias: 'l',
+			default: 'en',
+		},
 	},
 
 	help: {
@@ -63,6 +69,7 @@ const argv = cli({
 		OPENAI_KEY,
 		staged.diff,
 		argv.flags.generate,
+		argv.flags.lang,
 	);
 	s.stop('Changes analyzed');
 
