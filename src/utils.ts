@@ -66,6 +66,8 @@ const promptTemplate = 'Write an insightful but concise Git commit message in a 
 
 const getTranslatedPrompt = (lang: string) => {
 	// List obtained by asking chatGPT
+	// Prompt: "Give me a list from the supported langs of GPT-3.
+	// The list must be in ISO with 2 chars in format of a JS Array"
 	const validLangs = ['ar', 'bn', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fa', 'fi', 'fr', 'he', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'ms', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sq', 'sr', 'sv', 'th', 'tr', 'uk', 'ur', 'vi', 'zh'];
 
 	if (!validLangs.includes(lang)) {
