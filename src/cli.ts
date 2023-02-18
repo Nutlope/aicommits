@@ -27,6 +27,12 @@ const argv = cli({
 			alias: 'g',
 			default: 1,
 		},
+		gitmoji: {
+			type: Boolean,
+			description: 'Toggle whether to use a Gitmoji or not',
+			alias: 'j',
+			default: false,
+		}
 	},
 
 	help: {
@@ -63,6 +69,7 @@ const argv = cli({
 		OPENAI_KEY,
 		staged.diff,
 		argv.flags.generate,
+		argv.flags.gitmoji,
 	);
 	s.stop('Changes analyzed');
 
