@@ -62,14 +62,15 @@ export const getDetectedMessage = (files: string[]) => `Detected ${files.length.
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
-const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
+const getPrompt = (gitmoji: boolean, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff ${gitmoji ? 'preface with the suitable Gitmoji markup between colons:' : 'without prefacing it with anything, the response must be in the lang' }:\n${diff}`;
 
 export const generateCommitMessage = async (
 	apiKey: string,
 	diff: string,
 	completions: number,
+	gitmoji: boolean,
 ) => {
-	const prompt = `${promptTemplate}\n${diff}`;
+	const prompt = getPrompt(gitmoji, diff);
 
 	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
 	if (prompt.length > 8000) {
