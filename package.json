@@ -1,6 +1,6 @@
 {
 	"name": "aicommits",
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"description": "Writes your git commit messages for you with AI",
 	"keywords": [
 		"ai",
@@ -25,7 +25,7 @@
 		"pre-commit": "pnpm lint-staged"
 	},
 	"lint-staged": {
-		"*.ts": "eslint --fix"
+		"*.ts": "eslint --cache"
 	},
 	"devDependencies": {
 		"@clack/prompts": "^0.2.2",
