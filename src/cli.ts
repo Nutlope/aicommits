@@ -95,7 +95,7 @@ const argv = cli({
 	let gpg = false;
 	if (gpgKey) {
 		const confirmedGpg = await confirm({
-			message: `You have a GPG Key for git, do you want to use signed commit instead, your key \n ${gpgKey}`,
+			message: `You have a GPG Key for git, do you want to use signed commit instead, your key \n ${gpgKey.stdout}`,
 		});
 
 		if (confirmedGpg) {
