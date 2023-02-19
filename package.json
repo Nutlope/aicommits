@@ -14,7 +14,7 @@
 	"files": [
 		"dist"
 	],
-	"bin": "dist/cli.mjs",
+	"bin": "./dist/cli.mjs",
 	"scripts": {
 		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
@@ -45,6 +45,22 @@
 		"typescript": "^4.9.5"
 	},
 	"eslintConfig": {
-		"extends": "@pvtnbr"
+		"extends": "@pvtnbr",
+		"overrides": [
+			{
+				"files": "./src/prepare-commit-msg-hook.ts",
+				"rules": {
+					"unicorn/prevent-abbreviations": "off"
+				}
+			}
+		]
+	},
+	"pkgroll": {
+		"output": [
+			{
+				"path": "./dist/prepare-commit-msg-hook.mjs",
+				"executable": true
+			}
+		]
 	}
 }

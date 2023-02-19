@@ -2,6 +2,8 @@ import { Configuration, OpenAIApi } from 'openai';
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
+const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
+
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
 export const generateCommitMessage = async (
@@ -30,9 +32,10 @@ export const generateCommitMessage = async (
 			n: completions,
 		});
 
-		return completion.data.choices
-			.filter(choice => choice.text)
-			.map(choice => sanitizeMessage(choice.text!));
+		return deduplicateMessages(
+			completion.data.choices
+				.map(choice => sanitizeMessage(choice.text!)),
+		);
 	} catch (error) {
 		const errorAsAny = error as any;
 		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
