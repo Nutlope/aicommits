@@ -13,12 +13,7 @@
 ---
 
 ## Installation and Usage
-Before installing make sure you have the current LTS (v14~18) of Node.js. You can check your node version using ```bash node -v```. To update to latest node version run
-```bash
-sudo npm cache clean -f
-sudo npm install -g n
-sudo n stable
-```
+Before installing make sure you have at least LTS v14 or greater of Node.js. You can check your node version using ```bash node -v```.
 
 1. Install the CLI:
 
