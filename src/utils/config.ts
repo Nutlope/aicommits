@@ -3,9 +3,23 @@ import path from 'path';
 import os from 'os';
 import ini from 'ini';
 
-const validKeys = ['OPENAI_KEY'] as const;
+const keyValidators = {
+	OPENAI_KEY(key: string) {
+		if (!key) {
+			return 'Cannot be empty';
+		}
 
-type ValidKeys = typeof validKeys[number];
+		if (!key.startsWith('sk-')) {
+			return 'Must start with "sk-"';
+		}
+
+		if (key.length !== 51) {
+			return 'Must be 51 characters long';
+		}
+	},
+} as const;
+
+type ValidKeys = keyof typeof keyValidators;
 type ConfigType = {
 	[key in ValidKeys]?: string;
 };
@@ -24,14 +38,22 @@ export const getConfig = async (): Promise<ConfigType> => {
 	return ini.parse(configString);
 };
 
+const { hasOwnProperty } = Object.prototype;
+const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
+
 export const setConfigs = async (
 	keyValues: [key: string, value: string][],
 ) => {
 	const config = await getConfig();
 
 	for (const [key, value] of keyValues) {
-		if (!validKeys.includes(key as any)) {
-			throw new Error(`Invalid key: ${key}`);
+		if (!hasOwn(keyValidators, key)) {
+			throw new Error(`Invalid config property: ${key}`);
+		}
+
+		const isInvalid = keyValidators[key as ValidKeys](value);
+		if (isInvalid) {
+			throw new Error(`Invalid value for ${key}: ${isInvalid}`);
 		}
 
 		config[key as ValidKeys] = value;
