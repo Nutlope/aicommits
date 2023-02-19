@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execa, execaCommand } from 'execa';
 import {
 	black, dim, green, red, bgCyan,
 } from 'kolorist';
@@ -91,9 +91,22 @@ const argv = cli({
 		message = selected;
 	}
 
-	await execa('git', ['commit', '-m', message]);
+	const gpgKey = await execaCommand('gpg --list-secret-keys --keyid-format=long | grep Git');
+	let gpg = false;
+	if (gpgKey) {
+		const confirmedGpg = await confirm({
+			message: `You have a GPG Key for git, do you want to use signed commit instead, your key \n ${gpgKey}`,
+		});
 
-	outro(`${green('✔')} Successfully committed!`);
+		if (confirmedGpg) {
+			gpg = true;
+			await execa('git', ['commit', '-S', '-m', message]);
+		}
+	} else {
+		await execa('git', ['commit', '-m', message]);
+	}
+
+	outro(`${gpg ? `${green('✔')} Successfully committed!` : `${green('✔')} Successfully committed with signed commit!`}`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	process.exit(1);
