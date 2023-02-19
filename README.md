@@ -13,7 +13,7 @@
 ---
 
 ## Installation and Usage
-Before installing make sure you have at least LTS v14 or greater of Node.js. You can check your node version using ```bash node -v```.
+The minimum supported version of Node.js is v14. You can check your Node.js version with `node --version`.
 
 1. Install the CLI:
 
