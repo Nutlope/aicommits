@@ -19,7 +19,8 @@
 		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
-		"type-check": "tsc"
+		"type-check": "tsc",
+		"prepack": "pnpm build"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm lint-staged"
@@ -46,5 +47,8 @@
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr"
+	},
+	"release": {
+		"branches": ["main"]
 	}
 }
