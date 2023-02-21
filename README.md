@@ -13,7 +13,7 @@
 ---
 
 ## Installation and Usage
-The minimum supported version of Node.js is v14.19.0 (LTS). You can check your Node.js version with `node --version`.
+The minimum supported version of Node.js is v14 LTS. You can check your Node.js version with `node --version`.
 
 1. Install the CLI:
 
