@@ -29,7 +29,7 @@ const [messageFilePath, commitSource] = process.argv.slice(2);
 
 	intro(bgCyan(black(' aicommits ')));
 
-	const { OPENAI_KEY, generate } = await getConfig();
+	const { OPENAI_KEY, LANG = 'en', generate } = await getConfig();
 	if (!OPENAI_KEY) {
 		throw new Error('Please set your OpenAI API key in ~/.aicommits');
 	}
@@ -38,6 +38,7 @@ const [messageFilePath, commitSource] = process.argv.slice(2);
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
 		OPENAI_KEY,
+		LANG,
 		staged!.diff,
 		generate || 1,
 	);

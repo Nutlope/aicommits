@@ -22,6 +22,12 @@ const configParsers = {
 
 		return key;
 	},
+	LANG(key: string) {
+		parseAssert('LANG', key, 'Cannot be empty');
+		parseAssert('LANG', /^[a-zA-Z\s]*$/.test(key), 'Must contain letters and spaces only');
+
+		return key;
+	},
 	generate(key: string) {
 		parseAssert('generate', key, 'Cannot be empty');
 		parseAssert('generate', /^\d+$/.test(key), 'Must be an integer');

@@ -70,6 +70,7 @@ cli(
 
 			const config = await getConfig();
 			const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
+			const LANG = config.LANG ?? 'en';
 			if (!OPENAI_KEY) {
 				throw new Error('Please set your OpenAI API key in ~/.aicommits');
 			}
@@ -78,6 +79,7 @@ cli(
 			s.start('The AI is analyzing your changes');
 			const messages = await generateCommitMessage(
 				OPENAI_KEY,
+				LANG,
 				staged.diff,
 				argv.flags.generate,
 			);
