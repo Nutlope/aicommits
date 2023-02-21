@@ -24,7 +24,7 @@ const configParsers = {
 	},
 	LANG(key: string) {
 		parseAssert('LANG', key, 'Cannot be empty');
-		parseAssert('LANG', /^[a-zA-Z\s]*$/.test(key), 'Must contain letters and spaces only');
+		parseAssert('LANG', /^["']?[a-zA-Z\s-]+["']?$/.test(key), 'Must contain letters and dashes only');
 
 		return key;
 	},
