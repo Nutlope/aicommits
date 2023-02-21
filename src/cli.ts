@@ -15,11 +15,18 @@ import {
 	generateCommitMessage,
 } from './utils.js';
 
+const rawArgv = process.argv.slice(2);
+
 const argv = cli({
 	name: 'aicommits',
 
 	version,
 
+	/**
+	 * Since this is a wrapper around `git commit`,
+	 * flags should not overlap with it
+	 * https://git-scm.com/docs/git-commit
+	 */
 	flags: {
 		generate: {
 			type: Number,
@@ -32,7 +39,9 @@ const argv = cli({
 	help: {
 		description,
 	},
-});
+
+	ignoreArgv: type => type === 'unknown-flag' || type === 'argument',
+}, undefined, rawArgv);
 
 (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -91,7 +100,7 @@ const argv = cli({
 		message = selected;
 	}
 
-	await execa('git', ['commit', '-m', message]);
+	await execa('git', ['commit', '-m', message, ...rawArgv]);
 
 	outro(`${green('✔')} Successfully committed!`);
 })().catch((error) => {
