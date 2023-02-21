@@ -15,6 +15,7 @@ import {
 import { getConfig } from './utils/config.js';
 import { generateCommitMessage } from './utils/openai.js';
 import configCommand from './commands/config.js';
+import hookCommand from './commands/hook.js';
 
 const rawArgv = process.argv.slice(2);
 
@@ -40,6 +41,7 @@ cli(
 
 		commands: [
 			configCommand,
+			hookCommand,
 		],
 
 		help: {
