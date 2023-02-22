@@ -95,7 +95,7 @@ export const generateCommitMessage = async (
 			.map(choice => sanitizeMessage(choice.text!));
 	} catch (error) {
 		const errorAsAny = error as any;
-		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
+		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny?.response?.statusText || `code: ${errorAsAny.code} - errno: ${errorAsAny.errno}`}`;
 		throw errorAsAny;
 	}
 };
