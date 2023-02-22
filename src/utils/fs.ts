@@ -1,3 +1,4 @@
 import fs from 'fs/promises';
 
-export const fileExists = (filePath: string) => fs.access(filePath).then(() => true, () => false);
+// lstat is used because this is also used to check if a symlink file exists
+export const fileExists = (filePath: string) => fs.lstat(filePath).then(() => true, () => false);
