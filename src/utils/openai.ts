@@ -15,7 +15,7 @@ export const generateCommitMessage = async (
 
 	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
 	if (prompt.length > 8000) {
-		throw new Error('The diff is too large for the OpenAI API');
+		throw new Error('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
 	}
 
 	const openai = new OpenAIApi(new Configuration({ apiKey }));
