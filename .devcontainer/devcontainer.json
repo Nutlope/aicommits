@@ -4,7 +4,7 @@
     "features": {
         "ghcr.io/devcontainers-contrib/features/pnpm:2": {}
     },
-    "postCreateCommand": "source $NVM_DIR/nvm.sh && nvm i && pnpm i",
+    "postCreateCommand": ".devcontainer/postCreate.sh",
     "postAttachCommand": "pnpm build -w",
     "remoteUser": "node"
 }
