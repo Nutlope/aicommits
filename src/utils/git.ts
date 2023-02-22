@@ -15,7 +15,7 @@ const excludeFromDiff = [
 ].map(file => `:(exclude)${file}`);
 
 export const getStagedDiff = async () => {
-	const diffCached = ['diff', '--cached'];
+	const diffCached = ['diff', '--cached','--ignore-all-space','--diff-algorithm=minimal'];
 	const { stdout: files } = await execa(
 		'git',
 		[...diffCached, '--name-only', ...excludeFromDiff],
