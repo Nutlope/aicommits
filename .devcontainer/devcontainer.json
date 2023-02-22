@@ -1,6 +1,9 @@
 {
     "name": "Node.js",
-    "image": "mcr.microsoft.com/devcontainers/typescript-node:0-16",
-    "postCreateCommand": "npm install",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node",
+    "features": {
+        "ghcr.io/devcontainers-contrib/features/pnpm:2": {}
+    },
+    "postCreateCommand": "nvm i && pnpm i",
     "remoteUser": "node"
 }
