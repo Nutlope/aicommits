@@ -38,6 +38,10 @@ export const generateCommitMessage = async (
 		);
 	} catch (error) {
 		const errorAsAny = error as any;
+		if (errorAsAny.code === 'ENOTFOUND') {
+			throw new Error(`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`);
+		}
+
 		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
 		throw errorAsAny;
 	}
