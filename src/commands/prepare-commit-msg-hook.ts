@@ -5,13 +5,13 @@ import {
 import {
 	black, green, red, bgCyan,
 } from 'kolorist';
-import { getStagedDiff } from './utils/git.js';
-import { getConfig } from './utils/config.js';
-import { generateCommitMessage } from './utils/openai.js';
+import { getStagedDiff } from '../utils/git.js';
+import { getConfig } from '../utils/config.js';
+import { generateCommitMessage } from '../utils/openai.js';
 
 const [messageFilePath, commitSource] = process.argv.slice(2);
 
-(async () => {
+export default () => (async () => {
 	if (!messageFilePath) {
 		throw new Error('Commit message file path is missing. This file should be called from the "prepare-commit-msg" git hook');
 	}
@@ -62,5 +62,5 @@ const [messageFilePath, commitSource] = process.argv.slice(2);
 	outro(`${green('✔')} Saved commit message!`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
-	process.exit(1); // eslint-disable-line unicorn/no-process-exit
+	process.exit(1);
 });

@@ -28,6 +28,6 @@ export default command({
 		throw new Error(`Invalid mode: ${mode}`);
 	})().catch((error) => {
 		console.error(`${red('✖')} ${error.message}`);
-		process.exit(1); // eslint-disable-line unicorn/no-process-exit
+		process.exit(1);
 	});
 });

@@ -46,20 +46,15 @@
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr",
+		"rules": {
+			"unicorn/no-process-exit": "off"
+		},
 		"overrides": [
 			{
-				"files": "./src/prepare-commit-msg-hook.ts",
+				"files": "./src/commands/prepare-commit-msg-hook.ts",
 				"rules": {
 					"unicorn/prevent-abbreviations": "off"
 				}
-			}
-		]
-	},
-	"pkgroll": {
-		"output": [
-			{
-				"path": "./dist/prepare-commit-msg-hook.mjs",
-				"executable": true
 			}
 		]
 	}
