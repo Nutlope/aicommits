@@ -76,7 +76,9 @@ export default async (
 	await execa('git', ['commit', '-m', message, ...rawArgv]);
 
 	outro(`${green('✔')} Successfully committed!`);
-})().catch((error) => {
+})().then(() => {
+	process.exit(0);
+}).catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	process.exit(1);
 });
