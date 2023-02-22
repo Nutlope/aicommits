@@ -1,4 +1,5 @@
-import { Configuration, OpenAIApi } from 'openai';
+import type { CreateCompletionResponse } from 'openai';
+import got from 'got';
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
@@ -18,22 +19,26 @@ export const generateCommitMessage = async (
 		throw new Error('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
 	}
 
-	const openai = new OpenAIApi(new Configuration({ apiKey }));
 	try {
-		const completion = await openai.createCompletion({
-			model: 'text-davinci-003',
-			prompt,
-			temperature: 0.7,
-			top_p: 1,
-			frequency_penalty: 0,
-			presence_penalty: 0,
-			max_tokens: 200,
-			stream: false,
-			n: completions,
-		});
+		const completion = await got.post('https://api.openai.com/v1/completions', {
+			headers: {
+				Authorization: `Bearer ${apiKey}`,
+			},
+			json: {
+				model: 'text-davinci-003',
+				prompt,
+				temperature: 0.7,
+				top_p: 1,
+				frequency_penalty: 0,
+				presence_penalty: 0,
+				max_tokens: 200,
+				stream: false,
+				n: completions,
+			},
+		}).json() as CreateCompletionResponse;
 
 		return deduplicateMessages(
-			completion.data.choices
+			completion.choices
 				.map(choice => sanitizeMessage(choice.text!)),
 		);
 	} catch (error) {
