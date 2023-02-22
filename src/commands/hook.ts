@@ -6,28 +6,33 @@ import { command } from 'cleye';
 import { assertGitRepo } from '../utils/git.js';
 import { fileExists } from '../utils/fs.js';
 
+const hookName = 'prepare-commit-msg';
+const symlinkPath = `.git/hooks/${hookName}`;
+
+export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
+
 export default command({
 	name: 'hook',
 	parameters: ['<install/uninstall>'],
 }, (argv) => {
-	const hookPath = fileURLToPath(new URL('test.mjs', import.meta.url));
-	const hookName = 'prepare-commit-msg';
-	const symlinkPath = `.git/hooks/${hookName}`;
+	const hookPath = fileURLToPath(new URL('cli.mjs', import.meta.url));
 
 	(async () => {
 		await assertGitRepo();
 
-		const { installUninstall } = argv._;
+		const { installUninstall: mode } = argv._;
 
 		const hookExists = await fileExists(symlinkPath);
-		if (installUninstall === 'install') {
+		if (mode === 'install') {
 			if (hookExists) {
-				const realpath = await fs.realpath(symlinkPath);
+				// If the symlink is broken, it will throw an error
+				// eslint-disable-next-line @typescript-eslint/no-empty-function
+				const realpath = await fs.realpath(symlinkPath).catch(() => {});
 				if (realpath === hookPath)	{
-					throw new Error('The hook is already installed');
-				} else {
-					throw new Error(`A different ${hookName} hook seems to be installed. Please remove it before installing aicommits.`);
+					console.warn('The hook is already installed');
+					return;
 				}
+				throw new Error(`A different ${hookName} hook seems to be installed. Please remove it before installing aicommits.`);
 			}
 
 			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
@@ -37,13 +42,15 @@ export default command({
 			return;
 		}
 
-		if (installUninstall === 'uninstall') {
+		if (mode === 'uninstall') {
 			if (!hookExists) {
-				throw new Error('Hook is not installed');
+				console.warn('Hook is not installed');
+				return;
 			}
 			const realpath = await fs.realpath(symlinkPath);
 			if (realpath !== hookPath) {
-				throw new Error('Hook is not installed');
+				console.warn('Hook is not installed');
+				return;
 			}
 
 			await fs.rm(symlinkPath);
@@ -51,9 +58,9 @@ export default command({
 			return;
 		}
 
-		throw new Error(`Invalid mode: ${installUninstall}`);
+		throw new Error(`Invalid mode: ${mode}`);
 	})().catch((error) => {
 		console.error(`${red('✖')} ${error.message}`);
-		process.exit(1); // eslint-disable-line unicorn/no-process-exit
+		process.exit(1);
 	});
 });
