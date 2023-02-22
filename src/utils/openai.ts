@@ -1,5 +1,51 @@
-import type { CreateCompletionResponse } from 'openai';
-import got from 'got';
+import https from 'https';
+import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
+
+const createCompletion = (
+	apiKey: string,
+	json: CreateCompletionRequest,
+) => new Promise<CreateCompletionResponse>((resolve, reject) => {
+	const postContent = JSON.stringify(json);
+	const request = https.request(
+		{
+			port: 443,
+			hostname: 'api.openai.com',
+			path: '/v1/completions',
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': postContent.length,
+				Authorization: `Bearer ${apiKey}`,
+			},
+			timeout: 10_000, // 10s
+		},
+		(response) => {
+			if (
+				!response.statusCode
+				|| response.statusCode < 200
+				|| response.statusCode > 299
+			) {
+				return reject(new Error(`HTTP status code ${response.statusCode}`));
+			}
+
+			const body: Buffer[] = [];
+			response.on('data', chunk => body.push(chunk));
+			response.on('end', () => {
+				resolve(
+					JSON.parse(Buffer.concat(body).toString()),
+				);
+			});
+		},
+	);
+	request.on('error', reject);
+	request.on('timeout', () => {
+		request.destroy();
+		reject(new Error('Request timed out'));
+	});
+
+	request.write(postContent);
+	request.end();
+});
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
@@ -20,22 +66,17 @@ export const generateCommitMessage = async (
 	}
 
 	try {
-		const completion = await got.post('https://api.openai.com/v1/completions', {
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-			},
-			json: {
-				model: 'text-davinci-003',
-				prompt,
-				temperature: 0.7,
-				top_p: 1,
-				frequency_penalty: 0,
-				presence_penalty: 0,
-				max_tokens: 200,
-				stream: false,
-				n: completions,
-			},
-		}).json() as CreateCompletionResponse;
+		const completion = await createCompletion(apiKey, {
+			model: 'text-davinci-003',
+			prompt,
+			temperature: 0.7,
+			top_p: 1,
+			frequency_penalty: 0,
+			presence_penalty: 0,
+			max_tokens: 200,
+			stream: false,
+			n: completions,
+		});
 
 		return deduplicateMessages(
 			completion.choices
