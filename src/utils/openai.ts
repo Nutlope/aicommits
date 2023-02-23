@@ -4,15 +4,15 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getPrompt = (lang: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the lang ${lang}:\n${diff}`;
+const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
 export const generateCommitMessage = async (
 	apiKey: string,
-	lang: string,
+	locale: string,
 	diff: string,
 	completions: number,
 ) => {
-	const prompt = getPrompt(lang, diff);
+	const prompt = getPrompt(locale, diff);
 
 	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
 	if (prompt.length > 8000) {
