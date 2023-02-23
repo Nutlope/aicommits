@@ -35,7 +35,7 @@ export default async (
 
 	const config = await getConfig();
 	const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
-	const language = config.language ?? 'en';
+	const locale = config.locale ?? 'en';
 	if (!OPENAI_KEY) {
 		throw new Error('Please set your OpenAI API key in ~/.aicommits');
 	}
@@ -44,7 +44,7 @@ export default async (
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
 		OPENAI_KEY,
-		language,
+		locale,
 		staged.diff,
 		generate,
 	);
