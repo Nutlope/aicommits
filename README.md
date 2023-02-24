@@ -30,7 +30,7 @@
     aicommits config set OPENAI_KEY=<your token>
     ```
 
-    This will create a `.aicommitsrc` file in your home directory.
+    This will create a `.aicommits` file in your home directory.
 
 4. Start committing!
 
