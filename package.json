@@ -60,6 +60,11 @@
 		]
 	},
 	"release": {
-		"branches": ["main"]
+		"branches": [
+			"main"
+		]
+	},
+	"dependencies": {
+		"@dqbd/tiktoken": "^0.3.0"
 	}
 }

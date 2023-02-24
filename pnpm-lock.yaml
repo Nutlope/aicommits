@@ -2,6 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@clack/prompts': ^0.2.2
+  '@dqbd/tiktoken': ^0.3.0
   '@pvtnbr/eslint-config': ^0.33.0
   '@types/ini': ^1.3.31
   '@types/inquirer': ^9.0.3
@@ -16,6 +17,9 @@ specifiers:
   pkgroll: ^1.9.0
   simple-git-hooks: ^2.8.1
   typescript: ^4.9.5
+
+dependencies:
+  '@dqbd/tiktoken': 0.3.0
 
 devDependencies:
   '@clack/prompts': 0.2.2
@@ -71,6 +75,10 @@ packages:
       picocolors: 1.0.0
       sisteransi: 1.0.5
     dev: true
+
+  /@dqbd/tiktoken/0.3.0:
+    resolution: {integrity: sha512-Hxh/exPcIdfH2Zjq0x4L4Cjgf/IpYGdNZvmuA50rVgLGNax210Z61tbzl5O8ttVrxc45CUTw6Rx06uddFyK7BA==}
+    dev: false
 
   /@esbuild/android-arm/0.17.8:
     resolution: {integrity: sha512-0/rb91GYKhrtbeglJXOhAv9RuYimgI8h623TplY2X+vA4EXnk3Zj1fXZreJ0J3OJJu1bwmb0W7g+2cT/d8/l/w==}
