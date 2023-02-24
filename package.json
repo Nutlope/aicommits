@@ -1,6 +1,6 @@
 {
 	"name": "aicommits",
-	"version": "1.0.7",
+	"version": "0.0.0-semantic-release",
 	"description": "Writes your git commit messages for you with AI",
 	"keywords": [
 		"ai",
@@ -14,12 +14,13 @@
 	"files": [
 		"dist"
 	],
-	"bin": "dist/cli.mjs",
+	"bin": "./dist/cli.mjs",
 	"scripts": {
 		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
-		"type-check": "tsc"
+		"type-check": "tsc",
+		"prepack": "pnpm build"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm lint-staged"
@@ -45,6 +46,20 @@
 		"typescript": "^4.9.5"
 	},
 	"eslintConfig": {
-		"extends": "@pvtnbr"
+		"extends": "@pvtnbr",
+		"rules": {
+			"unicorn/no-process-exit": "off"
+		},
+		"overrides": [
+			{
+				"files": "./src/commands/prepare-commit-msg-hook.ts",
+				"rules": {
+					"unicorn/prevent-abbreviations": "off"
+				}
+			}
+		]
+	},
+	"release": {
+		"branches": ["main"]
 	}
 }
