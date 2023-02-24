@@ -25,6 +25,11 @@ cli(
 				alias: 'g',
 				default: 1,
 			},
+			prefix: {
+				type: String,
+				description: 'String to prefix to the generated commit message.',
+				default: '',
+			},
 		},
 
 		commands: [
@@ -44,6 +49,7 @@ cli(
 		} else {
 			aicommits(
 				argv.flags.generate,
+				argv.flags.prefix,
 				rawArgv,
 			);
 		}
