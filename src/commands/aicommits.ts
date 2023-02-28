@@ -3,8 +3,9 @@ import {
 	black, dim, green, red, bgCyan,
 } from 'kolorist';
 import {
-	intro, outro, spinner, select, confirm, isCancel,
+	intro, outro, spinner, select, isCancel,
 } from '@clack/prompts';
+import clipboard from 'clipboardy';
 import {
 	assertGitRepo,
 	getStagedDiff,
@@ -48,15 +49,27 @@ export default async (
 	);
 	s.stop('Changes analyzed');
 
+	const copyMessage = 'No, but copy the message to clipboard';
+	const yesMessage = 'Yes';
+	const noMessage = 'No';
+	const candidates = [yesMessage, noMessage, copyMessage];
+
 	let message;
 	if (messages.length === 1) {
 		[message] = messages;
-		const confirmed = await confirm({
-			message: `Use this commit message?\n\n   ${message}\n`,
+
+		const selected = await select({
+			message: `Use this commit message? ${dim('(Ctrl+c to exit)')} \n\n   ${message}\n`,
+			options: candidates.map(value => ({ label: value, value })),
 		});
 
-		if (!confirmed || isCancel(confirmed)) {
+		if (isCancel(selected) || selected === noMessage) {
 			outro('Commit cancelled');
+			return;
+		}
+		if (selected === copyMessage) {
+			clipboard.writeSync(message);
+			outro('Copied to clipboard successfully');
 			return;
 		}
 	} else {
