@@ -17,7 +17,7 @@
 	"bin": "./dist/cli.mjs",
 	"scripts": {
 		"prepare": "simple-git-hooks",
-		"build": "pkgroll --minify",
+		"build": "pkgroll --minify --export-condition=node",
 		"lint": "eslint --cache .",
 		"type-check": "tsc",
 		"prepack": "pnpm build"
