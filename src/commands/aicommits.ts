@@ -16,6 +16,7 @@ import { generateCommitMessage } from '../utils/openai.js';
 export default async (
 	generate: number,
 	rawArgv: string[],
+	maximumLength: number,
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
 
@@ -45,6 +46,7 @@ export default async (
 		OPENAI_KEY,
 		staged.diff,
 		generate,
+		maximumLength,
 	);
 	s.stop('Changes analyzed');
 
