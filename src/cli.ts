@@ -14,15 +14,14 @@ cli(
 		version,
 
 		/**
-     * Since this is a wrapper around `git commit`,
-     * flags should not overlap with it
-     * https://git-scm.com/docs/git-commit
-     */
+		 * Since this is a wrapper around `git commit`,
+		 * flags should not overlap with it
+		 * https://git-scm.com/docs/git-commit
+		 */
 		flags: {
 			generate: {
 				type: Number,
-				description:
-          'Number of messages to generate. (Warning: generating multiple costs more)',
+				description: 'Number of messages to generate. (Warning: generating multiple costs more)',
 				alias: 'g',
 				default: 1,
 			},
@@ -34,7 +33,10 @@ cli(
 			},
 		},
 
-		commands: [configCommand, hookCommand],
+		commands: [
+			configCommand,
+			hookCommand,
+		],
 
 		help: {
 			description,
@@ -46,7 +48,11 @@ cli(
 		if (isCalledFromGitHook) {
 			prepareCommitMessageHook();
 		} else {
-			aicommits(argv.flags.generate, rawArgv, argv.flags.length);
+			aicommits(
+				argv.flags.generate,
+				rawArgv,
+				argv.flags.length,
+			);
 		}
 	},
 	rawArgv,
