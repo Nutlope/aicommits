@@ -1,17 +1,17 @@
 import https from 'https';
-import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
+import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 
 const createCompletion = (
 	apiKey: string,
-	json: CreateCompletionRequest,
-) => new Promise<CreateCompletionResponse>((resolve, reject) => {
+	json: CreateChatCompletionRequest,
+) => new Promise<CreateChatCompletionResponse>((resolve, reject) => {
 	const postContent = JSON.stringify(json);
 	const request = https.request(
 		{
 			port: 443,
 			hostname: 'api.openai.com',
-			path: '/v1/completions',
+			path: '/v1/chat/completions',
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -59,8 +59,9 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
-const model = 'text-davinci-003';
-const encoder = encodingForModel(model);
+const model = 'gpt-3.5-turbo';
+// TODO: update for the new gpt-3.5 model
+const encoder = encodingForModel('text-davinci-003');
 
 export const generateCommitMessage = async (
 	apiKey: string,
@@ -80,7 +81,10 @@ export const generateCommitMessage = async (
 	try {
 		const completion = await createCompletion(apiKey, {
 			model,
-			prompt,
+			messages: [{
+				role: 'user',
+				content: prompt,
+			}],
 			temperature: 0.7,
 			top_p: 1,
 			frequency_penalty: 0,
@@ -92,7 +96,7 @@ export const generateCommitMessage = async (
 
 		return deduplicateMessages(
 			completion.choices
-				.map(choice => sanitizeMessage(choice.text!)),
+				.map(choice => sanitizeMessage(choice.message?.content ?? 'No Commit Message')),
 		);
 	} catch (error) {
 		const errorAsAny = error as any;
