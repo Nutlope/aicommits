@@ -25,7 +25,12 @@ const createCompletion = (
 				|| response.statusCode < 200
 				|| response.statusCode > 299
 			) {
-				return reject(new Error(`HTTP status code ${response.statusCode}`));
+				let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
+				if (response.statusCode === 500) {
+					errorMessage += '; Check the API status: https://status.openai.com';
+				}
+
+				return reject(new Error(errorMessage));
 			}
 
 			const body: Buffer[] = [];
@@ -88,7 +93,6 @@ export const generateCommitMessage = async (
 			throw new Error(`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`);
 		}
 
-		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
 		throw errorAsAny;
 	}
 };
