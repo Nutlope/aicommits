@@ -85,14 +85,12 @@ Video coming soon where I rebuild it from scratch to show you how to easily buil
 ## Future tasks
 
 - Add support for conventional commits as a flag that users can enable
+- Migrate to chatGPT instead of GPT-3
 - Add support for diffs greater than 200 lines by grabbing the diff per file, optional flag
 - Add ability to specify a commit message from inside aicommit if user doesn't like generated one
-- Solve latency issue (use a githook to asynchronously run gpt3 call on every git add, store the result in a temp file or in the .git folder). Put behind a flag
-- Use gpt-3-tokenizer instead of hard limit on characters as a more accurate model
 - Play around with prompt to produce optimal result
 - Add opt-in emoji flag to preface commits with an emoji, use [this](https://gitmoji.dev) as a guide
 - Add opt-in languages flag where it returns the commit in different languages
-- Add automated github releases using [this action](https://github.com/manovotny/github-releases-for-automated-package-publishing-action)
 - Build landing page for the 2.0 launch
 
 ## Maintainers
