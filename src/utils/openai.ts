@@ -1,5 +1,57 @@
-import { Configuration, OpenAIApi } from 'openai';
+import https from 'https';
+import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+
+const createCompletion = (
+	apiKey: string,
+	json: CreateCompletionRequest,
+) => new Promise<CreateCompletionResponse>((resolve, reject) => {
+	const postContent = JSON.stringify(json);
+	const request = https.request(
+		{
+			port: 443,
+			hostname: 'api.openai.com',
+			path: '/v1/completions',
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': postContent.length,
+				Authorization: `Bearer ${apiKey}`,
+			},
+			timeout: 10_000, // 10s
+		},
+		(response) => {
+			if (
+				!response.statusCode
+				|| response.statusCode < 200
+				|| response.statusCode > 299
+			) {
+				let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
+				if (response.statusCode === 500) {
+					errorMessage += '; Check the API status: https://status.openai.com';
+				}
+
+				return reject(new Error(errorMessage));
+			}
+
+			const body: Buffer[] = [];
+			response.on('data', chunk => body.push(chunk));
+			response.on('end', () => {
+				resolve(
+					JSON.parse(Buffer.concat(body).toString()),
+				);
+			});
+		},
+	);
+	request.on('error', reject);
+	request.on('timeout', () => {
+		request.destroy();
+		reject(new Error('Request timed out'));
+	});
+
+	request.write(postContent);
+	request.end();
+});
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
@@ -22,9 +74,8 @@ export const generateCommitMessage = async (
 		throw new Error('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
 	}
 
-	const openai = new OpenAIApi(new Configuration({ apiKey }));
 	try {
-		const completion = await openai.createCompletion({
+		const completion = await createCompletion(apiKey, {
 			model: MODEL,
 			prompt,
 			temperature: 0.7,
@@ -37,7 +88,7 @@ export const generateCommitMessage = async (
 		});
 
 		return deduplicateMessages(
-			completion.data.choices
+			completion.choices
 				.map(choice => sanitizeMessage(choice.text!)),
 		);
 	} catch (error) {
@@ -46,7 +97,6 @@ export const generateCommitMessage = async (
 			throw new Error(`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`);
 		}
 
-		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
 		throw errorAsAny;
 	}
 };

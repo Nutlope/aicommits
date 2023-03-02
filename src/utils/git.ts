@@ -10,8 +10,10 @@ export const assertGitRepo = async () => {
 
 const excludeFromDiff = [
 	'package-lock.json',
-	'yarn.lock',
 	'pnpm-lock.yaml',
+
+	// yarn.lock, Cargo.lock, Gemfile.lock, Pipfile.lock, etc.
+	'*.lock',
 ].map(file => `:(exclude)${file}`);
 
 export const getStagedDiff = async () => {
