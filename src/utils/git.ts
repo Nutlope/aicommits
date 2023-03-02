@@ -11,6 +11,8 @@ export const assertGitRepo = async () => {
 const excludeFromDiff = [
 	'package-lock.json',
 	'pnpm-lock.yaml',
+
+	// yarn.lock, Cargo.lock, Gemfile.lock, Pipfile.lock, etc.
 	'*.lock',
 ].map(file => `:(exclude)${file}`);
 
