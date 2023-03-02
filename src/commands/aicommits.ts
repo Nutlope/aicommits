@@ -48,7 +48,7 @@ export default async (
 	);
 	s.stop('Changes analyzed');
 
-	let message;
+	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
 		const confirmed = await confirm({

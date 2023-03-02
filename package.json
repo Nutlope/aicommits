@@ -66,5 +66,10 @@
 		"branches": [
 			"main"
 		]
+	},
+	"pnpm": {
+		"patchedDependencies": {
+			"@clack/prompts@0.6.1": "patches/@clack__prompts@0.6.1.patch"
+		}
 	}
 }
