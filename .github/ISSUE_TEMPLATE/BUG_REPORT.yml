@@ -26,7 +26,10 @@ body:
     attributes:
       label: aicommits version
       description: |
-        > aicommits --version
+        Run and paste the output of:
+        ```sh
+        aicommits --version
+        ```
       placeholder: v0.0.0
     validations:
       required: true
@@ -35,7 +38,7 @@ body:
       label: Environment
       description: |
         Run and paste the output of:
-        ```
+        ```sh
         npx envinfo --system --binaries
         ```
         
