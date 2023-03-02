@@ -28,9 +28,11 @@
 	"lint-staged": {
 		"*.ts": "eslint --cache"
 	},
+	"dependencies": {
+		"@dqbd/tiktoken": "^0.4.0"
+	},
 	"devDependencies": {
 		"@clack/prompts": "^0.2.2",
-		"@dqbd/tiktoken": "^0.3.0",
 		"@pvtnbr/eslint-config": "^0.33.0",
 		"@types/ini": "^1.3.31",
 		"@types/inquirer": "^9.0.3",
