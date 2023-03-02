@@ -30,11 +30,51 @@
     aicommits config set OPENAI_KEY=<your token>
     ```
 
-    This will create a `.aicommitsrc` file in your home directory.
+    This will create a `.aicommits` file in your home directory.
 
-4. Start committing!
 
-    Go make some changes in any Git repo, stage them, run `aicommits`, and see your AI generated message!
+## Usage
+### CLI mode
+
+You can call `aicommits` directly to generate a commit message for your staged changes:
+
+```sh
+git add <files...>
+aicommits
+```
+
+### Git hook
+
+You can also integrate _aicommits_ with Git via the [`prepare-commit-msg`](https://git-scm.com/docs/githooks#_prepare_commit_msg) hook. This lets you use Git like you normally would, and edit the commit message before committing.
+
+#### Install
+
+In the Git repository you want to install the hook in:
+```sh
+aicommits hook install
+```
+
+#### Uninstall
+In the Git repository you want to uninstall the hook from:
+
+```sh
+aicommits hook uninstall
+```
+
+#### Usage
+
+1. Stage your files and commit:
+    ```sh
+    git add <files...>
+    git commit # Only generates a message when it's not passed in
+    ```
+
+    > If you ever want to write your own message instead of generating one, you can simply pass one in: `git commit -m "My message"`
+
+2. Aicommits will generate the commit message for you and pass it back to Git. Git will open it with the [configured editor](https://docs.github.com/en/get-started/getting-started-with-git/associating-text-editors-with-git) for you to review/edit it.
+
+3. Save and close the editor to commit!
+
 
 ## How it works
 
