@@ -3,6 +3,7 @@ import path from 'path';
 import os from 'os';
 import ini from 'ini';
 import { fileExists } from './fs.js';
+import { KnownError } from './error.js';
 
 const parseAssert = (
 	name: string,
@@ -10,7 +11,7 @@ const parseAssert = (
 	message: string,
 ) => {
 	if (!condition) {
-		throw new Error(`Invalid config property ${name}: ${message}`);
+		throw new KnownError(`Invalid config property ${name}: ${message}`);
 	}
 };
 
@@ -67,7 +68,7 @@ export const setConfigs = async (
 
 	for (const [key, value] of keyValues) {
 		if (!hasOwn(configParsers, key)) {
-			throw new Error(`Invalid config property: ${key}`);
+			throw new KnownError(`Invalid config property: ${key}`);
 		}
 
 		const parsed = configParsers[key as ValidKeys](value);
