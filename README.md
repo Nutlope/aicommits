@@ -56,6 +56,12 @@ git add <files...>
 aicommits
 ```
 
+`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit) (with some exceptions (e.g. `--all`):
+
+```sh
+aicommits --dry-run
+```
+
 ### Git hook
 
 You can also integrate _aicommits_ with Git via the [`prepare-commit-msg`](https://git-scm.com/docs/githooks#_prepare_commit_msg) hook. This lets you use Git like you normally would, and edit the commit message before committing.
