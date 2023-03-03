@@ -5,6 +5,7 @@ import { green, red } from 'kolorist';
 import { command } from 'cleye';
 import { assertGitRepo } from '../utils/git.js';
 import { fileExists } from '../utils/fs.js';
+import { KnownError, handleCliError } from '../utils/error.js';
 
 const hookName = 'prepare-commit-msg';
 const symlinkPath = `.git/hooks/${hookName}`;
@@ -32,7 +33,7 @@ export default command({
 					console.warn('The hook is already installed');
 					return;
 				}
-				throw new Error(`A different ${hookName} hook seems to be installed. Please remove it before installing aicommits.`);
+				throw new KnownError(`A different ${hookName} hook seems to be installed. Please remove it before installing aicommits.`);
 			}
 
 			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
@@ -58,9 +59,10 @@ export default command({
 			return;
 		}
 
-		throw new Error(`Invalid mode: ${mode}`);
+		throw new KnownError(`Invalid mode: ${mode}`);
 	})().catch((error) => {
 		console.error(`${red('✖')} ${error.message}`);
+		handleCliError(error);
 		process.exit(1);
 	});
 });
