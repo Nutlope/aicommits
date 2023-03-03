@@ -33,6 +33,19 @@
     This will create a `.aicommits` file in your home directory.
 
 
+### Upgrading
+
+Check the installed version with:
+```
+aicommits --version
+```
+
+If it's not the [latest version](https://github.com/Nutlope/aicommits/releases/latest), run:
+
+```sh
+npm update -g aicommits
+```
+
 ## Usage
 ### CLI mode
 
