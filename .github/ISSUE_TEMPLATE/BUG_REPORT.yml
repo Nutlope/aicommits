@@ -12,13 +12,7 @@ body:
       description: A clear and concise description of the bug.
       placeholder: |
         <!--
-          What did you do? (Provide reproduction code in next section)
-
-          What did you expect to happen?
-
-          What happened instead?
-
-          Do you have an error stack-trace?
+          What did you do, what did you expect to happen, and what happened instead?
         -->
     validations:
       required: true
