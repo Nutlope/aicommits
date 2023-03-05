@@ -1,6 +1,6 @@
 import https from 'https';
 import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
-import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import { encoding_for_model as encodingForModel, TiktokenModel } from '@dqbd/tiktoken';
 import { KnownError } from './error.js';
 
 const createCompletion = (
@@ -60,20 +60,15 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
-const model = 'text-davinci-003';
-const encoder = encodingForModel(model);
-
 export const generateCommitMessage = async (
 	apiKey: string,
+	model: TiktokenModel,
 	diff: string,
 	completions: number,
 ) => {
 	const prompt = `${promptTemplate}\n${diff}`;
 
-	/**
-	 * text-davinci-003 has a token limit of 4000
-	 * https://platform.openai.com/docs/models/overview#:~:text=to%20Sep%202021-,text%2Ddavinci%2D003,-Can%20do%20any
-	 */
+	const encoder = encodingForModel(model);
 	if (encoder.encode(prompt).length > 4000) {
 		throw new KnownError('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
 	}
