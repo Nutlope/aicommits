@@ -32,6 +32,28 @@
 
     This will create a `.aicommits` file in your home directory.
 
+### Models
+
+If you want, it's also possible to use other (cheaper, but not recommended) models as:
+
+```sh
+aicommits config set OPENAI_KEY=<your token>
+```
+
+Models available (as of the fifth of March, 2023) are (ordered by lowest price):
+
+* `ada`
+  * `text-ada-001`
+* `babbage`
+  * `text-babbage-001`
+* `curie`
+  * `text-curie-001`
+* `davinci`
+  * `text-davinci-001`
+  * `text-davinci-002`
+  * `text-davinci-003` - This is the default
+
+More info on OpenAI's [pricing page](https://openai.com/pricing).
 
 ### Upgrading
 
