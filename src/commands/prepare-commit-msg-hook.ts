@@ -30,15 +30,13 @@ export default () => (async () => {
 
 	intro(bgCyan(black(' aicommits ')));
 
-	const { OPENAI_KEY, generate } = await getConfig();
-	if (!OPENAI_KEY) {
-		throw new KnownError('Please set your OpenAI API key in ~/.aicommits');
-	}
+	const { OPENAI_KEY, OPENAI_MODEL, generate } = await getConfig();
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
-		OPENAI_KEY,
+		OPENAI_KEY!,
+		OPENAI_MODEL!,
 		staged!.diff,
 		generate || 1,
 	);

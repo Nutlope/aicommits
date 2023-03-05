@@ -34,16 +34,13 @@ export default async (
 		staged.files.map(file => `     ${file}`).join('\n')
 	}`);
 
-	const config = await getConfig();
-	const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
-	if (!OPENAI_KEY) {
-		throw new KnownError('Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`');
-	}
+	const { OPENAI_KEY, OPENAI_MODEL } = await getConfig();
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
-		OPENAI_KEY,
+		OPENAI_KEY!,
+		OPENAI_MODEL!,
 		staged.diff,
 		generate,
 	);
