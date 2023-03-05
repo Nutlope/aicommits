@@ -2,12 +2,13 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import ini from 'ini';
+import { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
 const parseAssert = (
 	name: string,
-	condition: any,
+	condition: ConfigValue | boolean,
 	message: string,
 ) => {
 	if (!condition) {
@@ -22,6 +23,10 @@ const configParsers = {
 		parseAssert('OPENAI_KEY', key.length === 51, 'Must be 51 characters long');
 
 		return key;
+	},
+	OPENAI_MODEL(model: string): TiktokenModel {
+		// parseAssert('OPENAI_MODEL', model, 'Cannot be empty');
+		return model as TiktokenModel;
 	},
 	generate(key: string) {
 		parseAssert('generate', key, 'Cannot be empty');
@@ -39,8 +44,10 @@ type ValidKeys = keyof typeof configParsers;
 type ConfigType = {
 	[key in ValidKeys]?: ReturnType<typeof configParsers[key]>;
 };
+type ConfigValue = ConfigType[ValidKeys];
 
 const configPath = path.join(os.homedir(), '.aicommits');
+const defaultModel = 'text-davinci-003';
 
 export const getConfig = async (): Promise<ConfigType> => {
 	const configExists = await fileExists(configPath);
@@ -51,8 +58,16 @@ export const getConfig = async (): Promise<ConfigType> => {
 	const configString = await fs.readFile(configPath, 'utf8');
 	const config = ini.parse(configString);
 	for (const key of Object.keys(config)) {
-		const parsed = configParsers[key as ValidKeys](config[key]);
+		const validKey = key as ValidKeys;
+		const parsed = configParsers[validKey](config[key]) as ConfigValue;
 		config[key as ValidKeys] = parsed;
+	}
+
+	if (!config.OPENAI_KEY) {
+		throw new KnownError('Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`');
+	}
+	if (!config.OPENAI_MODEL) {
+		config.OPENAI_MODEL = defaultModel;
 	}
 
 	return config;
@@ -71,8 +86,9 @@ export const setConfigs = async (
 			throw new KnownError(`Invalid config property: ${key}`);
 		}
 
-		const parsed = configParsers[key as ValidKeys](value);
-		config[key as ValidKeys] = parsed as any;
+		const validKey = key as ValidKeys;
+		const parsed = configParsers[validKey](value);
+		config[validKey] = parsed as any;
 	}
 
 	await fs.writeFile(configPath, ini.stringify(config), 'utf8');
