@@ -19,7 +19,16 @@
     ```sh
     npm install -g aicommits
     ```
+    If u can't install it as a global package, try installing it locally.
+    ```sh
+    npm install aicommits
+    ```
+    Then add the following to your `.bashrc` or `.zshrc` file:
+    ```sh
+    echo "alias aicommits=\"$(pwd)/node_modules/aicommits/dist/cli.mjs\"" >> ~/.bashrc
 
+    source ~/.bashrc
+    ```
 2. Retrieve your API key from [OpenAI](https://platform.openai.com/account/api-keys)
 
     > Note: If you haven't already, you'll have to create an account and set up billing.
