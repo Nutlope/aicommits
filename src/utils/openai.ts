@@ -58,7 +58,7 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
+const promptDefaultTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
 
 const model = 'text-davinci-003';
 const encoder = encodingForModel(model);
@@ -67,6 +67,7 @@ export const generateCommitMessage = async (
 	apiKey: string,
 	diff: string,
 	completions: number,
+	promptTemplate: string = promptDefaultTemplate,
 ) => {
 	const prompt = `${promptTemplate}\n${diff}`;
 

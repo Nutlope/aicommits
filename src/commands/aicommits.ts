@@ -16,6 +16,7 @@ import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
 	generate: number,
+	prompt: string,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -46,9 +47,22 @@ export default async (
 		OPENAI_KEY,
 		staged.diff,
 		generate,
+		prompt,
 	);
 	s.stop('Changes analyzed');
 
+	if (!prompt) {
+		commitMessageProcess(messages, rawArgv);
+	} else {
+		customizedProcess(messages);
+	}
+})().catch((error) => {
+	outro(`${red('✖')} ${error.message}`);
+	handleCliError(error);
+	process.exit(1);
+});
+
+const commitMessageProcess = async (messages: string[], rawArgv: string[]) => {
 	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
@@ -77,8 +91,9 @@ export default async (
 	await execa('git', ['commit', '-m', message, ...rawArgv]);
 
 	outro(`${green('✔')} Successfully committed!`);
-})().catch((error) => {
-	outro(`${red('✖')} ${error.message}`);
-	handleCliError(error);
-	process.exit(1);
-});
+};
+
+const customizedProcess = async (messages: string[]) => {
+	const message = messages.length === 1 ? messages[0] : messages.join('\n');
+	outro(`Response message:\n\n   ${message}\n`);
+};
