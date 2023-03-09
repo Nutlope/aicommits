@@ -30,7 +30,7 @@ export default () => (async () => {
 
 	intro(bgCyan(black(' aicommits ')));
 
-	const { OPENAI_KEY, generate } = await getConfig();
+	const { OPENAI_KEY, locale = 'en', generate } = await getConfig();
 	if (!OPENAI_KEY) {
 		throw new KnownError('Please set your OpenAI API key in ~/.aicommits');
 	}
@@ -39,6 +39,7 @@ export default () => (async () => {
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
 		OPENAI_KEY,
+		locale,
 		staged!.diff,
 		generate || 1,
 	);
