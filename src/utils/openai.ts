@@ -58,7 +58,7 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything:';
+const promptTemplate = 'Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, making sure it is exactly or less than [count] characters long:';
 
 const model = 'text-davinci-003';
 const encoder = encodingForModel(model);
@@ -67,8 +67,9 @@ export const generateCommitMessage = async (
 	apiKey: string,
 	diff: string,
 	completions: number,
+	maximumLength: number,
 ) => {
-	const prompt = `${promptTemplate}\n${diff}`;
+	const prompt = `${promptTemplate.replace('[count]', maximumLength.toString())}\n${diff}`;
 
 	/**
 	 * text-davinci-003 has a token limit of 4000
