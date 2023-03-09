@@ -15,7 +15,7 @@ import { generateCommitMessage } from '../utils/openai.js';
 import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
-	generate: number,
+	generate: number | undefined,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -34,20 +34,18 @@ export default async (
 		staged.files.map(file => `     ${file}`).join('\n')
 	}`);
 
-	const config = await getConfig();
-	const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
-	const locale = config.locale ?? 'en';
-	if (!OPENAI_KEY) {
-		throw new KnownError('Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`');
-	}
+	const config = await getConfig({
+		OPENAI_KEY: process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY,
+		generate: generate?.toString(),
+	});
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
-		OPENAI_KEY,
-		locale,
+		config.OPENAI_KEY,
+		config.locale,
 		staged.diff,
-		generate,
+		config.generate,
 	);
 	s.stop('Changes analyzed');
 
