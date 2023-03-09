@@ -5,6 +5,9 @@ import ini from 'ini';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
+const { hasOwnProperty } = Object.prototype;
+const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
+
 const parseAssert = (
 	name: string,
 	condition: any,
@@ -57,15 +60,16 @@ export const getConfig = async (): Promise<ConfigType> => {
 	const configString = await fs.readFile(configPath, 'utf8');
 	const config = ini.parse(configString);
 	for (const key of Object.keys(config)) {
-		const parsed = configParsers[key as ValidKeys](config[key]);
-		config[key as ValidKeys] = parsed;
+		if (hasOwn(configParsers, key)) {
+			const parsed = configParsers[key as ValidKeys](config[key]);
+			config[key as ValidKeys] = parsed;
+		} else {
+			console.warn(`\n⚠️  Unknown config property "${key}" found in ${configPath}`);
+		}
 	}
 
 	return config;
 };
-
-const { hasOwnProperty } = Object.prototype;
-const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
 
 export const setConfigs = async (
 	keyValues: [key: string, value: string][],
