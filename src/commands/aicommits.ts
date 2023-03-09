@@ -16,6 +16,7 @@ import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
 	generate: number,
+	prefix: string,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -54,6 +55,8 @@ export default async (
 	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
+		message = `${prefix} ${message}`;
+
 		const confirmed = await confirm({
 			message: `Use this commit message?\n\n   ${message}\n`,
 		});
