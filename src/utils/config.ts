@@ -25,7 +25,7 @@ const configParsers = {
 	},
 	locale(key: string) {
 		parseAssert('locale', key, 'Cannot be empty');
-		parseAssert('locale', /^[a-z-]+$/i.test(key), 'Must be a valid locale (letters and dashes/underscores). You can consult the list of codes in: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes');
+		parseAssert('locale', /^[a-z-]+$/i.test(key), 'Must be a valid locale (letters and dashes/underscores). You can consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes');
 
 		return key;
 	},
