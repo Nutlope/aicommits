@@ -1,6 +1,7 @@
 import https from 'https';
 import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import HttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
 const createCompletion = (
@@ -8,19 +9,24 @@ const createCompletion = (
 	json: CreateCompletionRequest,
 ) => new Promise<CreateCompletionResponse>((resolve, reject) => {
 	const postContent = JSON.stringify(json);
-	const request = https.request(
-		{
-			port: 443,
-			hostname: 'api.openai.com',
-			path: '/v1/completions',
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Content-Length': postContent.length,
-				Authorization: `Bearer ${apiKey}`,
-			},
-			timeout: 10_000, // 10s
+	const requestOptions : https.RequestOptions = {
+		port: 443,
+		hostname: 'api.openai.com',
+		path: '/v1/completions',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Content-Length': postContent.length,
+			Authorization: `Bearer ${apiKey}`,
 		},
+		timeout: 10_000, // 10s
+	};
+	if (process.env.https_proxy || process.env.http_proxy) {
+		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+		requestOptions.agent = HttpsProxyAgent(process.env.https_proxy ?? process.env.http_proxy!);
+	}
+	const request = https.request(
+		requestOptions,
 		(response) => {
 			if (
 				!response.statusCode
