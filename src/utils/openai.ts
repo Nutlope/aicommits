@@ -21,9 +21,10 @@ const createCompletion = (
 		},
 		timeout: 10_000, // 10s
 	};
-	if (process.env.https_proxy || process.env.http_proxy) {
-		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		requestOptions.agent = HttpsProxyAgent(process.env.https_proxy ?? process.env.http_proxy!);
+	if (process.env.https_proxy) {
+		requestOptions.agent = HttpsProxyAgent(process.env.https_proxy);
+	} else if (process.env.http_proxy) {
+		requestOptions.agent = HttpsProxyAgent(process.env.http_proxy);
 	}
 	const request = https.request(
 		requestOptions,
