@@ -12,6 +12,7 @@ import {
 } from '../utils/git.js';
 import { getConfig } from '../utils/config.js';
 import { generateCommitMessage } from '../utils/openai.js';
+import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
 	generate: number,
@@ -26,7 +27,7 @@ export default async (
 	const staged = await getStagedDiff();
 
 	if (!staged) {
-		throw new Error('No staged changes found. Make sure to stage your changes with `git add`.');
+		throw new KnownError('No staged changes found. Make sure to stage your changes with `git add`.');
 	}
 
 	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
@@ -37,7 +38,7 @@ export default async (
 	const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
 	const locale = config.locale ?? 'en';
 	if (!OPENAI_KEY) {
-		throw new Error('Please set your OpenAI API key in ~/.aicommits');
+		throw new KnownError('Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`');
 	}
 
 	const s = spinner();
@@ -50,7 +51,7 @@ export default async (
 	);
 	s.stop('Changes analyzed');
 
-	let message;
+	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
 		const confirmed = await confirm({
@@ -80,5 +81,6 @@ export default async (
 	outro(`${green('✔')} Successfully committed!`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
+	handleCliError(error);
 	process.exit(1);
 });

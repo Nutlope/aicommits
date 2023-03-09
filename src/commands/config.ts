@@ -1,6 +1,7 @@
 import { command } from 'cleye';
 import { red } from 'kolorist';
 import { getConfig, setConfigs } from '../utils/config.js';
+import { KnownError, handleCliError } from '../utils/error.js';
 
 export default command({
 	name: 'config',
@@ -25,9 +26,10 @@ export default command({
 			return;
 		}
 
-		throw new Error(`Invalid mode: ${mode}`);
+		throw new KnownError(`Invalid mode: ${mode}`);
 	})().catch((error) => {
 		console.error(`${red('✖')} ${error.message}`);
+		handleCliError(error);
 		process.exit(1);
 	});
 });

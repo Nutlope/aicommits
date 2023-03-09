@@ -1,5 +1,7 @@
 import https from 'https';
 import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
+import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import { KnownError } from './error.js';
 
 const createCompletion = (
 	apiKey: string,
@@ -25,7 +27,12 @@ const createCompletion = (
 				|| response.statusCode < 200
 				|| response.statusCode > 299
 			) {
-				return reject(new Error(`HTTP status code ${response.statusCode}`));
+				let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
+				if (response.statusCode === 500) {
+					errorMessage += '; Check the API status: https://status.openai.com';
+				}
+
+				return reject(new KnownError(errorMessage));
 			}
 
 			const body: Buffer[] = [];
@@ -40,7 +47,7 @@ const createCompletion = (
 	request.on('error', reject);
 	request.on('timeout', () => {
 		request.destroy();
-		reject(new Error('Request timed out'));
+		reject(new KnownError('Request timed out'));
 	});
 
 	request.write(postContent);
@@ -53,6 +60,9 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
+const model = 'text-davinci-003';
+const encoder = encodingForModel(model);
+
 export const generateCommitMessage = async (
 	apiKey: string,
 	locale: string,
@@ -61,14 +71,17 @@ export const generateCommitMessage = async (
 ) => {
 	const prompt = getPrompt(locale, diff);
 
-	// Accounting for GPT-3's input req of 4k tokens (approx 8k chars)
-	if (prompt.length > 8000) {
-		throw new Error('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
+	/**
+	 * text-davinci-003 has a token limit of 4000
+	 * https://platform.openai.com/docs/models/overview#:~:text=to%20Sep%202021-,text%2Ddavinci%2D003,-Can%20do%20any
+	 */
+	if (encoder.encode(prompt).length > 4000) {
+		throw new KnownError('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
 	}
 
 	try {
 		const completion = await createCompletion(apiKey, {
-			model: 'text-davinci-003',
+			model,
 			prompt,
 			temperature: 0.7,
 			top_p: 1,
@@ -86,10 +99,9 @@ export const generateCommitMessage = async (
 	} catch (error) {
 		const errorAsAny = error as any;
 		if (errorAsAny.code === 'ENOTFOUND') {
-			throw new Error(`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`);
+			throw new KnownError(`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`);
 		}
 
-		errorAsAny.message = `OpenAI API Error: ${errorAsAny.message} - ${errorAsAny.response.statusText}`;
 		throw errorAsAny;
 	}
 };
