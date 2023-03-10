@@ -56,17 +56,20 @@ pnpm test
 
 
 ## Using & testing your changes
-You can publish the package to a GitHub branch using [`git-publish`](https://github.com/privatenumber/git-publish):
 
-Publish your current branch to a GitHub branch:
+Let's say you made some changes in a fork/branch and you want to test it in a project. You can publish the package to a GitHub branch using [`git-publish`](https://github.com/privatenumber/git-publish):
+
+Publish your current branch to a `npm/*` branch on your GitHub repository:
 ```sh
-$ npx git-publish
+$ pnpm dlx git-publish
 
 ✔ Successfully published branch! Install with command:
   → npm i 'Nutlope/aicommits#npm/develop'
 ```
 
-Then you can use the output to test the changes:
+> Note: The `Nutlope/aicommits` will be replaced with your fork's URL.
+
+Now, you can run the branch in your project:
 ```sh
-$ npx 'Nutlope/aicommits#npm/develop' # same as running `npx aicommits`
+$ pnpm dlx 'Nutlope/aicommits#npm/develop' # same as running `npx aicommits`
 ```
