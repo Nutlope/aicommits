@@ -94,10 +94,8 @@ export default testSuite(({ describe }) => {
 				if (stdout.match('└')) {
 					const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
 
-					// 2 choices or less should be generated
-					// pretty common for it to return 2 results that are the same
-					// which gets de-duplicated
-					expect(countChoices <= 2).toBe(true);
+					// 2 choices should be generated
+					expect(countChoices).toBe(2);
 
 					committing.stdin!.write('\r');
 					committing.stdin!.end();

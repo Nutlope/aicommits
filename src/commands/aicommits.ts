@@ -49,6 +49,10 @@ export default async (
 	);
 	s.stop('Changes analyzed');
 
+	if (messages.length === 0) {
+		throw new KnownError('No commit messages were generated. Try again.');
+	}
+
 	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;

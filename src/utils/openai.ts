@@ -1,46 +1,42 @@
 import https from 'https';
+import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 import { KnownError } from './error.js';
 
-const createCompletion = (
-	apiKey: string,
-	json: CreateChatCompletionRequest,
-) => new Promise<CreateChatCompletionResponse>((resolve, reject) => {
+const httpsPost = async (
+	hostname: string,
+	path: string,
+	headers: Record<string, string>,
+	json: unknown,
+) => new Promise<{
+	request: ClientRequest;
+	response: IncomingMessage;
+	data: string;
+}>((resolve, reject) => {
 	const postContent = JSON.stringify(json);
 	const request = https.request(
 		{
 			port: 443,
-			hostname: 'api.openai.com',
-			path: '/v1/chat/completions',
+			hostname,
+			path,
 			method: 'POST',
 			headers: {
+				...headers,
 				'Content-Type': 'application/json',
-				'Content-Length': postContent.length,
-				Authorization: `Bearer ${apiKey}`,
+				'Content-Length': Buffer.byteLength(postContent),
 			},
 			timeout: 10_000, // 10s
 		},
 		(response) => {
-			if (
-				!response.statusCode
-				|| response.statusCode < 200
-				|| response.statusCode > 299
-			) {
-				let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
-				if (response.statusCode === 500) {
-					errorMessage += '; Check the API status: https://status.openai.com';
-				}
-
-				return reject(new KnownError(errorMessage));
-			}
-
 			const body: Buffer[] = [];
 			response.on('data', chunk => body.push(chunk));
 			response.on('end', () => {
-				resolve(
-					JSON.parse(Buffer.concat(body).toString()),
-				);
+				resolve({
+					request,
+					response,
+					data: Buffer.concat(body).toString(),
+				});
 			});
 		},
 	);
@@ -53,6 +49,40 @@ const createCompletion = (
 	request.write(postContent);
 	request.end();
 });
+
+const createChatCompletion = async (
+	apiKey: string,
+	json: CreateChatCompletionRequest,
+) => {
+	const { response, data } = await httpsPost(
+		'api.openai.com',
+		'/v1/chat/completions',
+		{
+			Authorization: `Bearer ${apiKey}`,
+		},
+		json,
+	);
+
+	if (
+		!response.statusCode
+		|| response.statusCode < 200
+		|| response.statusCode > 299
+	) {
+		let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
+
+		if (data) {
+			errorMessage += `\n${data}`;
+		}
+
+		if (response.statusCode === 500) {
+			errorMessage += '\nCheck the API status: https://status.openai.com';
+		}
+
+		throw new KnownError(errorMessage);
+	}
+
+	return JSON.parse(data) as CreateChatCompletionResponse;
+};
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
@@ -81,7 +111,7 @@ export const generateCommitMessage = async (
 	}
 
 	try {
-		const completion = await createCompletion(apiKey, {
+		const completion = await createChatCompletion(apiKey, {
 			model,
 			messages: [{
 				role: 'user',
@@ -98,7 +128,8 @@ export const generateCommitMessage = async (
 
 		return deduplicateMessages(
 			completion.choices
-				.map(choice => sanitizeMessage(choice.message?.content ?? 'No Commit Message')),
+				.filter(choice => choice.message?.content)
+				.map(choice => sanitizeMessage(choice.message!.content)),
 		);
 	} catch (error) {
 		const errorAsAny = error as any;
