@@ -15,20 +15,32 @@ export default testSuite(({ describe }) => {
 	}
 
 	describe('CLI', async ({ test }) => {
-		test('Commits', async () => {
-			const fixture = await createFixture({
-				'data.json': JSON.stringify({
-					firstName: 'Hiroki',
-				}),
-			});
+		const fixture = await createFixture({
+			'data.json': JSON.stringify({
+				firstName: 'Hiroki',
+			}),
+		});
 
-			const aicommits = createAicommits({
-				cwd: fixture.path,
-				home: fixture.path,
-			});
+		const aicommits = createAicommits({
+			cwd: fixture.path,
+			home: fixture.path,
+		});
 
-			const git = await createGit(fixture.path);
+		await test('Fails on non-Git project', async () => {
+			const { stdout, exitCode } = await aicommits([], { reject: false });
+			expect(exitCode).toBe(1);
+			expect(stdout).toMatch('The current directory must be a Git repository!');
+		});
 
+		const git = await createGit(fixture.path);
+
+		await test('Fails on no staged files', async () => {
+			const { stdout, exitCode } = await aicommits([], { reject: false });
+			expect(exitCode).toBe(1);
+			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
+		});
+
+		await test('Commits', async () => {
 			await git('add', ['data.json']);
 
 			await aicommits([
@@ -38,11 +50,9 @@ export default testSuite(({ describe }) => {
 			]);
 
 			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-
 			expect(statusBefore.stdout).toBe('A  data.json');
 
 			const committing = aicommits();
-
 			committing.stdout!.on('data', (buffer) => {
 				const data = buffer.toString();
 
@@ -59,8 +69,8 @@ export default testSuite(({ describe }) => {
 
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Commited with:', stdout);
-
-			await fixture.rm();
 		});
+
+		await fixture.rm();
 	});
 });
