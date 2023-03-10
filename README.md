@@ -62,6 +62,8 @@ aicommits
 aicommits --dry-run
 ```
 
+> 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
+
 ### Git hook
 
 You can also integrate _aicommits_ with Git via the [`prepare-commit-msg`](https://git-scm.com/docs/githooks#_prepare_commit_msg) hook. This lets you use Git like you normally would, and edit the commit message before committing.
