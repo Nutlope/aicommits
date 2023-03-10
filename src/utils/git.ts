@@ -1,10 +1,11 @@
 import { execa } from 'execa';
+import { KnownError } from './error.js';
 
 export const assertGitRepo = async () => {
 	const { stdout } = await execa('git', ['rev-parse', '--is-inside-work-tree'], { reject: false });
 
 	if (stdout !== 'true') {
-		throw new Error('The current directory must be a Git repository!');
+		throw new KnownError('The current directory must be a Git repository!');
 	}
 };
 

@@ -8,12 +8,13 @@ import {
 import { getStagedDiff } from '../utils/git.js';
 import { getConfig } from '../utils/config.js';
 import { generateCommitMessage } from '../utils/openai.js';
+import { KnownError, handleCliError } from '../utils/error.js';
 
 const [messageFilePath, commitSource] = process.argv.slice(2);
 
 export default () => (async () => {
 	if (!messageFilePath) {
-		throw new Error('Commit message file path is missing. This file should be called from the "prepare-commit-msg" git hook');
+		throw new KnownError('Commit message file path is missing. This file should be called from the "prepare-commit-msg" git hook');
 	}
 
 	// If a commit message is passed in, ignore
@@ -29,17 +30,15 @@ export default () => (async () => {
 
 	intro(bgCyan(black(' aicommits ')));
 
-	const { OPENAI_KEY, generate } = await getConfig();
-	if (!OPENAI_KEY) {
-		throw new Error('Please set your OpenAI API key in ~/.aicommits');
-	}
+	const config = await getConfig();
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
-		OPENAI_KEY,
+		config.OPENAI_KEY,
+		config.locale,
 		staged!.diff,
-		generate || 1,
+		config.generate,
 	);
 	s.stop('Changes analyzed');
 
@@ -61,5 +60,6 @@ export default () => (async () => {
 	outro(`${green('✔')} Saved commit message!`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
+	handleCliError(error);
 	process.exit(1);
 });

@@ -33,6 +33,19 @@
     This will create a `.aicommits` file in your home directory.
 
 
+### Upgrading
+
+Check the installed version with:
+```
+aicommits --version
+```
+
+If it's not the [latest version](https://github.com/Nutlope/aicommits/releases/latest), run:
+
+```sh
+npm update -g aicommits
+```
+
 ## Usage
 ### CLI mode
 
@@ -41,6 +54,12 @@ You can call `aicommits` directly to generate a commit message for your staged c
 ```sh
 git add <files...>
 aicommits
+```
+
+`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit) (with some exceptions (e.g. `--all`):
+
+```sh
+aicommits --dry-run
 ```
 
 ### Git hook
