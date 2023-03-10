@@ -15,10 +15,11 @@ export default testSuite(({ describe }) => {
 	}
 
 	describe('CLI', async ({ test }) => {
+		const data: Record<string, string> = {
+			firstName: 'Hiroki',
+		};
 		const fixture = await createFixture({
-			'data.json': JSON.stringify({
-				firstName: 'Hiroki',
-			}),
+			'data.json': JSON.stringify(data),
 		});
 
 		const aicommits = createAicommits({
@@ -40,7 +41,7 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
 		});
 
-		await test('Commits', async () => {
+		await test('Generates commit message', async () => {
 			await git('add', ['data.json']);
 
 			await aicommits([
@@ -53,10 +54,9 @@ export default testSuite(({ describe }) => {
 			expect(statusBefore.stdout).toBe('A  data.json');
 
 			const committing = aicommits();
-			committing.stdout!.on('data', (buffer) => {
-				const data = buffer.toString();
-
-				if (data.match('Yes /')) {
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
 					committing.stdin!.write('y');
 					committing.stdin!.end();
 				}
@@ -68,7 +68,96 @@ export default testSuite(({ describe }) => {
 			expect(statusAfter.stdout).toBe('');
 
 			const { stdout } = await git('log', ['--oneline']);
-			console.log('Commited with:', stdout);
+			console.log('Committed with:', stdout);
+		});
+
+		await test('Accepts --generate flag, overriding config', async () => {
+			data.lastName = 'Osame';
+			await fixture.writeJson('data.json', data);
+
+			await git('add', ['data.json']);
+
+			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusBefore.stdout).toBe('M  data.json');
+
+			await aicommits([
+				'config',
+				'set',
+				'generate=4',
+			]);
+
+			// Generate flag should override generate config
+			const committing = aicommits(['--generate', '2']);
+
+			committing.stdout!.on('data', function onPrompt(buffer: Buffer) {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
+
+					// 2 choices or less should be generated
+					// pretty common for it to return 2 results that are the same
+					// which gets de-duplicated
+					expect(countChoices <= 2).toBe(true);
+
+					committing.stdin!.write('\r');
+					committing.stdin!.end();
+					committing.stdout?.off('data', onPrompt);
+				}
+			});
+
+			await committing;
+
+			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			await aicommits([
+				'config',
+				'set',
+				'generate=1',
+			]);
+		});
+
+		await test('Generates Japanese commit message via locale config', async () => {
+			// https://stackoverflow.com/a/15034560/911407
+			const japanesePattern = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
+
+			data.username = 'privatenumber';
+			await fixture.writeJson('data.json', data);
+
+			await git('add', ['data.json']);
+
+			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusBefore.stdout).toBe('M  data.json');
+
+			await aicommits([
+				'config',
+				'set',
+				'locale=ja',
+			]);
+
+			// Generate flag should override generate config
+			const committing = aicommits(['--generate', '1']);
+
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					committing.stdin!.write('y');
+					committing.stdin!.end();
+				}
+			});
+
+			await committing;
+
+			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			expect(stdout).toMatch(japanesePattern);
 		});
 
 		await fixture.rm();
