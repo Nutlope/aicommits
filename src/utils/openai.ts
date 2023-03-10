@@ -1,6 +1,6 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
-import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
+import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 import { KnownError } from './error.js';
 
@@ -50,13 +50,13 @@ const httpsPost = async (
 	request.end();
 });
 
-const createCompletion = async (
+const createChatCompletion = async (
 	apiKey: string,
-	json: CreateCompletionRequest,
+	json: CreateChatCompletionRequest,
 ) => {
 	const { response, data } = await httpsPost(
 		'api.openai.com',
-		'/v1/completions',
+		'/v1/chat/completions',
 		{
 			Authorization: `Bearer ${apiKey}`,
 		},
@@ -81,7 +81,7 @@ const createCompletion = async (
 		throw new KnownError(errorMessage);
 	}
 
-	return JSON.parse(data) as CreateCompletionResponse;
+	return JSON.parse(data) as CreateChatCompletionResponse;
 };
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
@@ -90,8 +90,9 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
-const model = 'text-davinci-003';
-const encoder = encodingForModel(model);
+const model = 'gpt-3.5-turbo';
+// TODO: update for the new gpt-3.5 model
+const encoder = encodingForModel('text-davinci-003');
 
 export const generateCommitMessage = async (
 	apiKey: string,
@@ -110,9 +111,12 @@ export const generateCommitMessage = async (
 	}
 
 	try {
-		const completion = await createCompletion(apiKey, {
+		const completion = await createChatCompletion(apiKey, {
 			model,
-			prompt,
+			messages: [{
+				role: 'user',
+				content: prompt,
+			}],
 			temperature: 0.7,
 			top_p: 1,
 			frequency_penalty: 0,
@@ -124,7 +128,8 @@ export const generateCommitMessage = async (
 
 		return deduplicateMessages(
 			completion.choices
-				.map(choice => sanitizeMessage(choice.text!)),
+				.filter(choice => choice.message?.content)
+				.map(choice => sanitizeMessage(choice.message!.content)),
 		);
 	} catch (error) {
 		const errorAsAny = error as any;
