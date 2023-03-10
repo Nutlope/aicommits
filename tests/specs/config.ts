@@ -2,26 +2,19 @@ import fs from 'fs/promises';
 import path from 'path';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import { execaNode } from 'execa';
-
-const aicommitsPath = path.resolve('./dist/cli.mjs');
+import { createAicommits } from '../utils.js';
 
 export default testSuite(({ describe }) => {
 	describe('config', async ({ test }) => {
 		const fixture = await createFixture();
-		const env = {
-			// Linux
-			HOME: fixture.path,
-
-			// Windows
-			USERPROFILE: fixture.path,
-		};
+		const aicommits = createAicommits({
+			home: fixture.path,
+		});
 		const configPath = path.join(fixture.path, '.aicommits');
 		const openAiToken = 'OPENAI_KEY=sk-abc';
 
 		test('set unknown config file', async () => {
-			const { stderr } = await execaNode(aicommitsPath, ['config', 'set', 'UNKNOWN=1'], {
-				env,
+			const { stderr } = await aicommits(['config', 'set', 'UNKNOWN=1'], {
 				reject: false,
 			});
 
@@ -29,8 +22,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		test('set invalid OPENAI_KEY', async () => {
-			const { stderr } = await execaNode(aicommitsPath, ['config', 'set', 'OPENAI_KEY=abc'], {
-				env,
+			const { stderr } = await aicommits(['config', 'set', 'OPENAI_KEY=abc'], {
 				reject: false,
 			});
 
@@ -38,14 +30,14 @@ export default testSuite(({ describe }) => {
 		});
 
 		await test('set config file', async () => {
-			await execaNode(aicommitsPath, ['config', 'set', openAiToken], { env });
+			await aicommits(['config', 'set', openAiToken]);
 
 			const configFile = await fs.readFile(configPath, 'utf8');
 			expect(configFile).toMatch(openAiToken);
 		});
 
 		await test('get config file', async () => {
-			const { stdout } = await execaNode(aicommitsPath, ['config', 'get', 'OPENAI_KEY'], { env });
+			const { stdout } = await aicommits(['config', 'get', 'OPENAI_KEY']);
 
 			expect(stdout).toBe(openAiToken);
 		});
@@ -53,8 +45,7 @@ export default testSuite(({ describe }) => {
 		await test('reading unknown config', async () => {
 			await fs.appendFile(configPath, 'UNKNOWN=1');
 
-			const { stdout, stderr } = await execaNode(aicommitsPath, ['config', 'get', 'UNKNOWN'], {
-				env,
+			const { stdout, stderr } = await aicommits(['config', 'get', 'UNKNOWN'], {
 				reject: false,
 			});
 

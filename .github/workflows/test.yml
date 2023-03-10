@@ -40,6 +40,8 @@ jobs:
       run: pnpm build
 
     - name: Test
+      env:
+        OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
       run: |
         pnpm test
         pnpm --use-node-version=14.21.3 test
