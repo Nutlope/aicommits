@@ -14,7 +14,10 @@
 	"files": [
 		"dist"
 	],
-	"bin": "./dist/cli.mjs",
+	"bin": {
+		"aicommits": "./dist/cli.js",
+		"aic": "./dist/cli.js"
+	},
 	"scripts": {
 		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
