@@ -7,6 +7,7 @@ import { KnownError } from './error.js';
 const createCompletion = (
 	apiKey: string,
 	json: CreateCompletionRequest,
+	proxy: string | undefined,
 ) => new Promise<CreateCompletionResponse>((resolve, reject) => {
 	const postContent = JSON.stringify(json);
 	const requestOptions : https.RequestOptions = {
@@ -21,10 +22,8 @@ const createCompletion = (
 		},
 		timeout: 10_000, // 10s
 	};
-	if (process.env.https_proxy) {
-		requestOptions.agent = HttpsProxyAgent(process.env.https_proxy);
-	} else if (process.env.http_proxy) {
-		requestOptions.agent = HttpsProxyAgent(process.env.http_proxy);
+	if (proxy) {
+		requestOptions.agent = HttpsProxyAgent(proxy);
 	}
 	const request = https.request(
 		requestOptions,
@@ -75,6 +74,7 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	proxy: string | undefined,
 ) => {
 	const prompt = getPrompt(locale, diff);
 
@@ -97,7 +97,7 @@ export const generateCommitMessage = async (
 			max_tokens: 200,
 			stream: false,
 			n: completions,
-		});
+		}, proxy);
 
 		return deduplicateMessages(
 			completion.choices
