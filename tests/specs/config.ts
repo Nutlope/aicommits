@@ -10,7 +10,11 @@ export default testSuite(({ describe }) => {
 	describe('config', async ({ test }) => {
 		const fixture = await createFixture();
 		const env = {
+			// Linux
 			HOME: fixture.path,
+
+			// Windows
+			USERPROFILE: fixture.path,
 		};
 		const configPath = path.join(fixture.path, '.aicommits');
 		const openAiToken = 'OPENAI_KEY=sk-abc';
