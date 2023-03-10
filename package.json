@@ -15,8 +15,8 @@
 		"dist"
 	],
 	"bin": {
-		"aicommits": "./dist/cli.js",
-		"aic": "./dist/cli.js"
+		"aicommits": "./dist/cli.mjs",
+		"aic": "./dist/cli.mjs"
 	},
 	"scripts": {
 		"prepare": "simple-git-hooks",
