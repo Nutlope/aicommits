@@ -34,3 +34,8 @@ jobs:
 
     - name: Build
       run: pnpm build
+
+    - name: Test
+      run: |
+        pnpm test
+        pnpm --use-node-version=14.21.3 test
