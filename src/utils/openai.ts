@@ -1,26 +1,32 @@
 import https from 'https';
 import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import HttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
 const createCompletion = (
 	apiKey: string,
 	json: CreateCompletionRequest,
+	proxy: string | undefined,
 ) => new Promise<CreateCompletionResponse>((resolve, reject) => {
 	const postContent = JSON.stringify(json);
-	const request = https.request(
-		{
-			port: 443,
-			hostname: 'api.openai.com',
-			path: '/v1/completions',
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Content-Length': postContent.length,
-				Authorization: `Bearer ${apiKey}`,
-			},
-			timeout: 10_000, // 10s
+	const requestOptions : https.RequestOptions = {
+		port: 443,
+		hostname: 'api.openai.com',
+		path: '/v1/completions',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Content-Length': postContent.length,
+			Authorization: `Bearer ${apiKey}`,
 		},
+		timeout: 10_000, // 10s
+	};
+	if (proxy) {
+		requestOptions.agent = HttpsProxyAgent(proxy);
+	}
+	const request = https.request(
+		requestOptions,
 		(response) => {
 			if (
 				!response.statusCode
@@ -68,6 +74,7 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	proxy: string | undefined,
 ) => {
 	const prompt = getPrompt(locale, diff);
 
@@ -90,7 +97,7 @@ export const generateCommitMessage = async (
 			max_tokens: 200,
 			stream: false,
 			n: completions,
-		});
+		}, proxy);
 
 		return deduplicateMessages(
 			completion.choices
