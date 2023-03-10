@@ -1,0 +1,24 @@
+{
+  "name": "aicommits",
+  "version": "0.0.0-semantic-release",
+  "description": "Writes your git commit messages for you with AI",
+  "keywords": [
+    "ai",
+    "git",
+    "commit"
+  ],
+  "license": "MIT",
+  "repository": "Nutlope/aicommits",
+  "author": "Hassan El Mghari (@nutlope)",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "aicommits": "./dist/cli.mjs",
+    "aic": "./dist/cli.mjs"
+  },
+  "dependencies": {
+    "@dqbd/tiktoken": "^0.4.0"
+  }
+}
