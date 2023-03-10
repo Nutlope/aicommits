@@ -71,11 +71,11 @@ const createChatCompletion = async (
 		let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
 
 		if (data) {
-			errorMessage += `\n${data}`;
+			errorMessage += `\n\n${data}`;
 		}
 
 		if (response.statusCode === 500) {
-			errorMessage += '\nCheck the API status: https://status.openai.com';
+			errorMessage += '\n\nCheck the API status: https://status.openai.com';
 		}
 
 		throw new KnownError(errorMessage);
