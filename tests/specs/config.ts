@@ -50,6 +50,18 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toBe(openAiToken);
 		});
 
+		await test('reading unknown config', async () => {
+			await fs.appendFile(configPath, 'UNKNOWN=1');
+
+			const { stdout, stderr } = await execaNode(aicommitsPath, ['config', 'get', 'UNKNOWN'], {
+				env,
+				reject: false,
+			});
+
+			expect(stdout).toBe('');
+			expect(stderr).toBe('');
+		});
+
 		await fixture.rm();
 	});
 });

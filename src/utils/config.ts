@@ -6,7 +6,7 @@ import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
 const { hasOwnProperty } = Object.prototype;
-const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
+export const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
 
 const parseAssert = (
 	name: string,
