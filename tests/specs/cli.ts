@@ -8,6 +8,12 @@ if (!OPENAI_KEY) {
 }
 
 export default testSuite(({ describe }) => {
+	if (process.platform === 'win32') {
+		// https://github.com/nodejs/node/issues/31409
+		console.warn('Skipping tests on Windows because Node.js spawn cant open TTYs');
+		return;
+	}
+
 	describe('CLI', async ({ test }) => {
 		test('Commits', async () => {
 			const fixture = await createFixture({
