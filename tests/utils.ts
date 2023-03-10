@@ -28,7 +28,7 @@ export const createAicommits = ({
 		},
 
 		// Block tsx nodeOptions
-		nodeOptions: undefined,
+		nodeOptions: [],
 	});
 };
 
