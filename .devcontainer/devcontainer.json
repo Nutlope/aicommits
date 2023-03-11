@@ -1,0 +1,10 @@
+{
+    "name": "Node.js",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node",
+    "features": {
+        "ghcr.io/devcontainers-contrib/features/pnpm:2": {}
+    },
+    "postCreateCommand": ".devcontainer/postCreate.sh",
+    "postAttachCommand": "pnpm build -w",
+    "remoteUser": "node"
+}
