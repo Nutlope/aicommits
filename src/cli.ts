@@ -21,9 +21,8 @@ cli(
 		flags: {
 			generate: {
 				type: Number,
-				description: 'Number of messages to generate. (Warning: generating multiple costs more)',
+				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
-				default: 1,
 			},
 			noninteractive: {
 				type: Boolean,

@@ -12,10 +12,11 @@ import {
 } from '../utils/git.js';
 import { getConfig } from '../utils/config.js';
 import { generateCommitMessage } from '../utils/openai.js';
+import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
-	generate: number,
-	noninteractive: boolean,
+	generate: number | undefined,
+	noninteractive: boolean | undefined,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -27,29 +28,33 @@ export default async (
 	const staged = await getStagedDiff();
 
 	if (!staged) {
-		throw new Error('No staged changes found. Make sure to stage your changes with `git add`.');
+		throw new KnownError('No staged changes found. Make sure to stage your changes with `git add`.');
 	}
 
 	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
 		staged.files.map(file => `     ${file}`).join('\n')
 	}`);
 
-	const config = await getConfig();
-	const OPENAI_KEY = process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY ?? config.OPENAI_KEY;
-	if (!OPENAI_KEY) {
-		throw new Error('Please set your OpenAI API key in ~/.aicommits');
-	}
+	const config = await getConfig({
+		OPENAI_KEY: process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY,
+		generate: generate?.toString(),
+	});
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
 	const messages = await generateCommitMessage(
-		OPENAI_KEY,
+		config.OPENAI_KEY,
+		config.locale,
 		staged.diff,
-		generate,
+		config.generate,
 	);
 	s.stop('Changes analyzed');
 
-	let message;
+	if (messages.length === 0) {
+		throw new KnownError('No commit messages were generated. Try again.');
+	}
+
+	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
 		const confirmed = noninteractive ? true : await confirm({ message: `Use this commit message?\n\n   ${message}\n` });
@@ -79,5 +84,6 @@ export default async (
 	outro(`${green('✔')} Successfully committed!`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
+	handleCliError(error);
 	process.exit(1);
 });

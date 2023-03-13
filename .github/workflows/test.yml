@@ -2,13 +2,17 @@ name: Test
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
 
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
 
     steps:
@@ -34,3 +38,10 @@ jobs:
 
     - name: Build
       run: pnpm build
+
+    - name: Test
+      env:
+        OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+      run: |
+        pnpm test
+        pnpm --use-node-version=14.21.3 test

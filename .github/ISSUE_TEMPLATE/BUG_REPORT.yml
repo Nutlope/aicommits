@@ -1,0 +1,56 @@
+name: Bug report
+description: File a bug report
+labels: [bug, pending triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to file this bug report.
+  - type: textarea
+    attributes:
+      label: Bug description
+      description: A clear and concise description of the bug.
+      placeholder: |
+        <!--
+          What did you do, what did you expect to happen, and what happened instead?
+        -->
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: aicommits version
+      description: |
+        Run and paste the output of:
+        ```sh
+        aicommits --version
+        ```
+      placeholder: v0.0.0
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Environment
+      description: |
+        Run and paste the output of:
+        ```sh
+        npx envinfo --system --binaries
+        ```
+        
+        This information is used to for reproduction and debugging.
+      placeholder: |
+        System:
+          OS:
+          CPU:
+          Shell:
+        Binaries:
+          Node:
+          npm:
+      render: shell
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Can you contribute a fix?
+      description: We would love it if you can open a pull request to fix this bug!
+      options:
+        - label: I’m interested in opening a pull request for this issue.
