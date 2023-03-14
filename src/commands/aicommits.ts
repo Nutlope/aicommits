@@ -65,7 +65,7 @@ export default async (
 		}
 	} else {
 		const selected = noninteractive
-			? messages[1]
+			? messages[0]
 			: await select({
 				message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
 				options: messages.map(value => ({ label: value, value })),
