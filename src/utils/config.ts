@@ -51,10 +51,13 @@ const configParsers = {
 
 		return parsed;
 	},
-	proxy(key: string) {
-		parseAssert('proxy', key.length === 0 || /^https?:\/\//.test(key), 'Must be a valid URL');
+	proxy(url: string) {
+		if (url.length === 0) {
+			return url;
+		}
+		parseAssert('proxy', /^https?:\/\//.test(url), 'Must be a valid URL');
 
-		return key;
+		return url;
 	},
 } as const;
 
