@@ -87,6 +87,19 @@ export default async (
 			message: `Here is the suggested commit message. Choose an action:\n\n   ${message}\n`,
 			options: ['Commit', 'Edit message'].map(value => ({ label: value, value })),
 		});
+		const confirmed = noninteractive ? true : await confirm({ message: `Use this commit message?\n\n   ${message}\n` });
+
+		if (!confirmed || isCancel(confirmed)) {
+			outro('Commit cancelled');
+			return;
+		}
+	} else {
+		const selected = noninteractive
+			? messages[0]
+			: await select({
+				message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
+				options: messages.map(value => ({ label: value, value })),
+			});
 
 		if (isCancel(selected)) {
 			outro('Commit cancelled');
