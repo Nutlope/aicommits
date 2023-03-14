@@ -24,6 +24,12 @@ cli(
 				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
+			noninteractive: {
+				type: Boolean,
+				description: 'Non interactive mode',
+				alias: 'y',
+				default: false,
+			},
 		},
 
 		commands: [
@@ -43,6 +49,7 @@ cli(
 		} else {
 			aicommits(
 				argv.flags.generate,
+				argv.flags.noninteractive,
 				rawArgv,
 			);
 		}
