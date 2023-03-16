@@ -88,7 +88,7 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
+const getBasePrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
 const model = 'gpt-3.5-turbo';
 // TODO: update for the new gpt-3.5 model
@@ -99,8 +99,17 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	useConventionalCommits: boolean,
 ) => {
-	const prompt = getPrompt(locale, diff);
+	const basePrompt = getBasePrompt(locale, diff);
+	const promptParts = [basePrompt];
+
+	if (useConventionalCommits) {
+		// Regex from https://www.regextester.com/109925
+		promptParts.push('Make sure to use the conventional commit standard: (build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\\([a-z ]+\\))?: [\\w ]+$.');
+	}
+
+	const prompt = promptParts.join(' ');
 
 	/**
 	 * text-davinci-003 has a token limit of 4000

@@ -49,6 +49,7 @@ export default async (
 			config.locale,
 			staged.diff,
 			config.generate,
+			config.conventional,
 		);
 	} finally {
 		s.stop('Changes analyzed');

@@ -160,6 +160,54 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch(japanesePattern);
 		});
 
+		await test('Generates conventional commit message via conventional config', async () => {
+			await fixture.writeJson('data.json', data);
+
+			await git('add', ['data.json']);
+
+			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusBefore.stdout).toBe('f  data.json');
+
+			await aicommits([
+				'config',
+				'set',
+				'conventional=true',
+			]);
+
+			// Generate flag should override generate config
+			const committing = aicommits(['--generate', '1']);
+
+			committing.stdout!.on('data', function onPrompt(buffer: Buffer) {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
+
+					// 2 choices should be generated
+					expect(countChoices).toBe(2);
+
+					committing.stdin!.write('\r');
+					committing.stdin!.end();
+					committing.stdout?.off('data', onPrompt);
+				}
+			});
+
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					committing.stdin!.write('y');
+					committing.stdin!.end();
+				}
+			});
+
+			await committing;
+
+			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+		});
+
 		await fixture.rm();
 	});
 });

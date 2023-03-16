@@ -51,6 +51,16 @@ const configParsers = {
 
 		return parsed;
 	},
+	conventional(conventional?: string) {
+		if (!conventional) {
+			return false;
+		}
+
+		parseAssert('conventional', /^true|false$/.test(conventional), 'Must be a boolean');
+		const parsed = Boolean(conventional);
+
+		return parsed;
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;
