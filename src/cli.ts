@@ -24,12 +24,6 @@ cli(
 				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
-			conventional: {
-				type: Boolean,
-				description: 'Make use of the conventional commits standard: https://www.conventionalcommits.org (default: false)',
-				alias: 'c',
-				default: false,
-			},
 		},
 
 		commands: [
