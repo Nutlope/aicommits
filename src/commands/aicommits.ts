@@ -50,6 +50,7 @@ export default async (
 			staged.diff,
 			config.generate,
 			config.conventional,
+			config.gitmoji,
 		);
 	} finally {
 		s.stop('Changes analyzed');

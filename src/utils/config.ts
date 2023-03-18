@@ -61,6 +61,16 @@ const configParsers = {
 
 		return parsed;
 	},
+	gitmoji(gitmoji?: string) {
+		if (!gitmoji) {
+			return false;
+		}
+
+		parseAssert('gitmoji', /^true|false$/.test(gitmoji), 'Must be a boolean');
+		const parsed = Boolean(gitmoji);
+
+		return parsed;
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;

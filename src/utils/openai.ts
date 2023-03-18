@@ -88,18 +88,26 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getBasePrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}.`;
+const getBasePrompt = (locale: string) => `
+I want you to act as a Senior Developer with language ${locale}.
+I will give you a diff and you will write a insightful but concise Git commit message in a complete sentence in present tense without prefacing it with anything.
+the commit message must be in the in language: ${locale}.
+`;
 
-const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
+const getCommitMessageFormatPrompt = (useConventionalCommits: boolean, useGitmoji: boolean) => {
 	const commitFormatParts = [];
 
 	if (useConventionalCommits) {
-		commitFormatParts.push('<conventional commit type>:');
+		commitFormatParts.push('<conventional commit type (dont use locale)>:');
+	}
+
+	if (useGitmoji) {
+		commitFormatParts.push('<gitmoji>');
 	}
 
 	commitFormatParts.push('<commit message>');
 
-	// <conventional commit type>: <commit message>
+	// <conventional commit type>: <gitmoji> <commit message>
 	return `The commit message should be in the following format: ${commitFormatParts.join(' ')}.`;
 };
 
@@ -112,27 +120,19 @@ const getExtraContextForConventionalCommits = () => {
 		*/
 		// feat: 'The commit implements a new feature for the application.',
 		// fix: 'The commit fixes a defect in the application.',
-		build:
-			'The commit alters the build system or external dependencies of the product (adding, removing, or upgrading dependencies).',
+		build: 'The commit alters the build system or external dependencies of the product.',
 		change: 'The commit changes the implementation of an existing feature.',
-		chore:
-			'The commit includes a technical or preventative maintenance task that is necessary for managing the product or the repository, but it is not tied to any specific feature or user story. For example, releasing the product can be considered a chore. Regenerating generated code that must be included in the repository could be a chore.',
+		chore: 'The commit includes a technical or preventative maintenance task that is necessary for managing the product or the repository.',
 		ci: 'The commit makes changes to continuous integration or continuous delivery scripts or configuration files.',
-		deprecate:
-			'The commit deprecates existing functionality, but does not remove it from the product. For example, sometimes older public APIs may get deprecated because newer, more efficient APIs are available. Removing the APIs could break existing integrations so the APIs may be marked as deprecated in order to encourage the integration developers to migrate to the newer APIs while also giving them time before removing older functionality.',
+		deprecate: 'The commit deprecates existing functionality, but does not remove it from the product.',
 		docs: 'The commit adds, updates, or revises documentation that is stored in the repository.',
-		perf: 'The commit improves the performance of algorithms or general execution time of the product, but does not fundamentally change an existing feature.',
-		refactor:
-			'The commit refactors existing code in the product, but does not alter or change existing behavior in the product.',
-		remove:
-			'The commit removes a feature from the product. Typically features are deprecated first for a period of time before being removed. Removing a feature from the product may be considered a breaking change that will require a major version number increment.',
-		revert:
-			'The commit reverts one or more commits that were previously included in the product, but were accidentally merged or serious issues were discovered that required their removal from the main branch.',
-		security:
-			'The commit improves the security of the product or resolves a security issue that has been reported.',
-		style:
-			'The commit updates or reformats the style of the source code, but does not otherwise change the product implementation.',
-		test: 'The commit enhances, adds to, revised, or otherwise changes the suite of automated tests for the product.',
+		perf: 'The commit improves the performance of algorithms or general execution time of the product.',
+		refactor: 'The commit refactors existing code in the product.',
+		remove: 'The commit removes a feature from the product.',
+		revert: 'The commit reverts one or more commits that were previously included in the product.',
+		security: 'The commit improves the security of the product.',
+		style: 'The commit updates or reformats the style of the source code.',
+		test: 'The commit changes the suite of automated tests for the product.',
 	};
 
 	const extraContextList = [];
@@ -140,12 +140,14 @@ const getExtraContextForConventionalCommits = () => {
 	// eslint-disable-next-line guard-for-in
 	for (const key in conventionalCommitTypes) {
 		const value = conventionalCommitTypes[key];
-		const context = `When ${value}, then I want you to use the "${key}" conventional commit type.`;
+		const context = `When ${value} I want you to use the "${key}" conventional commit type.`;
 		extraContextList.push(context);
 	}
 
 	return extraContextList.join(' ');
 };
+
+const getExtraContextGitmoji = () => 'I want you to use the gitmoji that best describes the (conventional) commit messages intent.';
 
 const model = 'gpt-3.5-turbo';
 // TODO: update for the new gpt-3.5 model
@@ -157,13 +159,17 @@ export const generateCommitMessage = async (
 	diff: string,
 	completions: number,
 	useConventionalCommits: boolean,
+	useGitmoji: boolean,
 ) => {
-	const basePrompt = getBasePrompt(locale, diff);
-	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(useConventionalCommits);
+	const basePrompt = getBasePrompt(locale);
+	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(
+		useConventionalCommits, useGitmoji,
+	);
 
 	const conventionalCommitsExtraContext = useConventionalCommits ? getExtraContextForConventionalCommits() : '';
+	const gitMojiExtraContext = useGitmoji ? getExtraContextGitmoji() : '';
 
-	const prompt = `${basePrompt} ${commitMessageFormatPrompt} ${conventionalCommitsExtraContext}`;
+	const prompt = `${basePrompt} ${commitMessageFormatPrompt} ${conventionalCommitsExtraContext} ${gitMojiExtraContext}`;
 
 	/**
 	 * text-davinci-003 has a token limit of 4000
@@ -177,8 +183,11 @@ export const generateCommitMessage = async (
 		const completion = await createChatCompletion(apiKey, {
 			model,
 			messages: [{
-				role: 'user',
+				role: 'system',
 				content: prompt,
+			}, {
+				role: 'user',
+				content: diff,
 			}],
 			temperature: 0.7,
 			top_p: 1,

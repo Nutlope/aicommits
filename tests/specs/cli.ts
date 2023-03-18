@@ -161,8 +161,8 @@ export default testSuite(({ describe }) => {
 			expect(await getGitStatus(git)).toBe('A  data.json');
 
 			const aicommits = await createAiCommitsFixture(fixture);
-			await aicommits(['config', 'set', 'locale=ja']);
 			await aicommits(['config', 'set', 'conventional=true']);
+			await aicommits(['config', 'set', 'locale=ja']);
 
 			const committing = aicommits();
 			selectYesOptionAICommit(committing);
@@ -206,6 +206,71 @@ export default testSuite(({ describe }) => {
 
 			// Regex should not match conventional commit messages
 			expect(stdout).toMatch(/(feat):/);
+		});
+
+		await test('Generates message with gitmoji', async () => {
+			const fixture = await createFixture({
+				'README.md': '',
+			});
+
+			const git = await createGit(fixture.path);
+			await git('add', ['README.md']);
+
+			await git('commit', ['-m', 'Initial commit']);
+
+			await fixture.rm('README.md');
+
+			await git('add', ['.']);
+
+			expect(await getGitStatus(git)).toBe('D  README.md');
+
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'gitmoji=true']);
+
+			const committing = aicommits();
+			selectYesOptionAICommit(committing);
+			await committing;
+
+			expect(await getGitStatus(git)).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			// Regex should not match conventional commit messages
+			expect(stdout).toMatch(/(🔥|🗑️)/);
+		});
+
+		await test('Generates message with conventional commits & gitmoji', async () => {
+			const fixture = await createFixture({
+				'README.md': '',
+			});
+
+			const git = await createGit(fixture.path);
+			await git('add', ['README.md']);
+
+			await git('commit', ['-m', 'Initial commit']);
+
+			await fixture.rm('README.md');
+
+			await git('add', ['.']);
+
+			expect(await getGitStatus(git)).toBe('D  README.md');
+
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'gitmoji=true']);
+			await aicommits(['config', 'set', 'conventional=true']);
+
+			const committing = aicommits();
+			selectYesOptionAICommit(committing);
+			await committing;
+
+			expect(await getGitStatus(git)).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			// Regex should not match conventional commit messages
+			expect(stdout).toMatch(/(feat|remove): (🔥|🗑️) /);
 		});
 
 		await test('Generates test: convential commit message', async () => {
