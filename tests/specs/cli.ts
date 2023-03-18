@@ -1,9 +1,12 @@
 import { testSuite, expect } from 'manten';
 import { createFixture, FsFixture } from 'fs-fixture';
-import { ExecaChildProcess } from 'execa';
+import { ExecaChildProcess, Options } from 'execa';
 import { createAicommits, createGit } from '../utils.js';
 
 const { OPENAI_KEY } = process.env;
+
+type GitType = (command: string, args?: string[] | undefined,
+	options?: Options<string> | undefined) => ExecaChildProcess<string>;
 
 export default testSuite(({ describe }) => {
 	if (process.platform === 'win32') {
@@ -74,8 +77,7 @@ export default testSuite(({ describe }) => {
 
 			await git('add', ['data.json']);
 
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('A  data.json');
+			expect(await getGitStatus(git)).toBe('A  data.json');
 
 			const committing = aicommits();
 			selectYesOptionAICommit(committing);
@@ -89,6 +91,10 @@ export default testSuite(({ describe }) => {
 		});
 
 		await test('Accepts --generate flag, overriding config', async () => {
+			// Generate more content to increase the chance of getting multiple commit messages
+			data.lastName = 'Osame';
+			data.moreChanges = 'Adds more changes to the mix';
+
 			const fixture = await createFixture({
 				'data.json': JSON.stringify(data),
 			});
@@ -96,47 +102,26 @@ export default testSuite(({ describe }) => {
 			const aicommits = await createAiCommitsFixture(fixture);
 			const git = await createGit(fixture.path);
 
-			await git('add', ['data.json']);
-
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('A  data.json');
-
-			const committing = aicommits();
-			selectYesOptionAICommit(committing);
-			await committing;
-
-			await aicommits([
-				'config',
-				'set',
-				'generate=4',
-			]);
-
-			// Generate flag should override generate config
-			data.lastName = 'Osame is the best';
-			data.moreChanges = 'Adds more changes';
+			await aicommits(['config', 'set', 'generate=4']);
 
 			await fixture.writeJson('data.json', data);
 			await fixture.writeFile('data2.json', JSON.stringify(data));
 
 			await git('add', ['data.json', 'data2.json']);
 
-			expect(statusBefore.stdout).toBe('A  data.json');
+			expect(await getGitStatus(git)).toContain('A  data.json');
+			expect(await getGitStatus(git)).toContain('A  data2.json');
 
-			const committing2 = aicommits(['--generate', '2']);
-			selectFirstAICommitFromChoices(committing2);
-			await committing2;
+			// Generate flag should override generate config
+			const committing = aicommits(['--generate', '2']);
+			assertAmountOfChoices(committing, 2);
+			selectFirstAICommitFromChoices(committing);
+			await committing;
 
-			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusAfter.stdout).toBe('');
+			expect(await getGitStatus(git)).toBe('');
 
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
-
-			await aicommits([
-				'config',
-				'set',
-				'generate=1',
-			]);
 		});
 
 		await test('Generates Japanese commit message via locale config', async () => {
@@ -155,8 +140,7 @@ export default testSuite(({ describe }) => {
 
 			await git('add', ['data.json']);
 
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('A  data.json');
+			expect(await getGitStatus(git)).toBe('A  data.json');
 
 			await aicommits([
 				'config',
@@ -169,8 +153,7 @@ export default testSuite(({ describe }) => {
 			selectYesOptionAICommit(committing);
 			await committing;
 
-			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusAfter.stdout).toBe('');
+			expect(await getGitStatus(git)).toBe('');
 
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
@@ -197,16 +180,14 @@ export default testSuite(({ describe }) => {
 				'conventional=true',
 			]);
 
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('A  data.json');
+			expect(await getGitStatus(git)).toBe('A  data.json');
 
 			// Generate flag should override generate config
 			const committing = aicommits(['--generate', '1']);
 			selectYesOptionAICommit(committing);
 			await committing;
 
-			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusAfter.stdout).toBe('');
+			expect(await getGitStatus(git)).toBe('');
 
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
@@ -227,16 +208,14 @@ export default testSuite(({ describe }) => {
 
 			await git('add', ['data.json']);
 
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('A  data.json');
+			expect(await getGitStatus(git)).toBe('A  data.json');
 
 			// Generate flag should override generate config
 			const committing = aicommits(['--generate', '1']);
 			selectYesOptionAICommit(committing);
 			await committing;
 
-			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusAfter.stdout).toBe('');
+			expect(await getGitStatus(git)).toBe('');
 
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
@@ -255,20 +234,32 @@ export default testSuite(({ describe }) => {
 			});
 		}
 
-		function selectFirstAICommitFromChoices(committing: ExecaChildProcess<string>) {
+		function assertAmountOfChoices(committing: ExecaChildProcess<string>, amount: number) {
 			committing.stdout!.on('data', function onPrompt(buffer: Buffer) {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
 					const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
 
 					// 2 choices should be generated
-					expect(countChoices).toBe(2);
-
-					committing.stdin!.write('\r');
-					committing.stdin!.end();
+					expect(countChoices).toBe(amount);
 					committing.stdout?.off('data', onPrompt);
 				}
 			});
+		}
+
+		function selectFirstAICommitFromChoices(committing: ExecaChildProcess<string>) {
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					committing.stdin!.write('\r');
+					committing.stdin!.end();
+				}
+			});
+		}
+
+		async function getGitStatus(git: GitType): Promise<string> {
+			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
+			return statusBefore.stdout;
 		}
 	});
 });
