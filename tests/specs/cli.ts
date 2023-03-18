@@ -238,6 +238,88 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch(/(docs|chore):/);
 		});
 
+		await test('Generates (ci|build): convential commit message', async () => {
+			const fixture = await createFixture({
+				'.github': {
+					workflows: {
+						'deploy.yml': `
+name: Deploy
+on:
+  push:
+	branches: [main, develop]
+  pull_request:
+
+jobs:
+  test:
+    name: Test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version-file: '.nvmrc'
+`,
+					},
+				},
+			});
+
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'conventional=true']);
+
+			const committing = aicommits();
+			selectYesOptionAICommit(committing);
+			await committing;
+
+			expect(await getGitStatus(git)).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			expect(stdout).toMatch(/(ci|build):/);
+		});
+
+		await test('Generates (change|fix): convential commit message', async () => {
+			const fixture = await createFixture({
+				'index.html': '<button>Click me</button>',
+			});
+
+			const git = await createGit(fixture.path);
+			await git('add', ['index.html']);
+
+			await git('commit', ['-m', 'Initial commit']);
+
+			fixture.writeJson('index.html', '<button>Click me changed</button>');
+
+			await git('add', ['index.html']);
+
+			expect(await getGitStatus(git)).toBe('M  index.html');
+
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'conventional=true']);
+
+			const committing = aicommits();
+			selectYesOptionAICommit(committing);
+			await committing;
+
+			expect(await getGitStatus(git)).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			expect(stdout).toMatch(/(change|fix):/);
+		});
+
 		function selectYesOptionAICommit(committing: ExecaChildProcess<string>) {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
