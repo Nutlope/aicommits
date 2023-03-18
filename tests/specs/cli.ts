@@ -32,11 +32,7 @@ export default testSuite(({ describe }) => {
 				home: fixture.path,
 			});
 
-			await aicommits([
-				'config',
-				'set',
-				`OPENAI_KEY=${OPENAI_KEY}`,
-			]);
+			await aicommits(['config', 'set', `OPENAI_KEY=${OPENAI_KEY}`]);
 
 			return aicommits;
 		}
@@ -72,19 +68,17 @@ export default testSuite(({ describe }) => {
 				'data.json': JSON.stringify(data),
 			});
 
-			const aicommits = await createAiCommitsFixture(fixture);
 			const git = await createGit(fixture.path);
-
 			await git('add', ['data.json']);
 
 			expect(await getGitStatus(git)).toBe('A  data.json');
 
+			const aicommits = await createAiCommitsFixture(fixture);
 			const committing = aicommits();
 			selectYesOptionAICommit(committing);
 			await committing;
 
-			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusAfter.stdout).toBe('');
+			expect(await getGitStatus(git)).toBe('');
 
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
@@ -94,25 +88,21 @@ export default testSuite(({ describe }) => {
 			// Generate more content to increase the chance of getting multiple commit messages
 			data.lastName = 'Osame';
 			data.moreChanges = 'Adds more changes to the mix';
-
 			const fixture = await createFixture({
 				'data.json': JSON.stringify(data),
+				'data2.json': JSON.stringify(data),
 			});
 
-			const aicommits = await createAiCommitsFixture(fixture);
 			const git = await createGit(fixture.path);
-
-			await aicommits(['config', 'set', 'generate=4']);
-
-			await fixture.writeJson('data.json', data);
-			await fixture.writeFile('data2.json', JSON.stringify(data));
-
 			await git('add', ['data.json', 'data2.json']);
 
 			expect(await getGitStatus(git)).toContain('A  data.json');
 			expect(await getGitStatus(git)).toContain('A  data2.json');
 
 			// Generate flag should override generate config
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'generate=4']);
+
 			const committing = aicommits(['--generate', '2']);
 			assertAmountOfChoices(committing, 2);
 			selectFirstAICommitFromChoices(committing);
@@ -125,31 +115,20 @@ export default testSuite(({ describe }) => {
 		});
 
 		await test('Generates Japanese commit message via locale config', async () => {
+			data.username = 'privatenumber';
 			const fixture = await createFixture({
 				'data.json': JSON.stringify(data),
 			});
 
-			const aicommits = await createAiCommitsFixture(fixture);
 			const git = await createGit(fixture.path);
-
-			// https://stackoverflow.com/a/15034560/911407
-			const japanesePattern = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
-
-			data.username = 'privatenumber';
-			await fixture.writeJson('data.json', data);
-
 			await git('add', ['data.json']);
 
 			expect(await getGitStatus(git)).toBe('A  data.json');
 
-			await aicommits([
-				'config',
-				'set',
-				'locale=ja',
-			]);
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'locale=ja']);
 
-			// Generate flag should override generate config
-			const committing = aicommits(['--generate', '1']);
+			const committing = aicommits();
 			selectYesOptionAICommit(committing);
 			await committing;
 
@@ -158,6 +137,7 @@ export default testSuite(({ describe }) => {
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
 
+			const japanesePattern = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
 			expect(stdout).toMatch(japanesePattern);
 		});
 
@@ -166,24 +146,15 @@ export default testSuite(({ describe }) => {
 				'data.json': JSON.stringify(data),
 			});
 
-			const aicommits = await createAiCommitsFixture(fixture);
 			const git = await createGit(fixture.path);
-
-			data.firstName = 'Osame';
-			await fixture.writeJson('data.json', data);
-
 			await git('add', ['data.json']);
-
-			await aicommits([
-				'config',
-				'set',
-				'conventional=true',
-			]);
 
 			expect(await getGitStatus(git)).toBe('A  data.json');
 
-			// Generate flag should override generate config
-			const committing = aicommits(['--generate', '1']);
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'conventional=true']);
+
+			const committing = aicommits();
 			selectYesOptionAICommit(committing);
 			await committing;
 
@@ -200,18 +171,13 @@ export default testSuite(({ describe }) => {
 				'data.json': JSON.stringify(data),
 			});
 
-			const aicommits = await createAiCommitsFixture(fixture);
 			const git = await createGit(fixture.path);
-
-			data.firstName = 'Hiroki';
-			await fixture.writeJson('data.json', data);
-
 			await git('add', ['data.json']);
 
 			expect(await getGitStatus(git)).toBe('A  data.json');
 
-			// Generate flag should override generate config
-			const committing = aicommits(['--generate', '1']);
+			const aicommits = await createAiCommitsFixture(fixture);
+			const committing = aicommits();
 			selectYesOptionAICommit(committing);
 			await committing;
 
