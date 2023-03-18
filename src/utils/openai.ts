@@ -103,6 +103,32 @@ const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
 	return `The commit message should be in the following format: ${commitFormatParts.join(' ')}.`;
 };
 
+const getExtraContextForConventionalCommits = () => {
+	const conventionalCommitTypes: Record<string, string> = {
+		build: 'Build configuration',
+		ci: 'Continuous integration pipelines',
+		docs: 'Documentation',
+		fix: 'Bug fixes or Semver patch version bump',
+		perf: 'Performance improvements',
+		refactor: 'Code refactoring',
+		style: 'Code style changes',
+		test: 'Unit tests',
+		// Commented 'revert': 'Is hard to evaluate'
+		// Commented 'feat': 'This should be defaulted to
+	};
+
+	const extraContextList = [];
+
+	// eslint-disable-next-line guard-for-in
+	for (const key in conventionalCommitTypes) {
+		const value = conventionalCommitTypes[key];
+		const context = `When primarily changes to ${value} is done I want you to use the "${key}" conventional commit type.`;
+		extraContextList.push(context);
+	}
+
+	return extraContextList.join(' ');
+};
+
 const model = 'gpt-3.5-turbo';
 // TODO: update for the new gpt-3.5 model
 const encoder = encodingForModel('text-davinci-003');
@@ -117,7 +143,9 @@ export const generateCommitMessage = async (
 	const basePrompt = getBasePrompt(locale, diff);
 	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(useConventionalCommits);
 
-	const prompt = `${basePrompt} ${commitMessageFormatPrompt}`;
+	const conventionalCommitsExtraContext = useConventionalCommits ? getExtraContextForConventionalCommits() : '';
+
+	const prompt = `${basePrompt} ${commitMessageFormatPrompt} ${conventionalCommitsExtraContext}`;
 
 	/**
 	 * text-davinci-003 has a token limit of 4000

@@ -21,10 +21,6 @@ export default testSuite(({ describe }) => {
 	}
 
 	describe('CLI', async ({ test }) => {
-		const data: Record<string, string> = {
-			firstName: 'Hiroki',
-		};
-
 		async function createAiCommitsFixture(fixture: FsFixture)
 		: Promise<ReturnType<typeof createAicommits>> {
 			const aicommits = createAicommits({
@@ -38,9 +34,7 @@ export default testSuite(({ describe }) => {
 		}
 
 		await test('Fails on non-Git project', async () => {
-			const fixture = await createFixture({
-				'data.json': JSON.stringify(data),
-			});
+			const fixture = await createFixture();
 
 			const aicommits = await createAiCommitsFixture(fixture);
 
@@ -50,9 +44,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		await test('Fails on no staged files', async () => {
-			const fixture = await createFixture({
-				'data.json': JSON.stringify(data),
-			});
+			const fixture = await createFixture();
 
 			await createGit(fixture.path);
 
@@ -63,7 +55,11 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
 		});
 
-		await test('Generates commit message', async () => {
+		await test('Generates default commit message', async () => {
+			const data: Record<string, string> = {
+				firstName: 'Hiroki',
+			};
+
 			const fixture = await createFixture({
 				'data.json': JSON.stringify(data),
 			});
@@ -82,12 +78,18 @@ export default testSuite(({ describe }) => {
 
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
+
+			// Default commit message should not include conventional commit prefix
+			expect(stdout).toMatch(/(?!.*(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s)/);
 		});
 
 		await test('Accepts --generate flag, overriding config', async () => {
-			// Generate more content to increase the chance of getting multiple commit messages
-			data.lastName = 'Osame';
-			data.moreChanges = 'Adds more changes to the mix';
+			const data: Record<string, string> = {
+				firstName: 'Hiroki',
+				lastName: 'Osame',
+				moreChanges: 'Adds more changes to the mix',
+			};
+
 			const fixture = await createFixture({
 				'data.json': JSON.stringify(data),
 				'data2.json': JSON.stringify(data),
@@ -115,7 +117,10 @@ export default testSuite(({ describe }) => {
 		});
 
 		await test('Generates Japanese commit message via locale config', async () => {
-			data.username = 'privatenumber';
+			const data: Record<string, string> = {
+				username: 'privatenumber',
+			};
+
 			const fixture = await createFixture({
 				'data.json': JSON.stringify(data),
 			});
@@ -141,7 +146,11 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch(japanesePattern);
 		});
 
-		await test('Generates conventional commit message via conventional config', async () => {
+		await test('Generates feat: convential commit message', async () => {
+			const data: Record<string, string> = {
+				firstName: 'Hiroki',
+			};
+
 			const fixture = await createFixture({
 				'data.json': JSON.stringify(data),
 			});
@@ -163,20 +172,29 @@ export default testSuite(({ describe }) => {
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
 
-			expect(stdout).toMatch(/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):/);
+			// Regex should not match conventional commit messages
+			expect(stdout).toMatch(/(?!.*(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s)/);
 		});
 
-		await test('Should not use conventional commit messages by default', async () => {
+		await test('Generates test: convential commit message', async () => {
 			const fixture = await createFixture({
-				'data.json': JSON.stringify(data),
+				'aicommits.spec.ts': '',
 			});
 
 			const git = await createGit(fixture.path);
-			await git('add', ['data.json']);
+			await git('add', ['aicommits.spec.ts']);
 
-			expect(await getGitStatus(git)).toBe('A  data.json');
+			await git('commit', ['-m', 'Initial commit']);
+
+			fixture.writeJson('aicommits.spec.ts', 'test(() => {})');
+
+			await git('add', ['aicommits.spec.ts']);
+
+			expect(await getGitStatus(git)).toBe('M  aicommits.spec.ts');
 
 			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'conventional=true']);
+
 			const committing = aicommits();
 			selectYesOptionAICommit(committing);
 			await committing;
@@ -186,16 +204,46 @@ export default testSuite(({ describe }) => {
 			const { stdout } = await git('log', ['--oneline']);
 			console.log('Committed with:', stdout);
 
-			// Regex should not match conventional commit messages
-			expect(stdout).toMatch(/(?!.*(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s)/);
+			expect(stdout).toMatch(/(test):/);
+		});
+
+		await test('Generates (docs|chore): convential commit message', async () => {
+			const fixture = await createFixture({
+				'README.md': '',
+			});
+
+			const git = await createGit(fixture.path);
+			await git('add', ['README.md']);
+
+			await git('commit', ['-m', 'Initial commit']);
+
+			fixture.writeJson('README.md', 'This is just some documentation change');
+
+			await git('add', ['README.md']);
+
+			expect(await getGitStatus(git)).toBe('M  README.md');
+
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'conventional=true']);
+
+			const committing = aicommits();
+			selectYesOptionAICommit(committing);
+			await committing;
+
+			expect(await getGitStatus(git)).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			expect(stdout).toMatch(/(docs|chore):/);
 		});
 
 		function selectYesOptionAICommit(committing: ExecaChildProcess<string>) {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					committing.stdin!.write('y');
-					committing.stdin!.end();
+					committing.stdin?.write('y');
+					committing.stdin?.end();
 				}
 			});
 		}
