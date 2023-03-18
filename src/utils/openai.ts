@@ -88,10 +88,20 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getBasePrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
+const getBasePrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}.`;
 
-// Conventional commits validation Regex from https://www.regextester.com/109925
-const conventionalCommitsPrompt = 'Make sure to use the conventional commit standard: ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\\([a-z ]+\\))?: [\\w ]+$.';
+const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
+	const commitFormatParts = [];
+
+	if (useConventionalCommits) {
+		commitFormatParts.push('<conventional commit type (dont apply locale)>:');
+	}
+
+	commitFormatParts.push('<commit message>');
+
+	// <conventional commit type>: <commit message>
+	return `The commit message should be in the following format: ${commitFormatParts.join(' ')}.`;
+};
 
 const model = 'gpt-3.5-turbo';
 // TODO: update for the new gpt-3.5 model
@@ -105,13 +115,9 @@ export const generateCommitMessage = async (
 	useConventionalCommits: boolean,
 ) => {
 	const basePrompt = getBasePrompt(locale, diff);
-	const promptParts = [basePrompt];
+	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(useConventionalCommits);
 
-	if (useConventionalCommits) {
-		promptParts.push(conventionalCommitsPrompt);
-	}
-
-	const prompt = promptParts.join(' ');
+	const prompt = `${basePrompt} ${commitMessageFormatPrompt}`;
 
 	/**
 	 * text-davinci-003 has a token limit of 4000
