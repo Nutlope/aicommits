@@ -94,7 +94,7 @@ const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
 	const commitFormatParts = [];
 
 	if (useConventionalCommits) {
-		commitFormatParts.push('<conventional commit type (dont apply locale)>:');
+		commitFormatParts.push('<conventional commit type>:');
 	}
 
 	commitFormatParts.push('<commit message>');

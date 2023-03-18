@@ -80,7 +80,7 @@ export default testSuite(({ describe }) => {
 			console.log('Committed with:', stdout);
 
 			// Default commit message should not include conventional commit prefix
-			expect(stdout).toMatch(/(?!.*(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s)/);
+			expect(stdout).not.toMatch(/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):/);
 		});
 
 		await test('Accepts --generate flag, overriding config', async () => {
@@ -146,7 +146,39 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch(japanesePattern);
 		});
 
-		await test('Generates feat: convential commit message', async () => {
+		await test('Should not translate conventional commit to locale (Japanese)', async () => {
+			const data: Record<string, string> = {
+				username: 'privatenumber',
+			};
+
+			const fixture = await createFixture({
+				'data.json': JSON.stringify(data),
+			});
+
+			const git = await createGit(fixture.path);
+			await git('add', ['data.json']);
+
+			expect(await getGitStatus(git)).toBe('A  data.json');
+
+			const aicommits = await createAiCommitsFixture(fixture);
+			await aicommits(['config', 'set', 'locale=ja']);
+			await aicommits(['config', 'set', 'conventional=true']);
+
+			const committing = aicommits();
+			selectYesOptionAICommit(committing);
+			await committing;
+
+			expect(await getGitStatus(git)).toBe('');
+
+			const { stdout } = await git('log', ['--oneline']);
+			console.log('Committed with:', stdout);
+
+			const japanesePattern = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
+			expect(stdout).toMatch(japanesePattern);
+			expect(stdout).toMatch(/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):/);
+		});
+
+		await test('Generates convential commit message', async () => {
 			const data: Record<string, string> = {
 				firstName: 'Hiroki',
 			};
@@ -173,7 +205,7 @@ export default testSuite(({ describe }) => {
 			console.log('Committed with:', stdout);
 
 			// Regex should not match conventional commit messages
-			expect(stdout).toMatch(/(?!.*(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s)/);
+			expect(stdout).toMatch(/(feat):/);
 		});
 
 		await test('Generates test: convential commit message', async () => {
