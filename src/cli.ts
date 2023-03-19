@@ -24,6 +24,11 @@ cli(
 				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
+			filename: {
+				type: String,
+				description: 'Excluding a path.',
+				alias: 'f',
+			},
 		},
 
 		commands: [
@@ -36,6 +41,7 @@ cli(
 		},
 
 		ignoreArgv: type => type === 'unknown-flag' || type === 'argument',
+		//
 	},
 	(argv) => {
 		if (isCalledFromGitHook) {
@@ -43,6 +49,7 @@ cli(
 		} else {
 			aicommits(
 				argv.flags.generate,
+				argv.flags.filename,
 				rawArgv,
 			);
 		}

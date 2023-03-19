@@ -14,8 +14,9 @@ import { getConfig } from '../utils/config.js';
 import { generateCommitMessage } from '../utils/openai.js';
 import { KnownError, handleCliError } from '../utils/error.js';
 
-export default async (
+export default async (:
 	generate: number | undefined,
+	excludeFile: string | undefined,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -24,7 +25,9 @@ export default async (
 
 	const detectingFiles = spinner();
 	detectingFiles.start('Detecting staged files');
-	const staged = await getStagedDiff();
+	const staged = await getStagedDiff(
+		excludeFile,
+	);
 
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
