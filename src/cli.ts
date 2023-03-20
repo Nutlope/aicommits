@@ -24,6 +24,16 @@ cli(
 				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
+			gitmoji: {
+				type: Boolean,
+				description: 'Enable the use of Gitmoji',
+				alias: 'm',
+			},
+			conventional: {
+				type: Boolean,
+				description: 'Enable the use of Conventional Commits',
+				alias: 'c',
+			},
 		},
 
 		commands: [
@@ -44,6 +54,8 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				rawArgv,
+				argv.flags.gitmoji,
+				argv.flags.conventional,
 			);
 		}
 	},
