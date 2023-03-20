@@ -17,7 +17,7 @@ const excludeFromDiff = [
 	'*.lock',
 ].map(file => `:(exclude)${file}`);
 
-export const getStagedDiff = async (excludeFile?: string) => {
+export const getStagedDiff = async (excludeFiles?: string[]) => {
 	const diffCached = ['diff', '--cached'];
 	const { stdout: files } = await execa(
 		'git',
@@ -25,7 +25,7 @@ export const getStagedDiff = async (excludeFile?: string) => {
 			...diffCached,
 			'--name-only',
 			...excludeFromDiff,
-			...(excludeFile ? [`:(exclude)${excludeFile}`] : []),
+			...(excludeFiles ? excludeFiles?.map(file => `:(exclude)${file}`) : []),
 		],
 	);
 

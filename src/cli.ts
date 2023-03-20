@@ -24,10 +24,10 @@ cli(
 				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
-			filename: {
-				type: String,
-				description: 'Excluding a path.',
-				alias: 'f',
+			exclude: {
+				type: [String],
+				description: 'Paths to exclude.',
+				alias: 'e',
 			},
 		},
 
@@ -49,7 +49,7 @@ cli(
 		} else {
 			aicommits(
 				argv.flags.generate,
-				argv.flags.filename,
+				argv.flags.exclude,
 				rawArgv,
 			);
 		}
