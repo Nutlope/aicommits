@@ -3,6 +3,7 @@ import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 import { KnownError } from './error.js';
+import { retrieveGitmojis } from './gitmoji.js';
 
 const httpsPost = async (
 	hostname: string,
@@ -26,7 +27,7 @@ const httpsPost = async (
 				'Content-Type': 'application/json',
 				'Content-Length': Buffer.byteLength(postContent),
 			},
-			timeout: 20_000, // 20s
+			timeout: 30_000, // 30s
 		},
 		(response) => {
 			const body: Buffer[] = [];
@@ -87,25 +88,24 @@ const createChatCompletion = async (
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getBasePrompt = (locale: string) => `
-I want you to act as the author of a commit message in git.
+INSTRUCTIONS:\nI want you to act as the author of a commit message in git.
 I'll enter a git diff, and your job is to convert it into a useful commit message.
 Do not preface the commit with anything, use the present tense, return the full sentence.
-The commit message must be in the language: ${locale}.\n\n`;
-
-const examplePrompt = `
-Example:
-<gitmoji> chore: update commit message format prompt and base prompt\n
-This commit ...\n\n`;
+The commit message must be in the language: ${locale}.`;
 
 const getCommitMessageFormatPrompt = (useConventionalCommits: boolean, useGitmoji: boolean) => {
 	const commitFormatParts = [];
 
-	if (useGitmoji) {
-		commitFormatParts.push('<gitmoji>');
+	if (useConventionalCommits) {
+		commitFormatParts.push('<conventional commits type (<type in lowercase>:');
 	}
 
-	if (useConventionalCommits) {
-		commitFormatParts.push('<conventional commits type (<type in lowercase>: <subject>)>:');
+	if (useGitmoji) {
+		commitFormatParts.push('<gitmoji> <subject>)>:');
+	}
+
+	if (!useGitmoji) {
+		commitFormatParts.push('<subject>)>:');
 	}
 
 	commitFormatParts.push('<commit message>');
@@ -114,7 +114,65 @@ const getCommitMessageFormatPrompt = (useConventionalCommits: boolean, useGitmoj
 	return `The commit message should be in the following format: ${commitFormatParts.join(' ')}.`;
 };
 
-const getExtraContextGitmoji = () => `I want you to use the gitmoji that best describes the (conventional) commit messages intent.\n${examplePrompt}`;
+const getExtraContextForConventionalCommits = () => {
+	// Based on https://medium.com/neudesic-innovation/conventional-commits-a-better-way-78d6785c2e08
+	const conventionalCommitTypes: Record<string, string> = {
+		/*
+			Comment out feat: and fix: because they are too common and
+			will cause the model to generate them too often.
+		*/
+		// feat: 'The commit implements a new feature for the application.',
+		// fix: 'The commit fixes a defect in the application.',
+		build: 'the commit alters the build system or external dependencies of the product.',
+		change: 'the commit changes the implementation of an existing feature.',
+		chore: 'the commit includes a technical or preventative maintenance task that is necessary for managing the product or the repository.',
+		ci: 'the commit makes changes to continuous integration or continuous delivery scripts or configuration files.',
+		deprecate: 'the commit deprecates existing functionality, but does not remove it from the product.',
+		docs: 'the commit adds, updates, or revises documentation that is stored in the repository.',
+		perf: 'the commit improves the performance of algorithms or general execution time of the product.',
+		refactor: 'the commit refactors existing code in the product.',
+		remove: 'the commit removes a feature from the product.',
+		revert: 'the commit reverts one or more commits that were previously included in the product.',
+		security: 'the commit improves the security of the product.',
+		style: 'the commit updates or reformats the style of the source code.',
+		test: 'the commit changes the suite of automated tests for the product.',
+	};
+
+	const extraContextList = [];
+
+	// eslint-disable-next-line guard-for-in
+	for (const key in conventionalCommitTypes) {
+		const value = conventionalCommitTypes[key];
+		const context = `When ${value} I want you to use the "${key}" conventional commit type.`;
+		extraContextList.push(context);
+	}
+
+	return extraContextList.join(' ');
+};
+
+async function main() {
+	const gitmojis = await retrieveGitmojis();
+	let gitmojiDescriptions = '';
+	for (const gitmoji of gitmojis) {
+		gitmojiDescriptions += `${gitmoji.emoji}: ${gitmoji.description}\n`;
+	}
+	return gitmojiDescriptions;
+}
+
+const getExtraContextGitmoji = async () => {
+	const gitmojiDescriptions = await main();
+	return `Choose a gitmoji from the list below based on the conventional commit scope and git diff:\n${gitmojiDescriptions}`;
+};
+
+const gitCommitExample = (useConventionalCommits: boolean, useGitmoji: boolean) => {
+	const commitFormatParts = [];
+
+	if (useConventionalCommits && useGitmoji) {
+		commitFormatParts.push('EXAMPLE:\nfeat: 🎉 Initial commit\n\nThis commit is the first commit of the repository');
+	}
+
+	return `${commitFormatParts.join(' ')}.`;
+};
 
 const model = 'gpt-3.5-turbo';
 // TODO: update for the new gpt-3.5 model
@@ -133,13 +191,19 @@ export const generateCommitMessage = async (
 		useConventionalCommits, useGitmoji,
 	);
 
-	const gitMojiExtraContext = useGitmoji ? getExtraContextGitmoji() : '';
+	const exampleCommitWithConventionalGitmoji = gitCommitExample(
+		useConventionalCommits, useGitmoji,
+	);
+
+	const conventionalCommitsExtraContext = useConventionalCommits ? getExtraContextForConventionalCommits() : '';
+
+	const gitMojiExtraContext = useGitmoji ? await getExtraContextGitmoji() : '';
 
 	function sanitizeMessage(message: string): string {
 		return message.replace(/<br>/g, '\n').replace(/\n{3,}/g, '\n');
 	}
 
-	const prompt = `${basePrompt}${commitMessageFormatPrompt}\n${gitMojiExtraContext}`;
+	const prompt = `${basePrompt}${commitMessageFormatPrompt}\n${conventionalCommitsExtraContext}\n\n${gitMojiExtraContext}\n\n${exampleCommitWithConventionalGitmoji}\n\n`;
 
 	/**
 	 * text-davinci-003 has a token limit of 4000
@@ -163,7 +227,7 @@ export const generateCommitMessage = async (
 			top_p: 1,
 			frequency_penalty: 0,
 			presence_penalty: 0,
-			max_tokens: 200,
+			max_tokens: 250,
 			stream: false,
 			n: completions,
 		});
