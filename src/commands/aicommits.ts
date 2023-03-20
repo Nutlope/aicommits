@@ -17,6 +17,8 @@ import { KnownError, handleCliError } from '../utils/error.js';
 export default async (
 	generate: number | undefined,
 	rawArgv: string[],
+	gitmoji: boolean | undefined,
+	conventional: boolean | undefined,
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
 
@@ -38,6 +40,8 @@ export default async (
 	const config = await getConfig({
 		OPENAI_KEY: process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY,
 		generate: generate?.toString(),
+		gitmoji: gitmoji?.toString(),
+		conventional: conventional?.toString(),
 	});
 
 	const s = spinner();
