@@ -16,18 +16,15 @@ import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
 	generate: number | undefined,
-	excludeFile: string[] | undefined,
+	excludeFiles: string[],
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
-	console.log(excludeFile)
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
 	detectingFiles.start('Detecting staged files');
-	const staged = await getStagedDiff(
-		excludeFile,
-	);
+	const staged = await getStagedDiff(excludeFiles);
 
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
