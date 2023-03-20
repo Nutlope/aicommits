@@ -68,7 +68,7 @@ export default async (
 	if (messages.length === 1) {
 		[message] = messages;
 		const confirmed = await confirm({
-			message: `Use this commit message?\n\n   ${message}\n`,
+			message: `Use this commit message?\n\n${message}\n`,
 		});
 
 		if (!confirmed || isCancel(confirmed)) {
@@ -88,7 +88,6 @@ export default async (
 
 		message = selected;
 	}
-
 	await execa('git', ['commit', '-m', message, ...rawArgv]);
 
 	outro(`${green('✔')} Successfully committed!`);
