@@ -26,7 +26,7 @@ const httpsPost = async (
 				'Content-Type': 'application/json',
 				'Content-Length': Buffer.byteLength(postContent),
 			},
-			timeout: 10_000, // 10s
+			timeout: 20_000, // 20s
 		},
 		(response) => {
 			const body: Buffer[] = [];
@@ -84,15 +84,18 @@ const createChatCompletion = async (
 	return JSON.parse(data) as CreateChatCompletionResponse;
 };
 
-const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
-
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getBasePrompt = (locale: string) => `
-I want you to act as a Senior Developer with language ${locale}.
-I will give you a diff and you will write a insightful but concise Git commit message in a complete sentence in present tense without prefacing it with anything.
-the commit message must be in the in language: ${locale}.
-`;
+I want you to act as the author of a commit message in git.
+I'll enter a git diff, and your job is to convert it into a useful commit message.
+Do not preface the commit with anything, use the present tense, return the full sentence.
+The commit message must be in the language: ${locale}.\n\n`;
+
+const examplePrompt = `
+Example:
+<gitmoji> chore: update commit message format prompt and base prompt\n
+This commit ...\n\n`;
 
 const getCommitMessageFormatPrompt = (useConventionalCommits: boolean, useGitmoji: boolean) => {
 	const commitFormatParts = [];
@@ -102,7 +105,7 @@ const getCommitMessageFormatPrompt = (useConventionalCommits: boolean, useGitmoj
 	}
 
 	if (useConventionalCommits) {
-		commitFormatParts.push('<conventional commit type (dont use locale)>:');
+		commitFormatParts.push('<conventional commits type (<type in lowercase>: <subject>)>:');
 	}
 
 	commitFormatParts.push('<commit message>');
@@ -111,43 +114,7 @@ const getCommitMessageFormatPrompt = (useConventionalCommits: boolean, useGitmoj
 	return `The commit message should be in the following format: ${commitFormatParts.join(' ')}.`;
 };
 
-const getExtraContextForConventionalCommits = () => {
-	// Based on https://medium.com/neudesic-innovation/conventional-commits-a-better-way-78d6785c2e08
-	const conventionalCommitTypes: Record<string, string> = {
-		/*
-			Comment out feat: and fix: because they are too common and
-			will cause the model to generate them too often.
-		*/
-		// feat: 'The commit implements a new feature for the application.',
-		// fix: 'The commit fixes a defect in the application.',
-		build: 'The commit alters the build system or external dependencies of the product.',
-		change: 'The commit changes the implementation of an existing feature.',
-		chore: 'The commit includes a technical or preventative maintenance task that is necessary for managing the product or the repository.',
-		ci: 'The commit makes changes to continuous integration or continuous delivery scripts or configuration files.',
-		deprecate: 'The commit deprecates existing functionality, but does not remove it from the product.',
-		docs: 'The commit adds, updates, or revises documentation that is stored in the repository.',
-		perf: 'The commit improves the performance of algorithms or general execution time of the product.',
-		refactor: 'The commit refactors existing code in the product.',
-		remove: 'The commit removes a feature from the product.',
-		revert: 'The commit reverts one or more commits that were previously included in the product.',
-		security: 'The commit improves the security of the product.',
-		style: 'The commit updates or reformats the style of the source code.',
-		test: 'The commit changes the suite of automated tests for the product.',
-	};
-
-	const extraContextList = [];
-
-	// eslint-disable-next-line guard-for-in
-	for (const key in conventionalCommitTypes) {
-		const value = conventionalCommitTypes[key];
-		const context = `When ${value} I want you to use the "${key}" conventional commit type.`;
-		extraContextList.push(context);
-	}
-
-	return extraContextList.join(' ');
-};
-
-const getExtraContextGitmoji = () => 'I want you to use the gitmoji that best describes the (conventional) commit messages intent.';
+const getExtraContextGitmoji = () => `I want you to use the gitmoji that best describes the (conventional) commit messages intent.\n${examplePrompt}`;
 
 const model = 'gpt-3.5-turbo';
 // TODO: update for the new gpt-3.5 model
@@ -166,10 +133,13 @@ export const generateCommitMessage = async (
 		useConventionalCommits, useGitmoji,
 	);
 
-	const conventionalCommitsExtraContext = useConventionalCommits ? getExtraContextForConventionalCommits() : '';
 	const gitMojiExtraContext = useGitmoji ? getExtraContextGitmoji() : '';
 
-	const prompt = `${basePrompt} ${commitMessageFormatPrompt} ${conventionalCommitsExtraContext} ${gitMojiExtraContext}`;
+	function sanitizeMessage(message: string): string {
+		return message.replace(/<br>/g, '\n').replace(/\n{3,}/g, '\n');
+	}
+
+	const prompt = `${basePrompt}${commitMessageFormatPrompt}\n${gitMojiExtraContext}`;
 
 	/**
 	 * text-davinci-003 has a token limit of 4000
