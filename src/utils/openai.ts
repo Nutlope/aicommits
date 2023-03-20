@@ -97,12 +97,12 @@ the commit message must be in the in language: ${locale}.
 const getCommitMessageFormatPrompt = (useConventionalCommits: boolean, useGitmoji: boolean) => {
 	const commitFormatParts = [];
 
-	if (useConventionalCommits) {
-		commitFormatParts.push('<conventional commit type (dont use locale)>:');
-	}
-
 	if (useGitmoji) {
 		commitFormatParts.push('<gitmoji>');
+	}
+
+	if (useConventionalCommits) {
+		commitFormatParts.push('<conventional commit type (dont use locale)>:');
 	}
 
 	commitFormatParts.push('<commit message>');
