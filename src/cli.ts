@@ -41,7 +41,6 @@ cli(
 		},
 
 		ignoreArgv: type => type === 'unknown-flag' || type === 'argument',
-		//
 	},
 	(argv) => {
 		if (isCalledFromGitHook) {
