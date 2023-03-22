@@ -45,7 +45,7 @@ const getCommitTitleFormatPrompt = (useConventionalCommits: boolean, useGitmoji:
 	}
 
 	if (useGitmoji) {
-		commitTitleParts.push('<gitmoji>');
+		commitTitleParts.push('<gitmoji (required)>');
 	}
 
 	commitTitleParts.push('<commit title>');
