@@ -26,7 +26,7 @@ const getOutputFormat = () => `
 I want you to output the result in the following format:
 {
 	"title": "<commit title>",
-	"description": "<commit description>"
+	"description": "<commit description>",
 }
 `;
 
