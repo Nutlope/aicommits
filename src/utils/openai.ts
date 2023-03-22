@@ -98,13 +98,17 @@ const getExtraContextForConventionalCommits = () => {
 };
 
 const getExtraContextGitmoji = async () => {
-	const gitmojis = await retrieveGitmojis();
-	let gitmojiDescriptions = '';
-	for (const gitmoji of gitmojis) {
-		gitmojiDescriptions += `${gitmoji.emoji}: ${gitmoji.description}\n`;
-	}
+	try {
+		const gitmojis = await retrieveGitmojis();
+		let gitmojiDescriptions = '';
+		for (const gitmoji of gitmojis) {
+			gitmojiDescriptions += `${gitmoji.emoji}: ${gitmoji.description}\n`;
+		}
 
-	return `Choose a gitmoji from the list below based on the conventional commit scope and git diff:\n${gitmojiDescriptions}`;
+		return `Choose a gitmoji from the list below based on the conventional commit scope and git diff:\n${gitmojiDescriptions}`;
+	} catch {
+		throw new KnownError('Error connecting to the Gitmoji API. Are you connected to the internet?');
+	}
 };
 
 const model = 'gpt-3.5-turbo';
@@ -184,6 +188,10 @@ export const generateCommitMessage = async (
 
 		return deduplicateMessages(commitMessages);
 	} catch (error: any) {
+		if (error.code === 'ENOTFOUND') {
+			throw new KnownError(`Error connecting to ${error.hostname} (${error.syscall}). Are you connected to the internet?`);
+		}
+
 		const statusCode = error?.response?.status;
 		if (statusCode === 400) {
 			throw new KnownError(
