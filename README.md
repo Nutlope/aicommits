@@ -64,6 +64,53 @@ aicommits --dry-run
 
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
 
+### Flags
+
+#### `--generate <number>` (or `--g <number>`)
+
+Generate multiple commit messages at once.
+
+```sh
+aicommits --generate 3
+```
+
+#### `--gitmoji` (or `--m`)
+
+(Experimental) Generate a commit message with a gitmoji: https://gitmoji.dev/.
+
+```sh
+aicommits --gitmoji
+aicommits --m
+```
+
+#### `--conventional` (or `--c`)
+
+(Experimental) Generate a commit message based on the conventional commit standard: https://www.conventionalcommits.org/en/v1.0.0/.
+
+```sh
+aicommits --conventional
+aicommits --c
+```
+
+### Combine flags
+
+You can combine flags to generate a commit message with a gitmoji and a conventional commit.
+
+```sh
+aicommits --gitmoji --conventional --generate 3
+aicommits --m --c --g 3
+```
+
+### Configure default flags
+
+You can configure default flags to be used every time you run `aicommits` by running:
+
+
+```sh
+aicommits config set gitmoji=true
+aicommits config set conventional=true
+```
+
 ### Git hook
 
 You can also integrate _aicommits_ with Git via the [`prepare-commit-msg`](https://git-scm.com/docs/githooks#_prepare_commit_msg) hook. This lets you use Git like you normally would, and edit the commit message before committing.

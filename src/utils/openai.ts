@@ -94,7 +94,7 @@ const getExtraContextForConventionalCommits = () => {
 		conventionalCommitDescription += `${key}: ${value}\n`;
 	}
 
-	return `Choose a conventional commit type from the list below based on the git diff:\n${conventionalCommitDescription}`;
+	return `Choose the primary used conventional commit type from the list below based on the git diff:\n${conventionalCommitDescription}`;
 };
 
 const getExtraContextGitmoji = async () => {

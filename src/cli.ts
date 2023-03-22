@@ -26,12 +26,12 @@ cli(
 			},
 			gitmoji: {
 				type: Boolean,
-				description: 'Enable the use of Gitmoji',
+				description: '(Experimental) Enable the use of Gitmoji',
 				alias: 'm',
 			},
 			conventional: {
 				type: Boolean,
-				description: 'Enable the use of Conventional Commits',
+				description: '(Experimental) Enable the use of Conventional Commits',
 				alias: 'c',
 			},
 		},
