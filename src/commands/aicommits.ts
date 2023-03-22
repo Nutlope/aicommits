@@ -11,7 +11,7 @@ import {
 	getDetectedMessage,
 } from '../utils/git.js';
 import { getConfig } from '../utils/config.js';
-import { generateCommitMessage } from '../utils/openai.js';
+import { CommitMessage, generateCommitMessage } from '../utils/openai.js';
 import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
@@ -46,9 +46,9 @@ export default async (
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
-	let messages: string[];
+	let commitMessages: CommitMessage[];
 	try {
-		messages = await generateCommitMessage(
+		commitMessages = await generateCommitMessage(
 			config.OPENAI_KEY,
 			config.locale,
 			staged.diff,
@@ -60,15 +60,15 @@ export default async (
 		s.stop('Changes analyzed');
 	}
 
-	if (messages.length === 0) {
+	if (commitMessages.length === 0) {
 		throw new KnownError('No commit messages were generated. Try again.');
 	}
 
-	let message: string;
-	if (messages.length === 1) {
-		[message] = messages;
+	let selectedCommitMessage: CommitMessage;
+	if (commitMessages.length === 1) {
+		[selectedCommitMessage] = commitMessages;
 		const confirmed = await confirm({
-			message: `Use this commit message?\n\n${message}\n`,
+			message: `Use this commit message?\n\n${selectedCommitMessage.title}\n\n${selectedCommitMessage.description}\n`,
 		});
 
 		if (!confirmed || isCancel(confirmed)) {
@@ -78,7 +78,11 @@ export default async (
 	} else {
 		const selected = await select({
 			message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
-			options: messages.map(value => ({ label: value, value })),
+			options: commitMessages.map(value => ({
+				label: value.title,
+				hint: `description: ${value.description}`,
+				value,
+			})),
 		});
 
 		if (isCancel(selected)) {
@@ -86,9 +90,16 @@ export default async (
 			return;
 		}
 
-		message = selected;
+		selectedCommitMessage = selected;
 	}
-	await execa('git', ['commit', '-m', message, ...rawArgv]);
+
+	const commitMessage = sanitizeMessage(`${selectedCommitMessage.title}}\n\n${selectedCommitMessage.description}`);
+
+	function sanitizeMessage(message: string): string {
+		return message.replace(/<br>/g, '\n').replace(/\n{3,}/g, '\n');
+	}
+
+	await execa('git', ['commit', '-m', commitMessage, ...rawArgv]);
 
 	outro(`${green('✔')} Successfully committed!`);
 })().catch((error) => {
