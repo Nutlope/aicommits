@@ -77,13 +77,13 @@ const getExtraContextForConventionalCommits = () => {
 		chore: 'includes a technical or preventative maintenance task',
 		ci: 'continuous integration or continuous delivery scripts or configuration files',
 		deprecate: 'deprecates existing functionality',
-		docs: 'add or update documentation',
+		docs: 'adds or updates documentation',
 		perf: 'improve the performance of algorithms or general execution',
+		remove: 'removes a feature or dependency',
 		refactor: 'code refactoring',
-		remove: 'remove a feature',
-		revert: 'revert one or more commits',
-		security: 'improve security',
-		style: 'update or reformat the style of the source code',
+		revert: 'reverts one or more commits',
+		security: 'improves security',
+		style: 'updates or reformats the style of the source code',
 		test: 'changes to the suite of automated tests',
 	};
 
