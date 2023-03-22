@@ -96,6 +96,13 @@ aicommits hook uninstall
 
 3. Save and close the editor to commit!
 
+### Language support
+Language support via locale config. [language code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+```sh
+aicommits config set locale=<language code>
+```
+
+
 
 ## How it works
 
