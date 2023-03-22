@@ -93,7 +93,7 @@ export default async (
 		selectedCommitMessage = selected;
 	}
 
-	const commitMessage = sanitizeMessage(`${selectedCommitMessage.title}}\n\n${selectedCommitMessage.description}`);
+	const commitMessage = sanitizeMessage(`${selectedCommitMessage.title}\n\n${selectedCommitMessage.description}`);
 
 	function sanitizeMessage(message: string): string {
 		return message.replace(/<br>/g, '\n').replace(/\n{3,}/g, '\n');
