@@ -5,6 +5,11 @@ import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 import { KnownError } from './error.js';
 import { retrieveGitmojis } from './gitmoji.js';
 
+type CommitMessage = {
+	title: string;
+	description: string;
+}
+
 const httpsPost = async (
 	hostname: string,
 	path: string,
@@ -91,6 +96,14 @@ const getBasePrompt = (locale: string) => `
 I want you to act as the author with language ${locale} of a commit message in git.
 I'll enter a git diff, and your job is to convert it into a useful commit message.
 Do not preface the commit with anything, use the present tense, return the full sentence.`;
+
+const getOutputFormat = () => `
+I want you to output the result in the following format:
+{
+	"title": "<commit title>",
+	"description": "<commit description>"
+}
+`;
 
 const getCommitMessageExtraContext = (locale: string) => `
 The <commit title> must be in the language: ${locale}.
@@ -181,7 +194,7 @@ export const generateCommitMessage = async (
 	completions: number,
 	useConventionalCommits: boolean,
 	useGitmoji: boolean,
-) => {
+) : Promise<CommitMessage[]> => {
 	const basePrompt = getBasePrompt(locale);
 	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(
 		useConventionalCommits, useGitmoji,
@@ -189,6 +202,7 @@ export const generateCommitMessage = async (
 
 	const systemPrompt = `${basePrompt} ${commitMessageFormatPrompt}`;
 
+	const outputFormat = getOutputFormat();
 	const commitMessageExtraContext = getCommitMessageExtraContext(locale);
 	const conventionalCommitsExtraContext = useConventionalCommits ? getExtraContextForConventionalCommits() : '';
 
@@ -221,6 +235,10 @@ export const generateCommitMessage = async (
 				{
 					role: 'assistant',
 					content: assistantPrompt,
+				},
+				{
+					role: 'assistant',
+					content: outputFormat,
 				},
 				{
 					role: 'user',
