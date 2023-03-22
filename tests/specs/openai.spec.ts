@@ -5,12 +5,6 @@ import { CommitMessage, generateCommitMessage } from '../../src/utils/openai.js'
 const { OPENAI_KEY } = process.env;
 
 export default testSuite(({ describe }) => {
-	if (process.platform === 'win32') {
-		// https://github.com/nodejs/node/issues/31409
-		console.warn('Skipping tests on Windows because Node.js spawn cant open TTYs');
-		return;
-	}
-
 	if (!OPENAI_KEY) {
 		console.warn('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
 		return;
@@ -38,23 +32,23 @@ export default testSuite(({ describe }) => {
 					content: systemPrompt,
 				},
 				{
+					role: 'assistant',
+					content: 'I want you to output only the git diff',
+				},
+				{
 					role: 'user',
 					content: typeOfChanges,
 				},
 			],
-			temperature: 0.7,
-			top_p: 1,
-			frequency_penalty: 0,
-			presence_penalty: 0,
-			stream: false,
-			n: 1,
 		});
 
-		if (!completion.data.choices[0].message) {
+		const gitDiffMessage = completion.data.choices[0].message;
+
+		if (!gitDiffMessage) {
 			throw new Error('Failed to generate git diff for test');
 		}
 
-		return completion.data.choices[0].message.content;
+		return gitDiffMessage.content;
 	}
 
 	async function runGenerateCommitMessage(gitDiff: string)
