@@ -5,10 +5,7 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getBasePrompt = (locale: string) => `
-I want you to act as the author with language ${locale} of a commit message in git.
-I'll enter a git diff and your job is to convert create a useful commit message based on the diff in the present tense.
-`;
+const getBasePrompt = (locale: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the diff that I provide you without prefacing it with anything, the response must be in the language ${locale}`;
 
 const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
 	const commitTitleParts = [];

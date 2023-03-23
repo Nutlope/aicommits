@@ -1,0 +1,14 @@
+diff --git a/src/main/java/com/example/MyClass.java b/src/main/java/com/example/MyClass.java
+index e7d8f38..caab7f1 100644
+--- a/src/main/java/com/example/MyClass.java
++++ b/src/main/java/com/example/MyClass.java
+@@ -23,7 +23,10 @@ public class MyClass {
+     public void processItems(List<Item> items) {
+         for (Item item : items) {
+-            if (item.getValue().equalsIgnoreCase("example")) {
++            // Fixing NullPointerException by adding a null check
++            String itemValue = item.getValue();
++            if (itemValue != null && itemValue.equalsIgnoreCase("example")) {
+                 processExampleItem(item);
+             }
+         }

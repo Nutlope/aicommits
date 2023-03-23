@@ -57,6 +57,8 @@ export default async (
 		s.stop('Changes analyzed');
 	}
 
+	console.log(messages);
+
 	if (messages.length === 0) {
 		throw new KnownError('No commit messages were generated. Try again.');
 	}

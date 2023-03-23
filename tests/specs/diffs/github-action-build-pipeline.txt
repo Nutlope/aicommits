@@ -1,0 +1,21 @@
+diff --git a/.github/workflows/build.yml b/.github/workflows/build.yml
+index 1d07d31..085eb64 100644
+--- a/.github/workflows/build.yml
++++ b/.github/workflows/build.yml
+@@ -10,6 +10,8 @@ jobs:
+       - uses: actions/setup-node@v1
+         with:
+           node-version: 12.x
++      - name: Install dependencies
++        run: npm install
+       - name: Build and test
+         run: |
+           npm run build
+@@ -22,3 +24,7 @@ jobs:
+         if: always()
+         uses: actions/upload-artifact@v1
+         with:
++          name: Build artifact
++          path: build
++      - name: Deploy to production
++        uses: some-third-party/deploy-action@v1
