@@ -21,35 +21,49 @@ describe('openai', () => {
 		}
 	});
 
-	it.concurrent('Should use "test:" conventional commit when change relate to testing a React application', async ({ expect }) => {
-		const gitDiff = await readDiffFromFile('testing-react-application.txt');
+	it.concurrent(
+		'Should use "test:" conventional commit when change relate to testing a React application',
+		async ({ expect }) => {
+			const gitDiff = await readDiffFromFile('testing-react-application.txt');
 
-		const commitMessage = await runGenerateCommitMessage(gitDiff);
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-		expect(commitMessage.title).toMatch(/(test(\(.*\))?):/);
-	});
+			expect(commitMessage.title).toMatch(/(test(\(.*\))?):/);
+		},
+	);
 
-	it.concurrent('Should use "build:" conventional commit when change relate to github action build pipeline', async ({ expect }) => {
-		const gitDiff = await readDiffFromFile('github-action-build-pipeline.txt');
+	it.concurrent(
+		'Should use "build:" conventional commit when change relate to github action build pipeline',
+		async ({ expect }) => {
+			const gitDiff = await readDiffFromFile(
+				'github-action-build-pipeline.txt',
+			);
 
-		const commitMessage = await runGenerateCommitMessage(gitDiff);
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-		expect(commitMessage.title).toMatch(/(build):/);
-	});
+			expect(commitMessage.title).toMatch(/(build):/);
+		},
+	);
 
-	it.concurrent('Should use "docs:" conventional commit when change relate to documentation changes', async ({ expect }) => {
-		const gitDiff = await readDiffFromFile('documentation-changes.txt');
-		const commitMessage = await runGenerateCommitMessage(gitDiff);
+	it.concurrent(
+		'Should use "docs:" conventional commit when change relate to documentation changes',
+		async ({ expect }) => {
+			const gitDiff = await readDiffFromFile('documentation-changes.txt');
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-		expect(commitMessage.title).toMatch(/(docs):/);
-	});
+			expect(commitMessage.title).toMatch(/(docs):/);
+		},
+	);
 
-	it.concurrent('Should use "(fix|change):" conventional commit when change relate to fixing code', async ({ expect }) => {
-		const gitDiff = await readDiffFromFile('fix-nullpointer-exception.txt');
-		const commitMessage = await runGenerateCommitMessage(gitDiff);
+	it.concurrent(
+		'Should use "(fix|change):" conventional commit when change relate to fixing code',
+		async ({ expect }) => {
+			const gitDiff = await readDiffFromFile('fix-nullpointer-exception.txt');
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-		expect(commitMessage.title).toMatch(/(fix):/);
-	});
+			expect(commitMessage.title).toMatch(/(fix):/);
+		},
+	);
 
 	async function runGenerateCommitMessage(
 		gitDiff: string,
@@ -66,6 +80,9 @@ describe('openai', () => {
 		return commitMessages[0];
 	}
 
+	/*
+	 *	See ./README.md in order to generate diff files
+	 */
 	async function readDiffFromFile(filename: string): Promise<string> {
 		const __filename = fileURLToPath(import.meta.url);
 		const __dirname = dirname(__filename);
@@ -75,45 +92,4 @@ describe('openai', () => {
 		);
 		return gitDiff;
 	}
-
-	// async function generateDiff(typeOfChanges: string): Promise<string> {
-	// 	const configuration = new Configuration({
-	// 		apiKey: OPENAI_KEY,
-	// 	});
-
-	// 	const openai = new OpenAIApi(configuration);
-
-	// 	const model = 'gpt-3.5-turbo';
-
-	// 	const systemPrompt = `
-	// 		I want you to act as a git cli
-	// 		I will give you the type of content and you will generate a random git diff based on that
-	// 	`;
-
-	// 	const completion = await openai.createChatCompletion({
-	// 		model,
-	// 		messages: [
-	// 			{
-	// 				role: 'system',
-	// 				content: systemPrompt,
-	// 			},
-	// 			{
-	// 				role: 'assistant',
-	// 				content: 'I want you to output only the git diff',
-	// 			},
-	// 			{
-	// 				role: 'user',
-	// 				content: typeOfChanges,
-	// 			},
-	// 		],
-	// 	});
-
-	// 	const gitDiffMessage = completion.data.choices[0].message;
-
-	// 	if (!gitDiffMessage) {
-	// 		throw new Error('Failed to generate git diff for test');
-	// 	}
-
-	// 	return gitDiffMessage.content;
-	// }
 });
