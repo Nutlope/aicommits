@@ -24,6 +24,11 @@ cli(
 				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
+			conventional: {
+				type: Boolean,
+				description: '(Experimental) Enable the use of Conventional Commits',
+				alias: 'c',
+			},
 		},
 
 		commands: [
@@ -44,6 +49,7 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				rawArgv,
+				argv.flags.conventional,
 			);
 		}
 	},
