@@ -87,7 +87,6 @@ You can configure default flags to be used every time you run `aicommits` by run
 
 
 ```sh
-aicommits config set gitmoji=true
 aicommits config set conventional=true
 ```
 
