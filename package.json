@@ -23,7 +23,7 @@
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc",
-		"test": "tsx tests",
+		"test": "vitest",
 		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
@@ -46,12 +46,12 @@
 		"ini": "^3.0.1",
 		"kolorist": "^1.7.0",
 		"lint-staged": "^13.1.2",
-		"manten": "^0.7.0",
 		"openai": "^3.2.1",
 		"pkgroll": "^1.9.0",
 		"simple-git-hooks": "^2.8.1",
 		"tsx": "^3.12.3",
-		"typescript": "^4.9.5"
+		"typescript": "^4.9.5",
+		"vitest": "^0.29.7"
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr",
