@@ -39,10 +39,16 @@ describe('openai', () => {
 
 	it.concurrent('Should use "docs:" conventional commit when change relate to documentation changes', async ({ expect }) => {
 		const gitDiff = await readDiffFromFile('documentation-changes.txt');
-
 		const commitMessage = await runGenerateCommitMessage(gitDiff);
 
 		expect(commitMessage.title).toMatch(/(docs):/);
+	});
+
+	it.concurrent('Should use "(fix|change):" conventional commit when change relate to fixing code', async ({ expect }) => {
+		const gitDiff = await readDiffFromFile('fix-nullpointer-exception.txt');
+		const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+		expect(commitMessage.title).toMatch(/(fix):/);
 	});
 
 	async function runGenerateCommitMessage(

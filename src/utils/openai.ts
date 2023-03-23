@@ -20,10 +20,10 @@ const deduplicateMessages = (array: CommitMessage[]) => {
 
 const getBasePrompt = (locale: string) => `
 I want you to act as the author with language ${locale} of a commit message in git.
-I'll enter a git diff, and your job is to convert it into a useful commit message in the present tense.`;
+I'll enter a git diff and your job is to convert create a useful commit message based on the diff in the present tense.`;
 
-const getOutputFormat = () => `
-I want you to output the result in the following format:
+const getOutputFormat = (locale: string) => `
+I want you to output the result in the following format and language ${locale}:
 {
 	"title": "<commit title>",
 	"description": "<commit description>",
@@ -76,7 +76,7 @@ const getExtraContextForConventionalCommits = () => {
 		chore: 'includes a technical or preventative maintenance task',
 		ci: 'continuous integration or continuous delivery scripts or configuration files',
 		deprecate: 'deprecates existing functionality',
-		docs: 'add and update in documentation files and markdown (*.md) files',
+		docs: 'changes to README files and markdown (*.md) files',
 		perf: 'improve the performance of algorithms or general execution',
 		remove: 'removes a feature or dependency',
 		refactor: 'code refactoring',
@@ -129,7 +129,7 @@ export const generateCommitMessage = async (
 
 	const systemPrompt = `${basePrompt} ${commitMessageFormatPrompt}`;
 
-	const outputFormat = getOutputFormat();
+	const outputFormat = getOutputFormat(locale);
 	const commitMessageExtraContext = getCommitMessageExtraContext(locale);
 	const conventionalCommitsExtraContext = useConventionalCommits
 		? getExtraContextForConventionalCommits()
