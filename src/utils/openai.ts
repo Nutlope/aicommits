@@ -137,7 +137,7 @@ const getExtraContextForConventionalCommits = () => {
 };
 
 const model = 'gpt-3.5-turbo';
-
+// TODO: update chat completion to using the openai SDK
 const encoder = encodingForModel('text-davinci-003');
 
 export const generateCommitMessage = async (
