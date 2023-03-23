@@ -1,0 +1,8 @@
+diff --git a/README.md b/README.md
+index e52c433..8a4e1d1 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,5 @@
+ # My Project
+-This is a project that does xyz.
++This is a project that does xyz and has been enhanced with some additional features.
