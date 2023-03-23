@@ -62,6 +62,35 @@ aicommits
 aicommits --dry-run
 ```
 
+### Flags
+
+#### `--generate <number>` (or `--g <number>`)
+
+Generate multiple commit messages at once.
+
+```sh
+aicommits --generate 3
+```
+
+#### `--conventional` (or `--c`)
+
+(Experimental) Generate a commit message based on the conventional commit standard: https://www.conventionalcommits.org/en/v1.0.0/.
+
+```sh
+aicommits --conventional
+aicommits --c
+```
+
+### Configure default flags
+
+You can configure default flags to be used every time you run `aicommits` by running:
+
+
+```sh
+aicommits config set gitmoji=true
+aicommits config set conventional=true
+```
+
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
 
 ### Git hook
