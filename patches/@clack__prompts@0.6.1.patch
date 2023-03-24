@@ -1,0 +1,13 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index 693d552f60c8e0dfef11480da22fb844065b18eb..f74db21d7709c9f6693a218cec2e424e4cf43c2d 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -36,7 +36,7 @@ interface SelectOptions<Options extends Option<Value>[], Value> {
+     options: Options;
+     initialValue?: Value;
+ }
+-declare const select: <Options extends Option<Value>[], Value>(opts: SelectOptions<Options, Value>) => Promise<symbol | Value>;
++declare const select: <Options extends Option<Value>[], Value>(opts: SelectOptions<Options, Value>) => Promise<symbol | [...Options][number]['value']>;
+ declare const selectKey: <Options extends Option<Value>[], Value extends string>(opts: SelectOptions<Options, Value>) => Promise<symbol | Value>;
+ interface MultiSelectOptions<Options extends Option<Value>[], Value> {
+     message: string;
