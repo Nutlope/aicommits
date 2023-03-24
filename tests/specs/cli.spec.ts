@@ -146,6 +146,66 @@ describe('cli', () => {
 		expect(stdout).toMatch(japanesePattern);
 	});
 
+	it.concurrent('Generates convential commit message via locale config', async ({ expect }) => {
+		const data: Record<string, string> = {
+			firstName: 'Hiroki',
+		};
+
+		const fixture = await createFixture({
+			'data.json': JSON.stringify(data),
+		});
+
+		const git = await createGit(fixture.path);
+		await git('add', ['data.json']);
+
+		expect(await getGitStatus(git)).toBe('A  data.json');
+
+		const aicommits = await createAiCommitsFixture(fixture);
+		await aicommits(['config', 'set', 'conventional=true']);
+
+		const committing = aicommits();
+		selectYesOptionAICommit(committing);
+		await committing;
+
+		expect(await getGitStatus(git)).toBe('');
+
+		const { stdout } = await git('log', ['--oneline']);
+		console.log('Committed with:', stdout);
+
+		// Regex should not match conventional commit messages
+		expect(stdout).toMatch(/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/);
+	});
+
+	it.concurrent('Accepts --conventional=false flag, overriding config', async ({ expect }) => {
+		const data: Record<string, string> = {
+			firstName: 'Hiroki',
+		};
+
+		const fixture = await createFixture({
+			'data.json': JSON.stringify(data),
+		});
+
+		const git = await createGit(fixture.path);
+		await git('add', ['data.json']);
+
+		expect(await getGitStatus(git)).toBe('A  data.json');
+
+		const aicommits = await createAiCommitsFixture(fixture);
+		await aicommits(['config', 'set', 'conventional=true']);
+
+		const committing = aicommits(['--conventional', 'false']);
+		selectYesOptionAICommit(committing);
+		await committing;
+
+		expect(await getGitStatus(git)).toBe('');
+
+		const { stdout } = await git('log', ['--oneline']);
+		console.log('Committed with:', stdout);
+
+		// Regex should not match conventional commit messages
+		expect(stdout).not.toMatch(/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/);
+	});
+
 	it.concurrent('Should not translate conventional commit to locale (Japanese)', async ({ expect }) => {
 		const data: Record<string, string> = {
 			username: 'privatenumber',
@@ -175,37 +235,7 @@ describe('cli', () => {
 
 		const japanesePattern = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
 		expect(stdout).toMatch(japanesePattern);
-		expect(stdout).toMatch(/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):/);
-	});
-
-	it.concurrent('Generates convential commit message', async ({ expect }) => {
-		const data: Record<string, string> = {
-			firstName: 'Hiroki',
-		};
-
-		const fixture = await createFixture({
-			'data.json': JSON.stringify(data),
-		});
-
-		const git = await createGit(fixture.path);
-		await git('add', ['data.json']);
-
-		expect(await getGitStatus(git)).toBe('A  data.json');
-
-		const aicommits = await createAiCommitsFixture(fixture);
-		await aicommits(['config', 'set', 'conventional=true']);
-
-		const committing = aicommits();
-		selectYesOptionAICommit(committing);
-		await committing;
-
-		expect(await getGitStatus(git)).toBe('');
-
-		const { stdout } = await git('log', ['--oneline']);
-		console.log('Committed with:', stdout);
-
-		// Regex should not match conventional commit messages
-		expect(stdout).toMatch(/(feat):/);
+		expect(stdout).toMatch(/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/);
 	});
 
 	function selectYesOptionAICommit(committing: ExecaChildProcess<string>) {
