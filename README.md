@@ -71,7 +71,7 @@ Sometimes the recommended commit message isn't the best so you want it to genera
 aicommits --generate # or -g
 ```
 
-> Warning: this uses more tokens which means it costs more.
+> Warning: this uses more tokens, meaning it costs more.
 
 ### Git hook
 
