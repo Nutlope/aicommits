@@ -173,18 +173,6 @@ This CLI tool runs `git diff` to grab all your latest code changes, sends them t
 
 Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
 
-## Future tasks
-
-- Add support for conventional commits as a flag that users can enable
-- Migrate to chatGPT instead of GPT-3
-- Add support for diffs greater than 200 lines by grabbing the diff per file, optional flag
-- Add ability to specify a commit message from inside aicommit if user doesn't like generated one
-- Play around with prompt to produce optimal result
-- Add an alias called `aic` that does "git add . && aicommits && git push"
-- Add opt-in emoji flag to preface commits with an emoji, use [this](https://gitmoji.dev) as a guide
-- Add opt-in languages flag where it returns the commit in different languages
-- Build landing page for the 2.0 launch
-
 ## Maintainers
 
 - **Hassan El Mghari**: [@Nutlope](https://github.com/Nutlope) [<img src="https://img.shields.io/twitter/follow/nutlope?style=flat&label=nutlope&logo=twitter&color=0bf&logoColor=fff" align="center">](https://twitter.com/nutlope)
