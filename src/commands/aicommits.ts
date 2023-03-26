@@ -27,6 +27,7 @@ export default async (
 	const staged = await getStagedDiff();
 
 	if (!staged) {
+		detectingFiles.stop('Detecting staged files');
 		throw new KnownError('No staged changes found. Make sure to stage your changes with `git add`.');
 	}
 
@@ -41,13 +42,17 @@ export default async (
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
-	const messages = await generateCommitMessage(
-		config.OPENAI_KEY,
-		config.locale,
-		staged.diff,
-		config.generate,
-	);
-	s.stop('Changes analyzed');
+	let messages: string[];
+	try {
+		messages = await generateCommitMessage(
+			config.OPENAI_KEY,
+			config.locale,
+			staged.diff,
+			config.generate,
+		);
+	} finally {
+		s.stop('Changes analyzed');
+	}
 
 	if (messages.length === 0) {
 		throw new KnownError('No commit messages were generated. Try again.');
