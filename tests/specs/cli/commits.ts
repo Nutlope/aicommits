@@ -4,6 +4,9 @@ import { createFixture, createGit } from '../../utils.js';
 
 const { OPENAI_KEY } = process.env;
 
+type GitType = (command: string, args?: string[] | undefined,
+	options?: Options<string> | undefined) => ExecaChildProcess<string>;
+
 export default testSuite(({ describe }) => {
 	if (process.platform === 'win32') {
 		// https://github.com/nodejs/node/issues/31409
@@ -16,10 +19,7 @@ export default testSuite(({ describe }) => {
 		return;
 	}
 
-	type GitType = (command: string, args?: string[] | undefined,
-		options?: Options<string> | undefined) => ExecaChildProcess<string>;
-
-	describe('CLI', async ({ test }) => {
+	describe('CLI', async ({ test, describe }) => {
 		const files = {
 			'.aicommits': `OPENAI_KEY=${OPENAI_KEY}`,
 			'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
@@ -113,30 +113,101 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
-		function selectYesOptionAICommit(committing: ExecaChildProcess<string>) {
-			committing.stdout!.on('data', (buffer: Buffer) => {
-				const stdout = buffer.toString();
-				if (stdout.match('└')) {
-					committing.stdin?.write('y');
-					committing.stdin?.end();
-				}
-			});
-		}
+		describe('proxy', ({ test }) => {
+			test('Fails on invalid proxy', async () => {
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\nproxy=http://localhost:1234`,
+				});
+				const git = await createGit(fixture.path);
 
-		function hitEnterToAcceptCommitMessage(committing: ExecaChildProcess<string>) {
-			committing.stdout!.on('data', function onPrompt(buffer: Buffer) {
-				const stdout = buffer.toString();
-				if (stdout.match('└')) {
-					committing.stdin!.write('\r');
-					committing.stdin!.end();
-					committing.stdout?.off('data', onPrompt);
-				}
-			});
-		}
+				await git('add', ['data.json']);
 
-		async function getGitStatus(git: GitType): Promise<string> {
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			return statusBefore.stdout;
-		}
+				const committing = aicommits([], {
+					reject: false,
+				});
+
+				selectYesOptionAICommit(committing);
+
+				const { stdout, exitCode } = await committing;
+
+				expect(exitCode).toBe(1);
+				expect(stdout).toMatch('connect ECONNREFUSED');
+
+				await fixture.rm();
+			});
+
+			test('Connects with config', async () => {
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\nproxy=http://localhost:8888`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits();
+				selectYesOptionAICommit(committing);
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+
+				await fixture.rm();
+			});
+
+			test('Connects with env variable', async () => {
+				const { fixture, aicommits } = await createFixture(files);
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits([], {
+					env: {
+						HTTP_PROXY: 'http://localhost:8888',
+					},
+				});
+
+				selectYesOptionAICommit(committing);
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+
+				await fixture.rm();
+			});
+		});
 	});
+
+	function selectYesOptionAICommit(committing: ExecaChildProcess<string>) {
+		committing.stdout!.on('data', (buffer: Buffer) => {
+			const stdout = buffer.toString();
+			if (stdout.match('└')) {
+				committing.stdin?.write('y');
+				committing.stdin?.end();
+			}
+		});
+	}
+
+	function hitEnterToAcceptCommitMessage(committing: ExecaChildProcess<string>) {
+		committing.stdout!.on('data', function onPrompt(buffer: Buffer) {
+			const stdout = buffer.toString();
+			if (stdout.match('└')) {
+				committing.stdin!.write('\r');
+				committing.stdin!.end();
+				committing.stdout?.off('data', onPrompt);
+			}
+		});
+	}
+
+	async function getGitStatus(git: GitType): Promise<string> {
+		const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
+		return statusBefore.stdout;
+	}
 });
