@@ -41,8 +41,9 @@ jobs:
 
     - name: Install tinyproxy
       if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get install tinyproxy
-
+      run: |
+        sudo apt-get install tinyproxy
+        tinyproxy
     - name: Test
       env:
         OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
