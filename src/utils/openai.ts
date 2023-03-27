@@ -1,52 +1,49 @@
 import https from 'https';
-import type { CreateCompletionRequest, CreateCompletionResponse } from 'openai';
+import type { ClientRequest, IncomingMessage } from 'http';
+import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 import HttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
-const createCompletion = (
-	apiKey: string,
-	json: CreateCompletionRequest,
-	proxy: string | undefined,
-) => new Promise<CreateCompletionResponse>((resolve, reject) => {
+const httpsPost = async (
+	hostname: string,
+	path: string,
+	headers: Record<string, string>,
+	json: unknown,
+	proxy?: string,
+) => new Promise<{
+	request: ClientRequest;
+	response: IncomingMessage;
+	data: string;
+}>((resolve, reject) => {
 	const postContent = JSON.stringify(json);
-	const requestOptions : https.RequestOptions = {
-		port: 443,
-		hostname: 'api.openai.com',
-		path: '/v1/completions',
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'Content-Length': postContent.length,
-			Authorization: `Bearer ${apiKey}`,
-		},
-		timeout: 10_000, // 10s
-	};
-	if (proxy) {
-		requestOptions.agent = HttpsProxyAgent(proxy);
-	}
 	const request = https.request(
-		requestOptions,
+		{
+			port: 443,
+			hostname,
+			path,
+			method: 'POST',
+			headers: {
+				...headers,
+				'Content-Type': 'application/json',
+				'Content-Length': Buffer.byteLength(postContent),
+			},
+			timeout: 10_000, // 10s
+			agent: (
+				proxy
+					? new HttpsProxyAgent(proxy)
+					: undefined
+			),
+		},
 		(response) => {
-			if (
-				!response.statusCode
-				|| response.statusCode < 200
-				|| response.statusCode > 299
-			) {
-				let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
-				if (response.statusCode === 500) {
-					errorMessage += '; Check the API status: https://status.openai.com';
-				}
-
-				return reject(new KnownError(errorMessage));
-			}
-
 			const body: Buffer[] = [];
 			response.on('data', chunk => body.push(chunk));
 			response.on('end', () => {
-				resolve(
-					JSON.parse(Buffer.concat(body).toString()),
-				);
+				resolve({
+					request,
+					response,
+					data: Buffer.concat(body).toString(),
+				});
 			});
 		},
 	);
@@ -60,21 +57,58 @@ const createCompletion = (
 	request.end();
 });
 
+const createChatCompletion = async (
+	apiKey: string,
+	json: CreateChatCompletionRequest,
+	proxy?: string,
+) => {
+	const { response, data } = await httpsPost(
+		'api.openai.com',
+		'/v1/chat/completions',
+		{
+			Authorization: `Bearer ${apiKey}`,
+		},
+		json,
+		proxy,
+	);
+
+	if (
+		!response.statusCode
+		|| response.statusCode < 200
+		|| response.statusCode > 299
+	) {
+		let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
+
+		if (data) {
+			errorMessage += `\n\n${data}`;
+		}
+
+		if (response.statusCode === 500) {
+			errorMessage += '\n\nCheck the API status: https://status.openai.com';
+		}
+
+		throw new KnownError(errorMessage);
+	}
+
+	return JSON.parse(data) as CreateChatCompletionResponse;
+};
+
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
-const model = 'text-davinci-003';
-const encoder = encodingForModel(model);
+const model = 'gpt-3.5-turbo';
+// TODO: update for the new gpt-3.5 model
+const encoder = encodingForModel('text-davinci-003');
 
 export const generateCommitMessage = async (
 	apiKey: string,
 	locale: string,
 	diff: string,
 	completions: number,
-	proxy: string | undefined,
+	proxy?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);
 
@@ -87,21 +121,29 @@ export const generateCommitMessage = async (
 	}
 
 	try {
-		const completion = await createCompletion(apiKey, {
-			model,
-			prompt,
-			temperature: 0.7,
-			top_p: 1,
-			frequency_penalty: 0,
-			presence_penalty: 0,
-			max_tokens: 200,
-			stream: false,
-			n: completions,
-		}, proxy);
+		const completion = await createChatCompletion(
+			apiKey,
+			{
+				model,
+				messages: [{
+					role: 'user',
+					content: prompt,
+				}],
+				temperature: 0.7,
+				top_p: 1,
+				frequency_penalty: 0,
+				presence_penalty: 0,
+				max_tokens: 200,
+				stream: false,
+				n: completions,
+			},
+			proxy,
+		);
 
 		return deduplicateMessages(
 			completion.choices
-				.map(choice => sanitizeMessage(choice.text!)),
+				.filter(choice => choice.message?.content)
+				.map(choice => sanitizeMessage(choice.message!.content)),
 		);
 	} catch (error) {
 		const errorAsAny = error as any;

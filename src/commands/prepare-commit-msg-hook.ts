@@ -34,14 +34,17 @@ export default () => (async () => {
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
-	const messages = await generateCommitMessage(
-		config.OPENAI_KEY,
-		config.locale,
-		staged!.diff,
-		config.generate,
-	);
-	s.stop('Changes analyzed');
-
+	let messages: string[];
+	try {
+		messages = await generateCommitMessage(
+			config.OPENAI_KEY,
+			config.locale,
+			staged!.diff,
+			config.generate,
+		);
+	} finally {
+		s.stop('Changes analyzed');
+	}
 	const hasMultipleMessages = messages.length > 1;
 	let instructions = `# 🤖 AI generated commit${hasMultipleMessages ? 's' : ''}\n`;
 

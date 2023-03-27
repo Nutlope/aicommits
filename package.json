@@ -14,14 +14,17 @@
 	"files": [
 		"dist"
 	],
-	"bin": "./dist/cli.mjs",
+	"bin": {
+		"aicommits": "./dist/cli.mjs",
+		"aic": "./dist/cli.mjs"
+	},
 	"scripts": {
 		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc",
 		"test": "tsx tests",
-		"prepack": "pnpm build"
+		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm lint-staged"
@@ -30,8 +33,7 @@
 		"*.ts": "eslint --cache"
 	},
 	"dependencies": {
-		"@dqbd/tiktoken": "^0.4.0",
-		"https-proxy-agent": "^5.0.1"
+		"@dqbd/tiktoken": "^0.4.0"
 	},
 	"devDependencies": {
 		"@clack/prompts": "^0.6.1",
@@ -39,10 +41,12 @@
 		"@types/ini": "^1.3.31",
 		"@types/inquirer": "^9.0.3",
 		"@types/node": "^18.14.2",
+		"clean-pkg-json": "^1.2.0",
 		"cleye": "^1.3.2",
 		"eslint": "^8.35.0",
 		"execa": "^7.0.0",
 		"fs-fixture": "^1.2.0",
+		"https-proxy-agent": "^5.0.1",
 		"ini": "^3.0.1",
 		"kolorist": "^1.7.0",
 		"lint-staged": "^13.1.2",
