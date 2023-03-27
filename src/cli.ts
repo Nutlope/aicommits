@@ -21,13 +21,13 @@ cli(
 		flags: {
 			generate: {
 				type: Number,
-				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
+				description: 'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
 			exclude: {
 				type: [String],
-				description: 'Paths to exclude.',
-				alias: 'e',
+				description: 'Files to exclude from AI analysis',
+				alias: 'x',
 			},
 		},
 

@@ -9,13 +9,15 @@ export const assertGitRepo = async () => {
 	}
 };
 
-const excludeFromDiff = [
+const excludeFromDiff = (path: string) => `:(exclude)${path}`;
+
+const filesToExclude = [
 	'package-lock.json',
 	'pnpm-lock.yaml',
 
 	// yarn.lock, Cargo.lock, Gemfile.lock, Pipfile.lock, etc.
 	'*.lock',
-].map(file => `:(exclude)${file}`);
+].map(excludeFromDiff);
 
 export const getStagedDiff = async (excludeFiles?: string[]) => {
 	const diffCached = ['diff', '--cached'];
@@ -24,8 +26,12 @@ export const getStagedDiff = async (excludeFiles?: string[]) => {
 		[
 			...diffCached,
 			'--name-only',
-			...excludeFromDiff,
-			...(excludeFiles ? excludeFiles?.map(file => `:(exclude)${file}`) : []),
+			...filesToExclude,
+			...(
+				excludeFiles
+					? excludeFiles.map(excludeFromDiff)
+					: []
+			),
 		],
 	);
 
@@ -35,7 +41,10 @@ export const getStagedDiff = async (excludeFiles?: string[]) => {
 
 	const { stdout: diff } = await execa(
 		'git',
-		[...diffCached, ...excludeFromDiff],
+		[
+			...diffCached,
+			...filesToExclude,
+		],
 	);
 
 	return {
