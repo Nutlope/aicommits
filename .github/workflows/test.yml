@@ -39,6 +39,10 @@ jobs:
     - name: Build
       run: pnpm build
 
+    - name: Install tinyproxy
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install -y tinyproxy
+
     - name: Test
       env:
         OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
