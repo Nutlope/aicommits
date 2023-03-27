@@ -41,7 +41,7 @@ jobs:
 
     - name: Install tinyproxy
       if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get install -y tinyproxy
+      run: apt-get install tinyproxy
 
     - name: Test
       env:
