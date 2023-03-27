@@ -35,8 +35,10 @@ export default async (
 		staged.files.map(file => `     ${file}`).join('\n')
 	}`);
 
+	const { env } = process;
 	const config = await getConfig({
-		OPENAI_KEY: process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY,
+		OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
+		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		generate: generate?.toString(),
 	});
 
@@ -49,6 +51,7 @@ export default async (
 			config.locale,
 			staged.diff,
 			config.generate,
+			config.proxy,
 		);
 	} finally {
 		s.stop('Changes analyzed');

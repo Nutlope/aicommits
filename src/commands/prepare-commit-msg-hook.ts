@@ -30,7 +30,10 @@ export default () => (async () => {
 
 	intro(bgCyan(black(' aicommits ')));
 
-	const config = await getConfig();
+	const { env } = process;
+	const config = await getConfig({
+		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
+	});
 
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
@@ -41,6 +44,7 @@ export default () => (async () => {
 			config.locale,
 			staged!.diff,
 			config.generate,
+			config.proxy,
 		);
 	} finally {
 		s.stop('Changes analyzed');

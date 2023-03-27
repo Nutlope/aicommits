@@ -165,7 +165,15 @@ The number of commit messages to generate to pick from.
 
 Note, this will use more tokens as it generates more results.
 
-This can also be configured with the CLI flag `--generate`.
+#### proxy
+
+Set a HTTP/HTTPS proxy to use for requests.
+
+To clear the proxy option, you can use the command (note the empty value after the equals sign):
+
+```sh
+aicommits config set proxy=
+```
 
 ## How it works
 

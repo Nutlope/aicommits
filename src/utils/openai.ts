@@ -2,6 +2,7 @@ import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
 const httpsPost = async (
@@ -9,6 +10,7 @@ const httpsPost = async (
 	path: string,
 	headers: Record<string, string>,
 	json: unknown,
+	proxy?: string,
 ) => new Promise<{
 	request: ClientRequest;
 	response: IncomingMessage;
@@ -27,6 +29,11 @@ const httpsPost = async (
 				'Content-Length': Buffer.byteLength(postContent),
 			},
 			timeout: 10_000, // 10s
+			agent: (
+				proxy
+					? createHttpsProxyAgent(proxy)
+					: undefined
+			),
 		},
 		(response) => {
 			const body: Buffer[] = [];
@@ -53,6 +60,7 @@ const httpsPost = async (
 const createChatCompletion = async (
 	apiKey: string,
 	json: CreateChatCompletionRequest,
+	proxy?: string,
 ) => {
 	const { response, data } = await httpsPost(
 		'api.openai.com',
@@ -61,6 +69,7 @@ const createChatCompletion = async (
 			Authorization: `Bearer ${apiKey}`,
 		},
 		json,
+		proxy,
 	);
 
 	if (
@@ -97,6 +106,7 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	proxy?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);
 
@@ -109,20 +119,24 @@ export const generateCommitMessage = async (
 	}
 
 	try {
-		const completion = await createChatCompletion(apiKey, {
-			model,
-			messages: [{
-				role: 'user',
-				content: prompt,
-			}],
-			temperature: 0.7,
-			top_p: 1,
-			frequency_penalty: 0,
-			presence_penalty: 0,
-			max_tokens: 200,
-			stream: false,
-			n: completions,
-		});
+		const completion = await createChatCompletion(
+			apiKey,
+			{
+				model,
+				messages: [{
+					role: 'user',
+					content: prompt,
+				}],
+				temperature: 0.7,
+				top_p: 1,
+				frequency_penalty: 0,
+				presence_penalty: 0,
+				max_tokens: 200,
+				stream: false,
+				n: completions,
+			},
+			proxy,
+		);
 
 		return deduplicateMessages(
 			completion.choices

@@ -46,6 +46,7 @@
 		"eslint": "^8.35.0",
 		"execa": "^7.0.0",
 		"fs-fixture": "^1.2.0",
+		"https-proxy-agent": "^5.0.1",
 		"ini": "^3.0.1",
 		"kolorist": "^1.7.0",
 		"lint-staged": "^13.1.2",
