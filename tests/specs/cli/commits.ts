@@ -15,7 +15,7 @@ export default testSuite(({ describe }) => {
 		return;
 	}
 
-	describe('CLI', async ({ test }) => {
+	describe('CLI', async ({ test, describe }) => {
 		const files = {
 			'.aicommits': `OPENAI_KEY=${OPENAI_KEY}`,
 			'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
@@ -132,6 +132,67 @@ export default testSuite(({ describe }) => {
 			expect(commitMessage).toMatch(japanesePattern);
 
 			await fixture.rm();
+		});
+
+		describe('proxy', ({ test }) => {
+			test('Fails on invalid proxy', async () => {
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\nproxy=http://localhost:1234`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits([], {
+					reject: false,
+				});
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				const { stdout, exitCode } = await committing;
+
+				expect(exitCode).toBe(1);
+				expect(stdout).toMatch('connect ECONNREFUSED');
+
+				await fixture.rm();
+			});
+
+			test('Connects', async () => {
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\nproxy=http://localhost:8888`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits();
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+
+				await fixture.rm();
+			});
 		});
 	});
 });
