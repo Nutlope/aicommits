@@ -100,8 +100,6 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
 const model = 'gpt-3.5-turbo';
-// TODO: update for the new gpt-3.5 model
-const encoder = encodingForModel('text-davinci-003');
 
 export const generateCommitMessage = async (
 	apiKey: string,
@@ -116,7 +114,7 @@ export const generateCommitMessage = async (
 	 * text-davinci-003 has a token limit of 4000
 	 * https://platform.openai.com/docs/models/overview#:~:text=to%20Sep%202021-,text%2Ddavinci%2D003,-Can%20do%20any
 	 */
-	if (encoder.encode(prompt).length > 4000) {
+	if (encodingForModel(model).encode(prompt).length > 4000) {
 		throw new KnownError('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
 	}
 
