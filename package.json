@@ -23,7 +23,7 @@
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc",
-		"test": "vitest",
+		"test": "tsx tests",
 		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
