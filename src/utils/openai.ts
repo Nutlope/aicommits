@@ -2,7 +2,7 @@ import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
-import HttpsProxyAgent from 'https-proxy-agent';
+import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
 const httpsPost = async (
@@ -31,7 +31,7 @@ const httpsPost = async (
 			timeout: 10_000, // 10s
 			agent: (
 				proxy
-					? new HttpsProxyAgent(proxy)
+					? createHttpsProxyAgent(proxy)
 					: undefined
 			),
 		},
