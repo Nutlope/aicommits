@@ -1,10 +1,14 @@
 import path from 'path';
 import { execa, execaNode, type Options } from 'execa';
-import type { FsFixture } from 'fs-fixture';
+import {
+	createFixture as createFixtureBase,
+	type FileTree,
+	type FsFixture,
+} from 'fs-fixture';
 
 const aicommitsPath = path.resolve('./dist/cli.mjs');
 
-export const createAicommits = (fixture: FsFixture) => {
+const createAicommits = (fixture: FsFixture) => {
 	const homeEnv = {
 		HOME: fixture.path, // Linux
 		USERPROFILE: fixture.path, // Windows
@@ -55,4 +59,16 @@ export const createGit = async (cwd: string) => {
 	await git('config', ['user.email', 'email']);
 
 	return git;
+};
+
+export const createFixture = async (
+	source?: string | FileTree,
+) => {
+	const fixture = await createFixtureBase(source);
+	const aicommits = createAicommits(fixture);
+
+	return {
+		fixture,
+		aicommits,
+	};
 };

@@ -1,6 +1,5 @@
 import { testSuite, expect } from 'manten';
-import { createFixture } from 'fs-fixture';
-import { createAicommits, createGit } from '../../utils.js';
+import { createFixture, createGit } from '../../utils.js';
 
 const { OPENAI_KEY } = process.env;
 
@@ -17,23 +16,15 @@ export default testSuite(({ describe }) => {
 	}
 
 	describe('CLI', async ({ test }) => {
-		const data: Record<string, string> = {
-			firstName: 'Hiroki',
-		};
-		const fixture = await createFixture({
-			'data.json': JSON.stringify(data),
-		});
+		const files = {
+			'.aicommits': `OPENAI_KEY=${OPENAI_KEY}`,
+			'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
+		} as const;
 
-		const aicommits = createAicommits(fixture);
-		const git = await createGit(fixture.path);
+		test('Excludes files', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
 
-		await aicommits([
-			'config',
-			'set',
-			`OPENAI_KEY=${OPENAI_KEY}`,
-		]);
-
-		await test('Excludes files', async () => {
 			await git('add', ['data.json']);
 			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusBefore.stdout).toBe('A  data.json');
@@ -41,9 +32,15 @@ export default testSuite(({ describe }) => {
 			const { stdout, exitCode } = await aicommits(['--exclude', 'data.json'], { reject: false });
 			expect(exitCode).toBe(1);
 			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
+			await fixture.rm();
 		});
 
-		await test('Generates commit message', async () => {
+		test('Generates commit message', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			await git('add', ['data.json']);
+
 			const committing = aicommits();
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
@@ -58,77 +55,64 @@ export default testSuite(({ describe }) => {
 			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
 
-			const { stdout } = await git('log', ['--oneline']);
-			console.log('Committed with:', stdout);
+			const { stdout: commitMessage } = await git('log', ['--oneline']);
+			console.log('Committed with:', commitMessage);
+
+			await fixture.rm();
 		});
 
-		await test('Accepts --generate flag, overriding config', async () => {
-			data.lastName = 'Osame';
-			await fixture.writeJson('data.json', data);
+		test('Accepts --generate flag, overriding config', async ({ onTestFail }) => {
+			const { fixture, aicommits } = await createFixture({
+				...files,
+				'.aicommits': `${files['.aicommits']}\ngenerate=4`,
+			});
+			const git = await createGit(fixture.path);
 
 			await git('add', ['data.json']);
 
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('M  data.json');
-
-			await aicommits([
-				'config',
-				'set',
-				'generate=4',
+			// Generate flag should override generate config
+			const committing = aicommits([
+				'--generate', '2',
 			]);
 
-			// Generate flag should override generate config
-			const committing = aicommits(['--generate', '2']);
-
+			// Hit enter to accept the commit message
 			committing.stdout!.on('data', function onPrompt(buffer: Buffer) {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
-
-					// 2 choices should be generated
-					expect(countChoices).toBe(2);
-
 					committing.stdin!.write('\r');
 					committing.stdin!.end();
 					committing.stdout?.off('data', onPrompt);
 				}
 			});
 
-			await committing;
+			const { stdout } = await committing;
+			const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
+
+			onTestFail(() => console.log({ stdout }));
+			expect(countChoices).toBe(2);
 
 			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
 
-			const { stdout } = await git('log', ['--oneline']);
-			console.log('Committed with:', stdout);
+			const { stdout: commitMessage } = await git('log', ['--oneline']);
+			console.log('Committed with:', commitMessage);
 
-			await aicommits([
-				'config',
-				'set',
-				'generate=1',
-			]);
+			await fixture.rm();
 		});
 
-		await test('Generates Japanese commit message via locale config', async () => {
+		test('Generates Japanese commit message via locale config', async () => {
 			// https://stackoverflow.com/a/15034560/911407
 			const japanesePattern = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
 
-			data.username = 'privatenumber';
-			await fixture.writeJson('data.json', data);
+			const { fixture, aicommits } = await createFixture({
+				...files,
+				'.aicommits': `${files['.aicommits']}\nlocale=ja`,
+			});
+			const git = await createGit(fixture.path);
 
 			await git('add', ['data.json']);
 
-			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('M  data.json');
-
-			await aicommits([
-				'config',
-				'set',
-				'locale=ja',
-			]);
-
-			// Generate flag should override generate config
-			const committing = aicommits(['--generate', '1']);
+			const committing = aicommits();
 
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
@@ -143,12 +127,11 @@ export default testSuite(({ describe }) => {
 			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
 
-			const { stdout } = await git('log', ['--oneline']);
-			console.log('Committed with:', stdout);
+			const { stdout: commitMessage } = await git('log', ['--oneline']);
+			console.log('Committed with:', commitMessage);
+			expect(commitMessage).toMatch(japanesePattern);
 
-			expect(stdout).toMatch(japanesePattern);
+			await fixture.rm();
 		});
-
-		await fixture.rm();
 	});
 });

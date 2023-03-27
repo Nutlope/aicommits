@@ -1,13 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { testSuite, expect } from 'manten';
-import { createFixture } from 'fs-fixture';
-import { createAicommits } from '../utils.js';
+import { createFixture } from '../utils.js';
 
 export default testSuite(({ describe }) => {
 	describe('config', async ({ test }) => {
-		const fixture = await createFixture();
-		const aicommits = createAicommits(fixture);
+		const { fixture, aicommits } = await createFixture();
 		const configPath = path.join(fixture.path, '.aicommits');
 		const openAiToken = 'OPENAI_KEY=sk-abc';
 
