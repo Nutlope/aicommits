@@ -7,9 +7,7 @@ import { createAicommits } from '../utils.js';
 export default testSuite(({ describe }) => {
 	describe('config', async ({ test }) => {
 		const fixture = await createFixture();
-		const aicommits = createAicommits({
-			home: fixture.path,
-		});
+		const aicommits = createAicommits(fixture);
 		const configPath = path.join(fixture.path, '.aicommits');
 		const openAiToken = 'OPENAI_KEY=sk-abc';
 

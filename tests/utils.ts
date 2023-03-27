@@ -1,18 +1,13 @@
 import path from 'path';
 import { execa, execaNode, type Options } from 'execa';
+import type { FsFixture } from 'fs-fixture';
 
 const aicommitsPath = path.resolve('./dist/cli.mjs');
 
-export const createAicommits = ({
-	cwd,
-	home,
-}: {
-	cwd?: string;
-	home: string;
-}) => {
+export const createAicommits = (fixture: FsFixture) => {
 	const homeEnv = {
-		HOME: home, // Linux
-		USERPROFILE: home, // Windows
+		HOME: fixture.path, // Linux
+		USERPROFILE: fixture.path, // Windows
 	};
 
 	return (
@@ -20,7 +15,7 @@ export const createAicommits = ({
 		options?: Options,
 	) => execaNode(aicommitsPath, args, {
 		...options,
-		cwd,
+		cwd: fixture.path,
 		extendEnv: false,
 		env: {
 			...homeEnv,

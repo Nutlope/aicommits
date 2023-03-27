@@ -1,6 +1,6 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import { createAicommits, createGit } from '../utils.js';
+import { createAicommits, createGit } from '../../utils.js';
 
 const { OPENAI_KEY } = process.env;
 
@@ -24,24 +24,8 @@ export default testSuite(({ describe }) => {
 			'data.json': JSON.stringify(data),
 		});
 
-		const aicommits = createAicommits({
-			cwd: fixture.path,
-			home: fixture.path,
-		});
-
-		await test('Fails on non-Git project', async () => {
-			const { stdout, exitCode } = await aicommits([], { reject: false });
-			expect(exitCode).toBe(1);
-			expect(stdout).toMatch('The current directory must be a Git repository!');
-		});
-
+		const aicommits = createAicommits(fixture);
 		const git = await createGit(fixture.path);
-
-		await test('Fails on no staged files', async () => {
-			const { stdout, exitCode } = await aicommits([], { reject: false });
-			expect(exitCode).toBe(1);
-			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
-		});
 
 		await aicommits([
 			'config',
