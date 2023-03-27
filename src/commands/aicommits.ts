@@ -16,15 +16,15 @@ import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
 	generate: number | undefined,
+	excludeFiles: string[],
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
-
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
 	detectingFiles.start('Detecting staged files');
-	const staged = await getStagedDiff();
+	const staged = await getStagedDiff(excludeFiles);
 
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
@@ -35,8 +35,10 @@ export default async (
 		staged.files.map(file => `     ${file}`).join('\n')
 	}`);
 
+	const { env } = process;
 	const config = await getConfig({
-		OPENAI_KEY: process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY,
+		OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
+		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		generate: generate?.toString(),
 	});
 
@@ -49,6 +51,7 @@ export default async (
 			config.locale,
 			staged.diff,
 			config.generate,
+			config.proxy,
 		);
 	} finally {
 		s.stop('Changes analyzed');

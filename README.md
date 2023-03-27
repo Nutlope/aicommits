@@ -64,6 +64,15 @@ aicommits --dry-run
 
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
 
+#### Generate multiple recommendations
+
+Sometimes the recommended commit message isn't the best so you want it to generate a few to pick from. You can generate multiple commit messages at once by passing in the `--generate` flag:
+```sh
+aicommits --generate # or -g
+```
+
+> Warning: this uses more tokens, meaning it costs more.
+
 ### Git hook
 
 You can also integrate _aicommits_ with Git via the [`prepare-commit-msg`](https://git-scm.com/docs/githooks#_prepare_commit_msg) hook. This lets you use Git like you normally would, and edit the commit message before committing.
@@ -96,24 +105,81 @@ aicommits hook uninstall
 
 3. Save and close the editor to commit!
 
+## Configuration
+
+### Reading a configuration value
+To retrieve a configuration option, use the command:
+
+```sh
+aicommits config get <key>
+```
+
+For example, to retrieve the API key, you can use:
+```sh
+aicommits config get OPENAI_KEY
+```
+
+You can also retrieve multiple configuration options at once by separating them with spaces:
+
+```sh
+aicommits config get OPENAI_KEY generate
+```
+
+### Setting a configuration value
+
+To set a configuration option, use the command:
+
+```sh
+aicommits config set <key>=<value>
+```
+
+For example, to set the API key, you can use:
+
+```sh
+aicommits config set OPENAI_KEY=<your-api-key>
+```
+
+You can also set multiple configuration options at once by separating them with spaces, like
+
+```sh
+aicommits config set OPENAI_KEY=<your-api-key> generate=3 locale=en
+```
+
+### Options
+#### OPENAI_KEY
+
+Required
+
+The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
+
+#### locale
+Default: `en`
+
+The locale to use for the generated commit messages. Consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes.
+
+#### generate
+
+Default: `1`
+
+The number of commit messages to generate to pick from.
+
+Note, this will use more tokens as it generates more results.
+
+#### proxy
+
+Set a HTTP/HTTPS proxy to use for requests.
+
+To clear the proxy option, you can use the command (note the empty value after the equals sign):
+
+```sh
+aicommits config set proxy=
+```
 
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.
 
 Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
-
-## Future tasks
-
-- Add support for conventional commits as a flag that users can enable
-- Migrate to chatGPT instead of GPT-3
-- Add support for diffs greater than 200 lines by grabbing the diff per file, optional flag
-- Add ability to specify a commit message from inside aicommit if user doesn't like generated one
-- Play around with prompt to produce optimal result
-- Add an alias called `aic` that does "git add . && aicommits && git push"
-- Add opt-in emoji flag to preface commits with an emoji, use [this](https://gitmoji.dev) as a guide
-- Add opt-in languages flag where it returns the commit in different languages
-- Build landing page for the 2.0 launch
 
 ## Maintainers
 
