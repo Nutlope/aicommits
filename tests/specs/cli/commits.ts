@@ -164,7 +164,7 @@ export default testSuite(({ describe }) => {
 				await fixture.rm();
 			});
 
-			test('Connects', async () => {
+			test('Connects with config', async () => {
 				const { fixture, aicommits } = await createFixture({
 					...files,
 					'.aicommits': `${files['.aicommits']}\nproxy=http://localhost:8888`,
@@ -174,6 +174,37 @@ export default testSuite(({ describe }) => {
 				await git('add', ['data.json']);
 
 				const committing = aicommits();
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+
+				await fixture.rm();
+			});
+
+			test('Connects with env variable', async () => {
+				const { fixture, aicommits } = await createFixture(files);
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits([], {
+					env: {
+						HTTP_PROXY: 'http://localhost:8888',
+					},
+				});
 
 				committing.stdout!.on('data', (buffer: Buffer) => {
 					const stdout = buffer.toString();
