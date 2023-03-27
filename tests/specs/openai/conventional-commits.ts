@@ -22,7 +22,10 @@ export default testSuite(({ describe }) => {
 
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
+			// should match "test:" or "test(<scope>):"
 			expect(commitMessage).toMatch(/(test(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
 		});
 
 		await test('Should use "build:" conventional commit when change relate to github action build pipeline', async () => {
@@ -32,39 +35,40 @@ export default testSuite(({ describe }) => {
 
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-			expect(commitMessage).toMatch(/(build):/);
+			// should match "build:" or "build(<scope>):"
+			expect(commitMessage).toMatch(/(build(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
 		});
 
 		await test('Should use "docs:" conventional commit when change relate to documentation changes', async () => {
 			const gitDiff = await readDiffFromFile('documentation-changes.txt');
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-			expect(commitMessage).toMatch(/(docs):/);
+			// should match "docs:" or "docs(<scope>):"
+			expect(commitMessage).toMatch(/(docs(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
 		});
 
-		await test('Should use "(fix|change):" conventional commit when change relate to fixing code', async () => {
+		await test('Should use "fix:" conventional commit when change relate to fixing code', async () => {
 			const gitDiff = await readDiffFromFile('fix-nullpointer-exception.txt');
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-			expect(commitMessage).toMatch(/(fix):/);
+			// should match "fix:" or "fix(<scope>):"
+			expect(commitMessage).toMatch(/(fix(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
 		});
 
-		async function runGenerateCommitMessage(
-			gitDiff: string,
-		): Promise<string> {
-			const commitMessages = await generateCommitMessage(
-				OPENAI_KEY!,
-				'en',
-				gitDiff,
-				1,
-				true,
-			);
+		async function runGenerateCommitMessage(gitDiff: string): Promise<string> {
+			const commitMessages = await generateCommitMessage(OPENAI_KEY!, 'en', gitDiff, 1, true);
 
 			return commitMessages[0];
 		}
 
 		/*
-		 *	See ./README.md in order to generate diff files
+		 *	See ./diffs/README.md in order to generate diff files
 		 */
 		async function readDiffFromFile(filename: string): Promise<string> {
 			const __filename = fileURLToPath(import.meta.url);
@@ -73,6 +77,7 @@ export default testSuite(({ describe }) => {
 				path.resolve(__dirname, `./diffs/${filename}`),
 				'utf8',
 			);
+
 			return gitDiff;
 		}
 	});
