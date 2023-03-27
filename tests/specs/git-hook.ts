@@ -23,7 +23,12 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch('Hook installed');
 
 			await git('add', ['data.json']);
-			await git('commit', ['--no-edit']);
+			await git('commit', ['--no-edit'], {
+				env: {
+					HOME: fixture.path,
+					USERPROFILE: fixture.path,
+				},
+			});
 
 			const { stdout: commitMessage } = await git('log', ['--pretty=%B']);
 			console.log('Committed with:', commitMessage);
