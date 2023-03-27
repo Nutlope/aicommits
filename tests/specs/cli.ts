@@ -43,18 +43,23 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
 		});
 
-		await test('Generates commit message', async () => {
+		await aicommits([
+			'config',
+			'set',
+			`OPENAI_KEY=${OPENAI_KEY}`,
+		]);
+
+		await test('Excludes files', async () => {
 			await git('add', ['data.json']);
-
-			await aicommits([
-				'config',
-				'set',
-				`OPENAI_KEY=${OPENAI_KEY}`,
-			]);
-
 			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusBefore.stdout).toBe('A  data.json');
 
+			const { stdout, exitCode } = await aicommits(['--exclude', 'data.json'], { reject: false });
+			expect(exitCode).toBe(1);
+			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
+		});
+
+		await test('Generates commit message', async () => {
 			const committing = aicommits();
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
