@@ -59,6 +59,7 @@ export default async (
 			config.generate,
 			config['max-length'],
 			config.timeout,
+			config.conventional,
 			config.proxy,
 		);
 	} finally {

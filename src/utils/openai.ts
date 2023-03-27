@@ -1,6 +1,6 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
-import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
+import type { ChatCompletionRequestMessage, CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import {
 	TiktokenModel,
 	// eslint-disable-next-line camelcase
@@ -104,7 +104,7 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getPrompt = (
+const getBasePrompt = (
 	locale: string,
 	diff: string,
 	maxLength: number,
@@ -114,6 +114,52 @@ const getPrompt = (
 	`Max message character length: ${maxLength}`,
 	'Exclude anything unnecessary such as the original translation—your entire response will be passed directly into git commit.',
 ].join('\n')}\n\n${diff}`;
+
+const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
+	const commitTitleParts = [];
+
+	if (useConventionalCommits) {
+		commitTitleParts.push('<conventional commits type>(<optional scope of the change>):');
+	}
+
+	commitTitleParts.push('<commit message>');
+
+	return commitTitleParts.join(' ');
+};
+
+const getExtraContextForConventionalCommits = () => {
+	// Based on https://medium.com/neudesic-innovation/conventional-commits-a-better-way-78d6785c2e08
+	const conventionalCommitTypes: Record<string, string> = {
+		/*
+			Commented out feat: and fix: because they are too common and
+			will cause the model to generate them too often.
+		*/
+		// feat: 'The commit implements a new feature for the application.',
+		// fix: 'The commit fixes a defect in the application.',
+		build: 'alters the build system or external dependencies of the product',
+		chore: 'includes a technical or preventative maintenance task',
+		ci: 'continuous integration or continuous delivery scripts or configuration files',
+		deprecate: 'deprecates existing functionality',
+		docs: 'changes to README files and markdown (*.md) files',
+		perf: 'improve the performance of algorithms or general execution',
+		remove: 'removes a feature or dependency',
+		refactor: 'code refactoring',
+		revert: 'reverts one or more commits',
+		security: 'improves security',
+		style: 'updates or reformats the style of the source code',
+		test: 'changes to the suite of automated tests',
+		change: 'changes the implementation of an existing feature',
+	};
+
+	let conventionalCommitDescription = '';
+	// eslint-disable-next-line guard-for-in
+	for (const key in conventionalCommitTypes) {
+		const value = conventionalCommitTypes[key];
+		conventionalCommitDescription += `${key}: ${value}\n`;
+	}
+
+	return `Choose the primary used conventional commit type from the list below based on the git diff:\n${conventionalCommitDescription}`;
+};
 
 const generateStringFromLength = (length: number) => {
 	let result = '';
@@ -140,9 +186,29 @@ export const generateCommitMessage = async (
 	completions: number,
 	maxLength: number,
 	timeout: number,
+	useConventionalCommits: boolean,
 	proxy?: string,
 ) => {
-	const prompt = getPrompt(locale, diff, maxLength);
+	const basePrompt = getBasePrompt(locale, diff, maxLength);
+
+	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(
+		useConventionalCommits,
+	);
+
+	const conventionalCommitsExtraContext = useConventionalCommits
+		? getExtraContextForConventionalCommits()
+		: '';
+
+	const completionMessages: ChatCompletionRequestMessage[] = [
+		{
+			role: 'system',
+			content: `${basePrompt}\n${commitMessageFormatPrompt}`,
+		},
+		{
+			role: 'assistant',
+			content: conventionalCommitsExtraContext,
+		},
+	];
 
 	// Padded by 5 for more room for the completion.
 	const stringFromLength = generateStringFromLength(maxLength + 5);
@@ -155,10 +221,7 @@ export const generateCommitMessage = async (
 			apiKey,
 			{
 				model,
-				messages: [{
-					role: 'user',
-					content: prompt,
-				}],
+				messages: completionMessages,
 				temperature: 0.7,
 				top_p: 1,
 				frequency_penalty: 0,
