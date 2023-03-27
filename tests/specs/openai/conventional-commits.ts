@@ -17,6 +17,17 @@ export default testSuite(({ describe }) => {
 	}
 
 	describe('ConventionalCommits', async ({ test }) => {
+		await test('Should use "feat:" conventional commit when change relate to adding a new feature', async () => {
+			const gitDiff = await readDiffFromFile('new-feature.txt');
+
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+			// should match "feat:" or "feat(<scope>):"
+			expect(commitMessage).toMatch(/(feat(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
+		});
+
 		await test('Should use "test:" conventional commit when change relate to testing a React application', async () => {
 			const gitDiff = await readDiffFromFile('testing-react-application.txt');
 
@@ -41,6 +52,17 @@ export default testSuite(({ describe }) => {
 			console.log('Generated message:', commitMessage);
 		});
 
+		await test('Should use "(ci|build):" conventional commit when change relate to continious integration', async () => {
+			const gitDiff = await readDiffFromFile('continous-integration.txt');
+
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+			// should match "ci:" or "ci(<scope>):"
+			expect(commitMessage).toMatch(/((ci|build)(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
+		});
+
 		await test('Should use "docs:" conventional commit when change relate to documentation changes', async () => {
 			const gitDiff = await readDiffFromFile('documentation-changes.txt');
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
@@ -57,6 +79,56 @@ export default testSuite(({ describe }) => {
 
 			// should match "fix:" or "fix(<scope>):"
 			expect(commitMessage).toMatch(/(fix(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
+		});
+
+		await test('Should use "remove:" conventional commit when change relate to removing code', async () => {
+			const gitDiff = await readDiffFromFile('remove-feature.txt');
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+			// should match "remove:" or "fix(<remove>):"
+			expect(commitMessage).toMatch(/(remove(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
+		});
+
+		await test('Should use "deprecate:" conventional commit when change relate to removing code', async () => {
+			const gitDiff = await readDiffFromFile('deprecate-feature.txt');
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+			// should match "deprecate:" or "deprecate(<scope>):"
+			expect(commitMessage).toMatch(/(deprecate(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
+		});
+
+		await test('Should use "style:" conventional commit when change relate to code style improvements', async () => {
+			const gitDiff = await readDiffFromFile('code-style.txt');
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+			// should match "style:" or "style(<style>):"
+			expect(commitMessage).toMatch(/(style(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
+		});
+
+		await test('Should use "chore:" conventional commit when change relate to a chore or maintenance', async () => {
+			const gitDiff = await readDiffFromFile('chore.txt');
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+			// should match "chore:" or "chore(<style>):"
+			expect(commitMessage).toMatch(/(chore(\(.*\))?):/);
+
+			console.log('Generated message:', commitMessage);
+		});
+
+		await test('Should use "perf:" conventional commit when change relate to a performance improvement', async () => {
+			const gitDiff = await readDiffFromFile('performance-improvement.txt');
+			const commitMessage = await runGenerateCommitMessage(gitDiff);
+
+			// should match "perf:" or "perf(<style>):"
+			expect(commitMessage).toMatch(/(perf(\(.*\))?):/);
 
 			console.log('Generated message:', commitMessage);
 		});

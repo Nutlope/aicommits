@@ -1,7 +1,7 @@
 import { testSuite } from 'manten';
 
 export default testSuite(({ describe }) => {
-	describe('CLI', ({ runTestSuite }) => {
+	describe('OpenAI', ({ runTestSuite }) => {
 		runTestSuite(import('./conventional-commits.js'));
 	});
 });

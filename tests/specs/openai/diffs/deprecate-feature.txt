@@ -1,0 +1,27 @@
+diff --git a/old_feature.py b/old_feature.py
+index 1234567..abcdefg 100644
+--- a/old_feature.py
++++ b/old_feature.py
+@@ -1,7 +1,9 @@
+ import warnings
+
+
+ class OldFeature:
++    def __init__(self):
++        warnings.warn("OldFeature is deprecated and will be removed in the next release. Please use NewFeature instead.", DeprecationWarning)
+
+     def do_something(self):
+         print("Doing something with the old feature...")
+diff --git a/new_feature.py b/new_feature.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/new_feature.py
+@@ -0,0 +1,7 @@
++class NewFeature:
++    def __init__(self):
++        print("Initializing the new feature...")
++
++    def do_something(self):
++        print("Doing something with the new feature...")
++
