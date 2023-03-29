@@ -6,13 +6,15 @@ import { createFixture } from '../utils.js';
 export default testSuite(({ describe }) => {
 	describe('config', async ({ test }) => {
 		test('set unknown config file', async () => {
-			const { aicommits } = await createFixture();
+			const { fixture, aicommits } = await createFixture();
 
 			const { stderr } = await aicommits(['config', 'set', 'UNKNOWN=1'], {
 				reject: false,
 			});
 
 			expect(stderr).toMatch('Invalid config property: UNKNOWN');
+
+			await fixture.rm();
 		});
 
 		test('set invalid OPENAI_KEY', async () => {
