@@ -1,0 +1,34 @@
+diff --git a/old_example.ts b/new_example.ts
+index 1234567..abcdefg 100644
+--- a/old_example.ts
++++ b/new_example.ts
+
+@@ -1,15 +1,16 @@
+-import { Component, OnInit } from '@angular/core';
++import { Component } from '@angular/core';
+
+-@Component({
+-  selector: 'app-example',
+-  templateUrl: './example.component.html',
+-  styleUrls: ['./example.component.css']
+-})
+-export class ExampleComponent implements OnInit {
+-  message: string;
++@Component({
++  selector: 'app-improved-example',
++  templateUrl: './improved-example.component.html',
++  styleUrls: ['./improved-example.component.css']
++})
++export class ImprovedExampleComponent {
++  private _message: string;
+
+-  ngOnInit() {
+-    this.message = 'Hello, world!';
++  constructor() {
++    this._message = 'Hello, world!';
+   }
+
++  get message(): string {
++    return this._message;
++  }
+ }

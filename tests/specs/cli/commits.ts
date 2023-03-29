@@ -208,6 +208,40 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		describe('conventional commits', ({ test }) => {
+			test('Generates conventional commits message via locale config', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\nconventional=true`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits();
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+				expect(commitMessage).toMatch(conventionalCommitPattern);
+
+				await fixture.rm();
+			});
+		});
+
 		describe('proxy', ({ test }) => {
 			test('Fails on invalid proxy', async () => {
 				const { fixture, aicommits } = await createFixture({
