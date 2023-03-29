@@ -1,11 +1,8 @@
-import { ExecaChildProcess, Options } from 'execa';
+import { ExecaChildProcess } from 'execa';
 import { testSuite, expect } from 'manten';
 import { createFixture, createGit } from '../../utils.js';
 
 const { OPENAI_KEY } = process.env;
-
-type GitType = (command: string, args?: string[] | undefined,
-	options?: Options<string> | undefined) => ExecaChildProcess<string>;
 
 export default testSuite(({ describe }) => {
 	if (process.platform === 'win32') {
@@ -31,7 +28,8 @@ export default testSuite(({ describe }) => {
 
 			await git('add', ['data.json']);
 
-			expect(await getGitStatus(git)).toBe('A  data.json');
+			const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusBefore.stdout).toBe('A  data.json');
 
 			const { stdout, exitCode } = await aicommits(['--exclude', 'data.json'], { reject: false });
 			expect(exitCode).toBe(1);
@@ -49,7 +47,8 @@ export default testSuite(({ describe }) => {
 			selectYesOptionAICommit(committing);
 			await committing;
 
-			expect(await getGitStatus(git)).toBe('');
+			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
 			console.log('Committed with:', commitMessage);
@@ -80,7 +79,8 @@ export default testSuite(({ describe }) => {
 			onTestFail(() => console.log({ stdout }));
 			expect(countChoices).toBe(2);
 
-			expect(await getGitStatus(git)).toBe('');
+			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
 			console.log('Committed with:', commitMessage);
@@ -104,7 +104,8 @@ export default testSuite(({ describe }) => {
 			selectYesOptionAICommit(committing);
 			await committing;
 
-			expect(await getGitStatus(git)).toBe('');
+			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
 			console.log('Committed with:', commitMessage);
@@ -204,10 +205,5 @@ export default testSuite(({ describe }) => {
 				committing.stdout?.off('data', onPrompt);
 			}
 		});
-	}
-
-	async function getGitStatus(git: GitType): Promise<string> {
-		const statusBefore = await git('status', ['--porcelain', '--untracked-files=no']);
-		return statusBefore.stdout;
 	}
 });
