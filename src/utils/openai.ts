@@ -131,12 +131,13 @@ const getExtraContextForConventionalCommits = () => {
 	// Based on https://medium.com/neudesic-innovation/conventional-commits-a-better-way-78d6785c2e08
 	const conventionalCommitTypes: Record<string, string> = {
 		/*
-			Commented out feat: fix: change: because they are too common and
+			Commented out feat: fix: change: :refactor because they are too common and
 			will cause the model to generate them too often.
 		*/
 		// feat: 'The commit implements a new feature for the application.',
 		// fix: 'The commit fixes a defect in the application.',
 		// change: 'changes the implementation of an existing feature',
+		// refactor: 'code refactoring',
 		build: 'alters the build system or external dependencies of the product',
 		chore: 'includes a technical or preventative maintenance task',
 		ci: 'continuous integration or continuous delivery scripts or configuration files',
@@ -148,7 +149,6 @@ const getExtraContextForConventionalCommits = () => {
 		security: 'improves security',
 		style: 'updates or reformats the style of the source code',
 		test: 'changes to the suite of automated tests',
-		refactor: 'code refactoring',
 	};
 
 	let conventionalCommitDescription = '';
