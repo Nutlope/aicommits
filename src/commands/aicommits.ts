@@ -17,6 +17,7 @@ import { KnownError, handleCliError } from '../utils/error.js';
 export default async (
 	generate: number | undefined,
 	excludeFiles: string[],
+	useSemantic: boolean | undefined,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -40,6 +41,7 @@ export default async (
 		OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
 		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		generate: generate?.toString(),
+		useSemantic: useSemantic,
 	});
 
 	const s = spinner();
@@ -52,6 +54,7 @@ export default async (
 			staged.diff,
 			config.generate,
 			config.proxy,
+			config.useSemantic
 		);
 	} finally {
 		s.stop('Changes analyzed');

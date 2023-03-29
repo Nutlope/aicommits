@@ -29,6 +29,13 @@ cli(
 				description: 'Files to exclude from AI analysis',
 				alias: 'x',
 			},
+			useSemantic: {
+				type: Boolean,
+				description: `Whether to return a semantic git commit log. E.g:
+feat: added some-feature to some-component
+fix: fixed bug-xyz`,
+				alias: 's' 
+			}
 		},
 
 		commands: [
@@ -49,6 +56,7 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				argv.flags.exclude,
+				argv.flags.useSemantic,
 				rawArgv,
 			);
 		}

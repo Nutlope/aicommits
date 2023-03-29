@@ -38,6 +38,14 @@ const configParsers = {
 
 		return locale;
 	},
+	useSemantic(useSemantic?: boolean) {
+		if (!useSemantic) {
+			return false;
+		}
+
+		parseAssert('useSemantic', typeof useSemantic === 'boolean', 'Must be a boolean value (true/false)');
+		return useSemantic;
+	},
 	generate(count?: string) {
 		if (!count) {
 			return 1;
