@@ -17,7 +17,7 @@ import { KnownError, handleCliError } from '../utils/error.js';
 export default async (
 	generate: number | undefined,
 	excludeFiles: string[],
-	all: boolean,
+	stageAll: boolean,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -25,7 +25,7 @@ export default async (
 
 	const detectingFiles = spinner();
 
-	if (all) {
+	if (stageAll) {
 		await execa('git', ['add', '-A']);
 	}
 
