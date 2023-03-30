@@ -199,7 +199,7 @@ export const generateCommitMessage = async (
 		? getExtraContextForConventionalCommits()
 		: '';
 
-	const completionMessages: ChatCompletionRequestMessage[] = [
+	const messages: ChatCompletionRequestMessage[] = [
 		{
 			role: 'system',
 			content: `${basePrompt}\n${commitMessageFormatPrompt}`,
@@ -221,7 +221,7 @@ export const generateCommitMessage = async (
 			apiKey,
 			{
 				model,
-				messages: completionMessages,
+				messages,
 				temperature: 0.7,
 				top_p: 1,
 				frequency_penalty: 0,
