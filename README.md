@@ -73,6 +73,14 @@ aicommits --generate <i> # or -g <i>
 
 > Warning: this uses more tokens, meaning it costs more.
 
+#### Stage all changes and commit at the same time
+
+If you want stage all the changes and commit all at the same time. You can pass the `--all` or `-a` flag
+
+```sh
+aicommits --all
+```
+
 ### Git hook
 
 You can also integrate _aicommits_ with Git via the [`prepare-commit-msg`](https://git-scm.com/docs/githooks#_prepare_commit_msg) hook. This lets you use Git like you normally would, and edit the commit message before committing.

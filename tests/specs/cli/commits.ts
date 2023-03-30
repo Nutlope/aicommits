@@ -61,6 +61,30 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		test('Accepts --all flag, staging all changes before commit', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			const statusBefore = await git('status', [
+				'--short',
+				'--untracked-files=no',
+				"| grep '^ M'",
+			]);
+			expect(statusBefore.stdout).not.toBe('');
+
+			const committing = aicommits(['--all']);
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					committing.stdin!.write('y');
+					committing.stdin!.end();
+				}
+			});
+
+			const statusAfter = await git('status', ['--short', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
+		});
+
 		test('Accepts --generate flag, overriding config', async ({ onTestFail }) => {
 			const { fixture, aicommits } = await createFixture({
 				...files,

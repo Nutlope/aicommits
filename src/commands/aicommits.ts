@@ -17,18 +17,24 @@ import { KnownError, handleCliError } from '../utils/error.js';
 export default async (
 	generate: number | undefined,
 	excludeFiles: string[],
+	all: boolean,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
+
+	if (all) {
+		await execa('git', ['add', '-A']);
+	}
+
 	detectingFiles.start('Detecting staged files');
 	const staged = await getStagedDiff(excludeFiles);
 
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
-		throw new KnownError('No staged changes found. Make sure to stage your changes with `git add`.');
+		throw new KnownError('No staged changes found. Pass the `--all` flag to stage all changes and commit at once.');
 	}
 
 	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
