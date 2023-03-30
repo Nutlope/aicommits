@@ -44,6 +44,11 @@ export const getStagedDiff = async (excludeFiles?: string[]) => {
 		[
 			...diffCached,
 			...filesToExclude,
+			...(
+				excludeFiles
+					? excludeFiles.map(excludeFromDiff)
+					: []
+			),
 		],
 	);
 
