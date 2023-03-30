@@ -6,7 +6,7 @@ import { expect, testSuite } from 'manten';
 import {
 	generateCommitMessage,
 } from '../../../src/utils/openai.js';
-import { ValidConfig } from '../../../src/utils/config.js';
+import { CommitStandard, ValidConfig } from '../../../src/utils/config.js';
 
 const { OPENAI_KEY } = process.env;
 
@@ -100,24 +100,6 @@ export default testSuite(({ describe }) => {
 			console.log('Generated message:', commitMessage);
 		});
 
-		// await test('Should use "remove:" conventional commit when change relate to removing code', async () => {
-		// 	const gitDiff = await readDiffFromFile('remove-feature.txt');
-		// 	const commitMessage = await runGenerateCommitMessage(gitDiff);
-
-		// 	// should match "remove:" or "fix(<remove>):"
-		// 	expect(commitMessage).toMatch(/(remove(\(.*\))?):/);
-		// 	console.log('Generated message:', commitMessage);
-		// });
-
-		// await test('Should use "deprecate:" conventional commit when change relate to removing code', async () => {
-		// 	const gitDiff = await readDiffFromFile('deprecate-feature.txt');
-		// 	const commitMessage = await runGenerateCommitMessage(gitDiff);
-
-		// 	// should match "deprecate:" or "deprecate(<scope>):"
-		// 	expect(commitMessage).toMatch(/(deprecate(\(.*\))?):/);
-		// 	console.log('Generated message:', commitMessage);
-		// });
-
 		await test('Should use "style:" conventional commit when change relate to code style improvements', async () => {
 			const gitDiff = await readDiffFromFile('code-style.txt');
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
@@ -149,12 +131,12 @@ export default testSuite(({ describe }) => {
 			configOverrides: Partial<ValidConfig> = {}): Promise<string> {
 			const config = {
 				locale: 'en',
-				conventional: true,
+				standard: CommitStandard.Conventional,
 				generate: 1,
 				...configOverrides,
 			} as ValidConfig;
 			// eslint-disable-next-line max-len
-			const commitMessages = await generateCommitMessage(OPENAI_KEY!, config.locale, gitDiff, config.generate, config.conventional);
+			const commitMessages = await generateCommitMessage(OPENAI_KEY!, config.locale, gitDiff, config.generate, config.standard);
 
 			return commitMessages[0];
 		}

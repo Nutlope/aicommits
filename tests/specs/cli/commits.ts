@@ -213,7 +213,7 @@ export default testSuite(({ describe }) => {
 				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/;
 				const { fixture, aicommits } = await createFixture({
 					...files,
-					'.aicommits': `${files['.aicommits']}\nconventional=true`,
+					'.aicommits': `${files['.aicommits']}\nstandard=Conventional`,
 				});
 				const git = await createGit(fixture.path);
 

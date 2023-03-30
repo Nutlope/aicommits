@@ -8,6 +8,7 @@ import {
 } from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
+import { CommitStandard } from './config.js';
 
 const httpsPost = async (
 	hostname: string,
@@ -115,10 +116,10 @@ const getBasePrompt = (
 	'Exclude anything unnecessary such as the original translation—your entire response will be passed directly into git commit.',
 ].join('\n')}\n\n${diff}`;
 
-const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
+const getCommitMessageFormatPrompt = (standard: CommitStandard) => {
 	const commitTitleParts = [];
 
-	if (useConventionalCommits) {
+	if (standard === CommitStandard.Conventional) {
 		commitTitleParts.push('<conventional commits type>(<optional scope of the change>):');
 	}
 
@@ -181,17 +182,17 @@ export const generateCommitMessage = async (
 	diff: string,
 	completions: number,
 	maxLength: number,
+	standard: CommitStandard,
 	timeout: number,
-	useConventionalCommits: boolean,
 	proxy?: string,
 ) => {
 	const basePrompt = getBasePrompt(locale, diff, maxLength);
 
 	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(
-		useConventionalCommits,
+		standard,
 	);
 
-	const conventionalCommitsExtraContext = useConventionalCommits
+	const conventionalCommitsExtraContext = standard === CommitStandard.Conventional
 		? getExtraContextForConventionalCommits()
 		: '';
 

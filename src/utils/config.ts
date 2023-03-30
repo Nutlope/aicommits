@@ -6,6 +6,11 @@ import type { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
+export enum CommitStandard {
+	None = 'NONE',
+	Conventional = 'CONVENTIONAL',
+  }
+
 const { hasOwnProperty } = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
 
@@ -51,13 +56,14 @@ const configParsers = {
 
 		return parsed;
 	},
-	conventional(conventional?: string) {
-		if (!conventional) {
-			return false;
+	standard(standard?: string) {
+		if (!standard) {
+			return CommitStandard.None;
 		}
 
-		parseAssert('conventional', /^true|false$/.test(conventional), 'Must be a boolean');
-		const parsed = Boolean(conventional);
+		const standardLower = standard.toLowerCase();
+		parseAssert('standard', /^conventional$/.test(standardLower), 'Must be one of type CommitStandard');
+		const parsed: CommitStandard = getCommitStandardEnumFromString(standardLower);
 
 		return parsed;
 	},
@@ -102,6 +108,10 @@ const configParsers = {
 		return parsed;
 	},
 } as const;
+
+function getCommitStandardEnumFromString(commitStandardString: string): CommitStandard {
+	return CommitStandard[commitStandardString.toUpperCase()];
+}
 
 type ConfigKeys = keyof typeof configParsers;
 
