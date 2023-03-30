@@ -100,23 +100,23 @@ export default testSuite(({ describe }) => {
 			console.log('Generated message:', commitMessage);
 		});
 
-		await test('Should use "remove:" conventional commit when change relate to removing code', async () => {
-			const gitDiff = await readDiffFromFile('remove-feature.txt');
-			const commitMessage = await runGenerateCommitMessage(gitDiff);
+		// await test('Should use "remove:" conventional commit when change relate to removing code', async () => {
+		// 	const gitDiff = await readDiffFromFile('remove-feature.txt');
+		// 	const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-			// should match "remove:" or "fix(<remove>):"
-			expect(commitMessage).toMatch(/(remove(\(.*\))?):/);
-			console.log('Generated message:', commitMessage);
-		});
+		// 	// should match "remove:" or "fix(<remove>):"
+		// 	expect(commitMessage).toMatch(/(remove(\(.*\))?):/);
+		// 	console.log('Generated message:', commitMessage);
+		// });
 
-		await test('Should use "deprecate:" conventional commit when change relate to removing code', async () => {
-			const gitDiff = await readDiffFromFile('deprecate-feature.txt');
-			const commitMessage = await runGenerateCommitMessage(gitDiff);
+		// await test('Should use "deprecate:" conventional commit when change relate to removing code', async () => {
+		// 	const gitDiff = await readDiffFromFile('deprecate-feature.txt');
+		// 	const commitMessage = await runGenerateCommitMessage(gitDiff);
 
-			// should match "deprecate:" or "deprecate(<scope>):"
-			expect(commitMessage).toMatch(/(deprecate(\(.*\))?):/);
-			console.log('Generated message:', commitMessage);
-		});
+		// 	// should match "deprecate:" or "deprecate(<scope>):"
+		// 	expect(commitMessage).toMatch(/(deprecate(\(.*\))?):/);
+		// 	console.log('Generated message:', commitMessage);
+		// });
 
 		await test('Should use "style:" conventional commit when change relate to code style improvements', async () => {
 			const gitDiff = await readDiffFromFile('code-style.txt');

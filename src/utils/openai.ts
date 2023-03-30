@@ -128,37 +128,33 @@ const getCommitMessageFormatPrompt = (useConventionalCommits: boolean) => {
 };
 
 const getExtraContextForConventionalCommits = () => {
-	// Based on https://medium.com/neudesic-innovation/conventional-commits-a-better-way-78d6785c2e08
+	/**
+	 * References:
+	 * Commitlint:
+	 * https://github.com/conventional-changelog/commitlint/blob/18fbed7ea86ac0ec9d5449b4979b762ec4305a92/%40commitlint/config-conventional/index.js#L40-L100
+	 *
+	 * Conventional Changelog:
+	 * https://github.com/conventional-changelog/conventional-changelog/blob/d0e5d5926c8addba74bc962553dd8bcfba90e228/packages/conventional-changelog-conventionalcommits/writer-opts.js#L182-L193
+	 */
 	const conventionalCommitTypes: Record<string, string> = {
 		/*
-			Commented out feat: fix: change: :refactor because they are too common and
+			Commented out because they are too common and
 			will cause the model to generate them too often.
 		*/
-		// feat: 'The commit implements a new feature for the application.',
-		// fix: 'The commit fixes a defect in the application.',
-		// change: 'changes the implementation of an existing feature',
-		// refactor: 'code refactoring',
+		// feat: 'The commit implements a new feature for the application',
+		// fix: 'The commit fixes a defect in the application',
+		refactor: 'code refactoring',
 		build: 'alters the build system or external dependencies of the product',
 		chore: 'includes a technical or preventative maintenance task',
 		ci: 'continuous integration or continuous delivery scripts or configuration files',
-		deprecate: 'deprecates existing functionality',
 		docs: 'changes to README files and markdown (*.md) files',
 		perf: 'improve the performance of algorithms or general execution',
-		remove: 'removes a feature or dependency',
 		revert: 'reverts one or more commits',
-		security: 'improves security',
 		style: 'updates or reformats the style of the source code',
 		test: 'changes to the suite of automated tests',
 	};
 
-	let conventionalCommitDescription = '';
-	// eslint-disable-next-line guard-for-in
-	for (const key in conventionalCommitTypes) {
-		const value = conventionalCommitTypes[key];
-		conventionalCommitDescription += `${key}: ${value}\n`;
-	}
-
-	return `Choose the primary used conventional commit type from the list below based on the git diff:\n${conventionalCommitDescription}`;
+	return `Choose a commit type from the type-to-description JSON below that best describes the git diff:\n${JSON.stringify(conventionalCommitTypes, null, 2)}`;
 };
 
 const generateStringFromLength = (length: number) => {
