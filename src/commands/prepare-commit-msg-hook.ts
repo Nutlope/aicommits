@@ -44,8 +44,8 @@ export default () => (async () => {
 			config.locale,
 			staged!.diff,
 			config.generate,
-			config.proxy,
 			config.model,
+			config.proxy,
 		);
 	} finally {
 		s.stop('Changes analyzed');

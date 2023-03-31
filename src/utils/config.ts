@@ -62,7 +62,7 @@ const configParsers = {
 	},
 	model(model?: string) {
 		if (!model || model.length === 0) {
-			model = 'gpt-3.5-turbo';
+			return 'gpt-3.5-turbo';
 		}
 
 		return model;

@@ -104,13 +104,10 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	model: string,
 	proxy?: string,
-	model?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);
-
-	// Default model to 'gpt-3.5-turbo' if not provided
-	model = model || 'gpt-3.5-turbo';
 
 	/**
 	 * text-davinci-003 has a token limit of 4000
