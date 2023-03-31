@@ -6,7 +6,7 @@ import { expect, testSuite } from 'manten';
 import {
 	generateCommitMessage,
 } from '../../../src/utils/openai.js';
-import { CommitStandard, ValidConfig } from '../../../src/utils/config.js';
+import { ValidConfig } from '../../../src/utils/config.js';
 
 const { OPENAI_KEY } = process.env;
 
@@ -131,7 +131,7 @@ export default testSuite(({ describe }) => {
 			configOverrides: Partial<ValidConfig> = {}): Promise<string> {
 			const config = {
 				locale: 'en',
-				standard: CommitStandard.Conventional,
+				standard: 'conventional',
 				generate: 1,
 				...configOverrides,
 			} as ValidConfig;
