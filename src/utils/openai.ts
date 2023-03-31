@@ -99,16 +99,18 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
-const model = 'gpt-3.5-turbo';
-
 export const generateCommitMessage = async (
 	apiKey: string,
 	locale: string,
 	diff: string,
 	completions: number,
 	proxy?: string,
+	model?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);
+
+	// Default model to 'gpt-3.5-turbo' if not provided
+	model = model || 'gpt-3.5-turbo';
 
 	/**
 	 * text-davinci-003 has a token limit of 4000

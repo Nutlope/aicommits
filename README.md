@@ -175,6 +175,17 @@ To clear the proxy option, you can use the command (note the empty value after t
 aicommits config set proxy=
 ```
 
+#### model
+
+Specify the Chat GPT model to use
+Must be compatibile with `/v1/chat/completions`
+
+https://platform.openai.com/docs/models/model-endpoint-compatibility
+
+```sh
+aicommits config set model=gpt-4
+```
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.

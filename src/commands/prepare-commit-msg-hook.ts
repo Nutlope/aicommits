@@ -45,6 +45,7 @@ export default () => (async () => {
 			staged!.diff,
 			config.generate,
 			config.proxy,
+			config.model,
 		);
 	} finally {
 		s.stop('Changes analyzed');
