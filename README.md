@@ -177,6 +177,8 @@ aicommits config set proxy=
 
 #### model
 
+Default: `gpt-3.5-turbo`
+
 Specify the Chat GPT model to use
 Must be compatibile with `/v1/chat/completions`
 
