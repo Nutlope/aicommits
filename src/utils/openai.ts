@@ -117,15 +117,11 @@ const getBasePrompt = (
 ].join('\n')}\n\n${diff}`;
 
 const getCommitMessageFormatPrompt = (type: CommitType) => {
-	const commitTitleParts = [];
-
 	if (type === 'conventional') {
-		commitTitleParts.push('<conventional commits type>(<optional scope of the change>):');
+		return '<type>(<optional scope>): <commit message>';
 	}
 
-	commitTitleParts.push('<commit message>');
-
-	return commitTitleParts.join(' ');
+	return '<commit message>';
 };
 
 const getExtraContextForConventionalCommits = () => {
@@ -156,7 +152,7 @@ const getExtraContextForConventionalCommits = () => {
 		revert: 'Reverts a previous commit',
 	};
 
-	return `Choose a commit type from the type-to-description JSON below that best describes the git diff:\n${JSON.stringify(conventionalCommitTypes, null, 2)}`;
+	return `Choose a type from the type-to-description JSON below that best describes the git diff:\n${JSON.stringify(conventionalCommitTypes, null, 2)}`;
 };
 
 const generateStringFromLength = (length: number) => {
