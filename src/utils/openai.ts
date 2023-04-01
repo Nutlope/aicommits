@@ -142,17 +142,18 @@ const getExtraContextForConventionalCommits = () => {
 			Commented out because they are too common and
 			will cause the model to generate them too often.
 		*/
-		// feat: 'The commit implements a new feature for the application',
-		// fix: 'The commit fixes a defect in the application',
-		refactor: 'code refactoring',
-		build: 'alters the build system or external dependencies of the product',
-		chore: 'includes a technical or preventative maintenance task',
-		ci: 'continuous integration or continuous delivery scripts or configuration files',
-		docs: 'changes to README files and markdown (*.md) files',
-		perf: 'improve the performance of algorithms or general execution',
-		revert: 'reverts one or more commits',
-		style: 'updates or reformats the style of the source code',
-		test: 'changes to the suite of automated tests',
+		// feat: 'A new feature',
+		// fix: 'A bug fix',
+		docs: 'Documentation only changes',
+		style:
+			'Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)',
+		refactor: 'A code change that neither fixes a bug nor adds a feature',
+		perf: 'A code change that improves performance',
+		test: 'Adding missing tests or correcting existing tests',
+		build: 'Changes that affect the build system or external dependencies',
+		ci: 'Changes to our CI configuration files and scripts',
+		chore: "Other changes that don't modify src or test files",
+		revert: 'Reverts a previous commit',
 	};
 
 	return `Choose a commit type from the type-to-description JSON below that best describes the git diff:\n${JSON.stringify(conventionalCommitTypes, null, 2)}`;
