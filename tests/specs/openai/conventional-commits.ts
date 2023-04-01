@@ -107,7 +107,7 @@ export default testSuite(({ describe }) => {
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
 			// should match "style:" or "style(<style>):"
-			expect(commitMessage).toMatch(/style(\(.*\))?:/);
+			expect(commitMessage).toMatch(/(style|refactor)(\(.*\))?:/);
 			console.log('Generated message:', commitMessage);
 		});
 

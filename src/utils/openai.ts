@@ -196,11 +196,7 @@ export const generateCommitMessage = async (
 	const messages: ChatCompletionRequestMessage[] = [
 		{
 			role: 'system',
-			content: `${basePrompt}\n${commitMessageFormatPrompt}`,
-		},
-		{
-			role: 'assistant',
-			content: conventionalCommitsExtraContext,
+			content: `${basePrompt}\n${commitMessageFormatPrompt}\n${conventionalCommitsExtraContext}`,
 		},
 	];
 
