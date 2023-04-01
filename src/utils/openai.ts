@@ -1,7 +1,7 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
-import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import { type TiktokenModel, encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
@@ -101,10 +101,10 @@ const getPrompt = (locale: string, diff: string) => `Write an insightful but con
 
 export const generateCommitMessage = async (
 	apiKey: string,
+	model: TiktokenModel,
 	locale: string,
 	diff: string,
 	completions: number,
-	model: string,
 	proxy?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);

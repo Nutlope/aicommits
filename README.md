@@ -184,14 +184,7 @@ aicommits config set proxy=
 
 Default: `gpt-3.5-turbo`
 
-Specify the Chat GPT model to use
-Must be compatibile with `/v1/chat/completions`
-
-https://platform.openai.com/docs/models/model-endpoint-compatibility
-
-```sh
-aicommits config set model=gpt-4
-```
+The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of models available in the [OpenAI Documentation](https://platform.openai.com/docs/models/model-endpoint-compatibility).
 
 ## How it works
 

@@ -41,10 +41,10 @@ export default () => (async () => {
 	try {
 		messages = await generateCommitMessage(
 			config.OPENAI_KEY,
+			config.model,
 			config.locale,
 			staged!.diff,
 			config.generate,
-			config.model,
 			config.proxy,
 		);
 	} finally {
