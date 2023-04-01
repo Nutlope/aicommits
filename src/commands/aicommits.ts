@@ -58,7 +58,7 @@ export default async (
 			staged.diff,
 			config.generate,
 			config['max-length'],
-			config.standard,
+			config.type,
 			config.timeout,
 			config.proxy,
 		);

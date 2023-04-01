@@ -135,12 +135,12 @@ export default testSuite(({ describe }) => {
 			configOverrides: Partial<ValidConfig> = {}): Promise<string> {
 			const config = {
 				locale: 'en',
-				standard: 'conventional',
+				type: 'conventional',
 				generate: 1,
 				...configOverrides,
 			} as ValidConfig;
 			// eslint-disable-next-line max-len
-			const commitMessages = await generateCommitMessage(OPENAI_KEY!, config.locale, gitDiff, config.generate, config.standard);
+			const commitMessages = await generateCommitMessage(OPENAI_KEY!, config.locale, gitDiff, config.generate, config.type);
 
 			return commitMessages[0];
 		}

@@ -6,7 +6,7 @@ import type { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
-export type CommitStandard = 'none' | 'conventional';
+export type CommitType = 'none' | 'conventional';
 
 const { hasOwnProperty } = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
@@ -53,14 +53,14 @@ const configParsers = {
 
 		return parsed;
 	},
-	standard(standard?: string) {
-		if (!standard) {
+	type(type?: string) {
+		if (!type) {
 			return 'none';
 		}
 
-		const standardLower = standard.toLowerCase();
-		parseAssert('standard', /^conventional$/.test(standardLower), 'Must be "conventional"');
-		const parsed: CommitStandard = standardLower as CommitStandard;
+		const typeLower = type.toLowerCase();
+		parseAssert('type', /^conventional$/.test(typeLower), 'Must be "conventional"');
+		const parsed: CommitType = typeLower as CommitType;
 		return parsed;
 	},
 	proxy(url?: string) {
