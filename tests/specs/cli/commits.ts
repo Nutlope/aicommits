@@ -31,7 +31,7 @@ export default testSuite(({ describe }) => {
 
 			const { stdout, exitCode } = await aicommits(['--exclude', 'data.json'], { reject: false });
 			expect(exitCode).toBe(1);
-			expect(stdout).toMatch('No staged changes found. Make sure to stage your changes with `git add`.');
+			expect(stdout).toMatch('No staged changes found.');
 			await fixture.rm();
 		});
 
@@ -56,6 +56,38 @@ export default testSuite(({ describe }) => {
 			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
+			console.log('Committed with:', commitMessage);
+
+			await fixture.rm();
+		});
+
+		test('Accepts --all flag, staging all changes before commit', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			await git('add', ['data.json']);
+			await git('commit', ['-m', 'wip']);
+
+			await fixture.writeFile('data.json', 'Test');
+
+			const statusBefore = await git('status', ['--short', '--untracked-files=no']);
+			expect(statusBefore.stdout).toBe(' M data.json');
+
+			const committing = aicommits(['--all']);
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					committing.stdin!.write('y');
+					committing.stdin!.end();
+				}
+			});
+
+			await committing;
+
+			const statusAfter = await git('status', ['--short', '--untracked-files=no']);
+			expect(statusAfter.stdout).toBe('');
+
+			const { stdout: commitMessage } = await git('log', ['-n1', '--oneline']);
 			console.log('Committed with:', commitMessage);
 
 			await fixture.rm();

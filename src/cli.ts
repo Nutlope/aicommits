@@ -29,6 +29,12 @@ cli(
 				description: 'Files to exclude from AI analysis',
 				alias: 'x',
 			},
+			all: {
+				type: Boolean,
+				description: 'Automatically stage changes in tracked files for the commit',
+				alias: 'a',
+				default: false,
+			},
 		},
 
 		commands: [
@@ -49,6 +55,7 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				argv.flags.exclude,
+				argv.flags.all,
 				rawArgv,
 			);
 		}
