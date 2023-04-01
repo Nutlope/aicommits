@@ -31,7 +31,7 @@ cli(
 			},
 			all: {
 				type: Boolean,
-				description: 'Stage all changes and commit at the same time',
+				description: 'Automatically stage changes in tracked files for the commit',
 				alias: 'a',
 				default: false,
 			},

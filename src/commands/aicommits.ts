@@ -26,7 +26,7 @@ export default async (
 	const detectingFiles = spinner();
 
 	if (stageAll) {
-		await execa('git', ['add', '-A']);
+		await execa('git', ['add', '--all']);
 	}
 
 	detectingFiles.start('Detecting staged files');
@@ -34,7 +34,7 @@ export default async (
 
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
-		throw new KnownError('No staged changes found. Pass the `--all` flag to stage all changes and commit at once.');
+		throw new KnownError('No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.');
 	}
 
 	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${

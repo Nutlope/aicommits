@@ -56,10 +56,11 @@ git add <files...>
 aicommits
 ```
 
-`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit) (with some exceptions (e.g. `--all`):
+`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit).
 
+For example, you can stage all changes in tracked files with as you commit:
 ```sh
-aicommits --dry-run
+aicommits --all # or -a
 ```
 
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
@@ -72,10 +73,6 @@ aicommits --generate <i> # or -g <i>
 ```
 
 > Warning: this uses more tokens, meaning it costs more.
-
-#### Stage all changes and commit at the same time
-
-If you want stage all the changes and commit all at the same time. You can pass the `--all` or `-a` flag
 
 ```sh
 aicommits --all
