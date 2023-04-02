@@ -43,7 +43,7 @@ export default command({
 
 			if (isWindows) {
 				await fs.writeFile(
-					hookPath,
+					symlinkPath,
 					`
 					#!/bin/sh
 					${process.execPath} ${symlinkPath} "$@"
