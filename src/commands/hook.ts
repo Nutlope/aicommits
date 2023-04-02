@@ -46,7 +46,7 @@ export default command({
 					symlinkPath,
 					`
 					#!/bin/sh
-					${process.execPath} ${symlinkPath} "$@"
+					node ${symlinkPath} "$@"
 					`.replace(/^\s+/mg, '').trim(),
 				);
 			} else {
