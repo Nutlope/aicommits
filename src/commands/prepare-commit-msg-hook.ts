@@ -61,6 +61,9 @@ export default () => (async () => {
 		instructions += `\n${messages[0]}\n`;
 	}
 
+	const asdf = await fs.readFile(messageFilePath, 'utf8');
+	console.log({ asdf });
+
 	await fs.appendFile(
 		messageFilePath,
 		instructions,
