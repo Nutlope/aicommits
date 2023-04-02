@@ -73,7 +73,7 @@ export default command({
 
 			if (isWindows) {
 				const scriptContent = await fs.readFile(symlinkPath, 'utf8');
-				if (scriptContent !== windowsHook(hookPath)) {
+				if (scriptContent !== windowsHook) {
 					console.warn('Hook is not installed');
 					return;
 				}
