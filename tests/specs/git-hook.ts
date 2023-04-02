@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { testSuite, expect } from 'manten';
 import { createFixture, createGit, files } from '../utils.js';
+import { execa } from 'execa';
 
 export default testSuite(({ describe }) => {
 	describe('Git hook', ({ test }) => {
@@ -30,6 +31,13 @@ export default testSuite(({ describe }) => {
 
 			const gitHooksFiles = await fs.readdir(path.join(fixture.path, '.git/hooks'));
 			console.log(gitHooksFiles);
+
+			
+			const hookContent = await fs.readFile(path.join(fixture.path, '.git/hooks/prepare-commit-msg'), 'utf8');
+			console.log({hookContent});
+
+			const a = await execa(path.join(fixture.path, '.git/hooks/prepare-commit-msg'));
+			console.log(a);
 
 			await git('add', ['data.json']);
 			await git('commit', ['--no-edit'], {
