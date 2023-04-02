@@ -22,7 +22,7 @@ const isWindows = process.platform === 'win32';
 const windowsHook = `
 #!/usr/bin/env node
 import(${JSON.stringify(pathToFileURL(hookPath))})
-`.replace(/^\s+/gm, '').trim();
+`.trim();
 
 export default command({
 	name: 'hook',
