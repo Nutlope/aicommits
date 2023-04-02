@@ -10,6 +10,7 @@ import { KnownError, handleCliError } from '../utils/error.js';
 const hookName = 'prepare-commit-msg';
 const symlinkPath = `.git/hooks/${hookName}`;
 
+console.log('process.argv', process.argv);
 export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
 
 const isWindows = process.platform === 'win32';
