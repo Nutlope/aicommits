@@ -16,7 +16,7 @@ export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
 const isWindows = process.platform === 'win32';
 const windowsHook = (hookPath: string) => `
 #!/usr/bin/env node
-import(${JSON.stringify(path.relative(symlinkPath, hookPath))})
+import(${JSON.stringify(path.relative(path.resolve(symlinkPath), hookPath))})
 `.replace(/^\s+/gm, '').trim();
 
 export default command({
@@ -46,9 +46,11 @@ export default command({
 			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
 
 			if (isWindows) {
+				const asdf = windowsHook(hookPath);
+				console.log({ asdf });
 				await fs.writeFile(
 					symlinkPath,
-					windowsHook(hookPath),
+					asdf,
 				);
 			} else {
 				await fs.symlink(hookPath, symlinkPath, 'file');
