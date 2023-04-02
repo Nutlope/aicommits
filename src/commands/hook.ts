@@ -15,8 +15,8 @@ export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
 
 const isWindows = process.platform === 'win32';
 const windowsHook = (hookPath: string) => `
-#!/bin/sh
-node ${JSON.stringify(path.relative(symlinkPath, hookPath))} "$@"
+#!/usr/bin/env node
+import(${JSON.stringify(path.relative(symlinkPath, hookPath))})
 `.replace(/^\s+/gm, '').trim();
 
 export default command({
