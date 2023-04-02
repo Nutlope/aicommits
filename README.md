@@ -56,22 +56,27 @@ git add <files...>
 aicommits
 ```
 
-`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit) (with some exceptions (e.g. `--all`):
+`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit).
 
+For example, you can stage all changes in tracked files with as you commit:
 ```sh
-aicommits --dry-run
+aicommits --all # or -a
 ```
 
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
 
 #### Generate multiple recommendations
 
-Sometimes the recommended commit message isn't the best so you want it to generate a few to pick from. You can generate multiple commit messages at once by passing in the `--generate` flag:
+Sometimes the recommended commit message isn't the best so you want it to generate a few to pick from. You can generate multiple commit messages at once by passing in the `--generate <i>` flag, where 'i' is the number of generated messages:
 ```sh
-aicommits --generate # or -g
+aicommits --generate <i> # or -g <i>
 ```
 
 > Warning: this uses more tokens, meaning it costs more.
+
+```sh
+aicommits --all
+```
 
 ### Git hook
 
@@ -174,6 +179,15 @@ To clear the proxy option, you can use the command (note the empty value after t
 ```sh
 aicommits config set proxy=
 ```
+
+#### model
+
+Default: `gpt-3.5-turbo`
+
+The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of models available in the [OpenAI Documentation](https://platform.openai.com/docs/models/model-endpoint-compatibility).
+
+> Tip: If you have access, try upgrading to [`gpt-4`](https://platform.openai.com/docs/models/gpt-4) for next-level code analysis. It can handle double the input size, but comes at a higher cost. Check out OpenAI's website to learn more.
+
 
 ## How it works
 

@@ -1,7 +1,7 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
-import { encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import { type TiktokenModel, encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
@@ -99,10 +99,9 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
 
-const model = 'gpt-3.5-turbo';
-
 export const generateCommitMessage = async (
 	apiKey: string,
+	model: TiktokenModel,
 	locale: string,
 	diff: string,
 	completions: number,
