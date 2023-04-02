@@ -1,12 +1,11 @@
 import { readFile } from 'fs/promises';
-// eslint-disable-next-line unicorn/import-style
-import path, { dirname } from 'path';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { expect, testSuite } from 'manten';
 import {
 	generateCommitMessage,
 } from '../../../src/utils/openai.js';
-import { ValidConfig } from '../../../src/utils/config.js';
+import type { ValidConfig } from '../../../src/utils/config.js';
 
 const { OPENAI_KEY } = process.env;
 
@@ -16,7 +15,7 @@ export default testSuite(({ describe }) => {
 		return;
 	}
 
-	describe('ConventionalCommits', async ({ test }) => {
+	describe('Conventional Commits', async ({ test }) => {
 		await test('Should not translate conventional commit type to Japanase when locale config is set to japanese', async () => {
 			const japaneseConventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.*\))?: [\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
 
@@ -149,9 +148,9 @@ export default testSuite(({ describe }) => {
 		 */
 		async function readDiffFromFile(filename: string): Promise<string> {
 			const __filename = fileURLToPath(import.meta.url);
-			const __dirname = dirname(__filename);
+			const __dirname = path.dirname(__filename);
 			const gitDiff = await readFile(
-				path.resolve(__dirname, `./diffs/${filename}`),
+				path.resolve(__dirname, `./diff-fixtures/${filename}`),
 				'utf8',
 			);
 

@@ -208,9 +208,9 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
-		describe('conventional commits', ({ test }) => {
-			test('Generates conventional commits message via locale config', async () => {
-				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/;
+		describe('commit types', ({ test }) => {
+			test('Conventional commits', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
 				const { fixture, aicommits } = await createFixture({
 					...files,
 					'.aicommits': `${files['.aicommits']}\ntype=conventional`,
@@ -220,6 +220,41 @@ export default testSuite(({ describe }) => {
 				await git('add', ['data.json']);
 
 				const committing = aicommits();
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+				expect(commitMessage).toMatch(conventionalCommitPattern);
+
+				await fixture.rm();
+			});
+
+			test('Accepts --type flag, overriding config', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\ntype=other`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				// Generate flag should override generate config
+				const committing = aicommits([
+					'--type', 'conventional',
+				]);
 
 				committing.stdout!.on('data', (buffer: Buffer) => {
 					const stdout = buffer.toString();
