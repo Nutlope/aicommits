@@ -47,8 +47,11 @@ export default () => (async () => {
 			config.generate,
 			config.proxy,
 		);
+		console.log('generated');
 	} finally {
+		console.log(0);
 		s.stop('Changes analyzed');
+		console.log(0.5);
 	}
 	console.log(1);
 	const hasMultipleMessages = messages.length > 1;
