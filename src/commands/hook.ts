@@ -13,7 +13,11 @@ const symlinkPath = `.git/hooks/${hookName}`;
 const hookPath = fileURLToPath(new URL('cli.mjs', import.meta.url));
 
 console.log('process.argv', process.argv);
-export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
+export const isCalledFromGitHook = (
+	process.argv[1]
+	.replace(/\\/g, '/') // Replace Windows back slashes with forward slashes
+	.endsWith(`/${symlinkPath}`)
+);
 
 const isWindows = process.platform === 'win32';
 const windowsHook = `
