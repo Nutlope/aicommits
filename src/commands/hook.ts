@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { green, red } from 'kolorist';
 import { command } from 'cleye';
 import { assertGitRepo } from '../utils/git.js';
@@ -10,20 +10,21 @@ import { KnownError, handleCliError } from '../utils/error.js';
 const hookName = 'prepare-commit-msg';
 const symlinkPath = `.git/hooks/${hookName}`;
 
+const hookPath = fileURLToPath(new URL('cli.mjs', import.meta.url));
+
 console.log('process.argv', process.argv);
 export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
 
 const isWindows = process.platform === 'win32';
-const windowsHook = (hookPath: string) => `
+const windowsHook = `
 #!/usr/bin/env node
-import(${JSON.stringify(path.relative(path.resolve(symlinkPath), hookPath))})
+import(${JSON.stringify(pathToFileURL(hookPath))})
 `.replace(/^\s+/gm, '').trim();
 
 export default command({
 	name: 'hook',
 	parameters: ['<install/uninstall>'],
 }, (argv) => {
-	const hookPath = fileURLToPath(new URL('cli.mjs', import.meta.url));
 
 	(async () => {
 		await assertGitRepo();
@@ -46,16 +47,15 @@ export default command({
 			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
 
 			if (isWindows) {
-				const asdf = windowsHook(hookPath);
 				console.log({
-					asdf,
+					windowsHook,
 					symlinkPath,
 					resolvedSymLinkPath: path.resolve(symlinkPath),
 					hookPath,
 				});
 				await fs.writeFile(
 					symlinkPath,
-					asdf,
+					windowsHook,
 				);
 			} else {
 				await fs.symlink(hookPath, symlinkPath, 'file');
