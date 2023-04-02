@@ -13,6 +13,10 @@ const symlinkPath = `.git/hooks/${hookName}`;
 export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
 
 const isWindows = process.platform === 'win32';
+const windowsHook = (hookPath: string) => `
+#!/bin/sh
+node ${JSON.stringify(path.relative(symlinkPath, hookPath))} "$@"
+`.replace(/^\s+/gm, '').trim();
 
 export default command({
 	name: 'hook',
@@ -40,14 +44,10 @@ export default command({
 
 			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
 
-
 			if (isWindows) {
 				await fs.writeFile(
 					symlinkPath,
-					`
-					#!/bin/sh
-					node ${JSON.stringify(path.relative(symlinkPath, hookPath))} "$@"
-					`.replace(/^\s+/mg, '').trim(),
+					windowsHook(hookPath),
 				);
 			} else {
 				await fs.symlink(hookPath, symlinkPath, 'file');
@@ -62,10 +62,19 @@ export default command({
 				console.warn('Hook is not installed');
 				return;
 			}
-			const realpath = await fs.realpath(symlinkPath);
-			if (realpath !== hookPath) {
-				console.warn('Hook is not installed');
-				return;
+
+			if (isWindows) {
+				const scriptContent = await fs.readFile(symlinkPath, 'utf8');
+				if (scriptContent !== windowsHook(hookPath)) {
+					console.warn('Hook is not installed');
+					return;
+				}
+			} else {
+				const realpath = await fs.realpath(symlinkPath);
+				if (realpath !== hookPath) {
+					console.warn('Hook is not installed');
+					return;
+				}
 			}
 
 			await fs.rm(symlinkPath);
