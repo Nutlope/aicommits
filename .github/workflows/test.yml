@@ -10,7 +10,7 @@ jobs:
     name: Test
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
@@ -33,8 +33,8 @@ jobs:
     - name: Type check
       run: pnpm type-check
 
-    # - name: Lint
-    #   run: pnpm lint
+    - name: Lint
+      run: pnpm lint
 
     - name: Build
       run: pnpm build
@@ -49,3 +49,4 @@ jobs:
         OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
       run: |
         pnpm test
+        pnpm --use-node-version=14.21.3 test

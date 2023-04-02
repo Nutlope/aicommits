@@ -3,17 +3,17 @@ import { createFixture, createGit, files } from '../utils.js';
 
 export default testSuite(({ describe }) => {
 	describe('Git hook', ({ test }) => {
-		// test('errors when not in Git repo', async () => {
-		// 	const { fixture, aicommits } = await createFixture(files);
-		// 	const { exitCode, stderr } = await aicommits(['hook', 'install'], {
-		// 		reject: false,
-		// 	});
+		test('errors when not in Git repo', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const { exitCode, stderr } = await aicommits(['hook', 'install'], {
+				reject: false,
+			});
 
-		// 	expect(exitCode).toBe(1);
-		// 	expect(stderr).toMatch('The current directory must be a Git repository');
+			expect(exitCode).toBe(1);
+			expect(stderr).toMatch('The current directory must be a Git repository');
 
-		// 	await fixture.rm();
-		// });
+			await fixture.rm();
+		});
 
 		test('Commits', async () => {
 			const { fixture, aicommits } = await createFixture(files);
@@ -23,16 +23,16 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toMatch('Hook installed');
 
 			await git('add', ['data.json']);
-			const a = await git('commit', ['--no-edit'], {
+			await git('commit', ['--no-edit'], {
 				env: {
 					HOME: fixture.path,
 					USERPROFILE: fixture.path,
 				},
 			});
-			console.log(a);
 
 			const { stdout: commitMessage } = await git('log', ['--pretty=%B']);
 			console.log('Committed with:', commitMessage);
+			expect(commitMessage.startsWith('# ')).not.toBe(true);
 
 			await fixture.rm();
 		});
