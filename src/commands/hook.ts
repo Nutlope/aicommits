@@ -47,7 +47,12 @@ export default command({
 
 			if (isWindows) {
 				const asdf = windowsHook(hookPath);
-				console.log({ asdf });
+				console.log({
+					asdf,
+					symlinkPath,
+					resolvedSymLinkPath: path.resolve(symlinkPath),
+					hookPath,
+				});
 				await fs.writeFile(
 					symlinkPath,
 					asdf,
