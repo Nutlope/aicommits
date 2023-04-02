@@ -93,6 +93,29 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		test('Accepts --edit flag, letting user edit commit message', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			await git('add', ['data.json']);
+			const statusBefore = await git('status', ['--short', '--untracked-files=no']);
+			expect(statusBefore.stdout).toBe('A  data.json');
+
+			const committing = aicommits(['--edit']);
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					committing.stdin!.write('y');
+					committing.stdin!.end();
+				}
+			});
+
+			const { stdout } = await committing;
+			expect(stdout).toMatch(/edit commit message/gi);
+
+			await fixture.rm();
+		});
+
 		test('Accepts --generate flag, overriding config', async ({ onTestFail }) => {
 			const { fixture, aicommits } = await createFixture({
 				...files,

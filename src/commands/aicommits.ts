@@ -3,7 +3,7 @@ import {
 	black, dim, green, red, bgCyan,
 } from 'kolorist';
 import {
-	intro, outro, spinner, select, confirm, isCancel,
+	intro, outro, spinner, select, confirm, isCancel, text,
 } from '@clack/prompts';
 import {
 	assertGitRepo,
@@ -18,6 +18,7 @@ export default async (
 	generate: number | undefined,
 	excludeFiles: string[],
 	stageAll: boolean,
+	editBeforeCommit: boolean,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -91,6 +92,21 @@ export default async (
 		}
 
 		message = selected;
+	}
+
+	if (editBeforeCommit) {
+		const updatedMessage = await text({
+			message: 'Edit commit message',
+			initialValue: message,
+			placeholder: 'Add a commit message here',
+		});
+
+		if (isCancel(updatedMessage)) {
+			outro('Commit cancelled');
+			return;
+		}
+
+		message = updatedMessage as string;
 	}
 
 	await execa('git', ['commit', '-m', message, ...rawArgv]);

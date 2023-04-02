@@ -35,6 +35,12 @@ cli(
 				alias: 'a',
 				default: false,
 			},
+			edit: {
+				type: Boolean,
+				description: 'Edit the commit message before committing',
+				alias: 'e',
+				default: false,
+			},
 		},
 
 		commands: [
@@ -56,6 +62,7 @@ cli(
 				argv.flags.generate,
 				argv.flags.exclude,
 				argv.flags.all,
+				argv.flags.edit,
 				rawArgv,
 			);
 		}
