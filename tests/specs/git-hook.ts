@@ -23,21 +23,7 @@ export default testSuite(({ describe }) => {
 			const git = await createGit(fixture.path);
 
 			const { stdout } = await aicommits(['hook', 'install']);
-			console.log({ stdout });
 			expect(stdout).toMatch('Hook installed');
-
-			const fixtureFiles = await fs.readdir(fixture.path);
-			console.log(fixtureFiles);
-
-			const gitHooksFiles = await fs.readdir(path.join(fixture.path, '.git/hooks'));
-			console.log(gitHooksFiles);
-
-			
-			const hookContent = await fs.readFile(path.join(fixture.path, '.git/hooks/prepare-commit-msg'), 'utf8');
-			console.log({hookContent});
-
-			const a = await execa(path.join(fixture.path, '.git/hooks/prepare-commit-msg'));
-			console.log(a);
 
 			await git('add', ['data.json']);
 			await git('commit', ['--no-edit'], {
