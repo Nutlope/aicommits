@@ -12,6 +12,8 @@ const symlinkPath = `.git/hooks/${hookName}`;
 
 export const isCalledFromGitHook = process.argv[1].endsWith(`/${symlinkPath}`);
 
+const isWindows = process.platform === 'win32';
+
 export default command({
 	name: 'hook',
 	parameters: ['<install/uninstall>'],
@@ -29,7 +31,7 @@ export default command({
 				// If the symlink is broken, it will throw an error
 				// eslint-disable-next-line @typescript-eslint/no-empty-function
 				const realpath = await fs.realpath(symlinkPath).catch(() => {});
-				if (realpath === hookPath)	{
+				if (realpath === hookPath) {
 					console.warn('The hook is already installed');
 					return;
 				}
@@ -37,8 +39,20 @@ export default command({
 			}
 
 			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
-			await fs.symlink(hookPath, symlinkPath, 'file');
-			await fs.chmod(symlinkPath, 0o755);
+
+
+			if (isWindows) {
+				await fs.writeFile(
+					hookPath,
+					`
+					#!/bin/sh
+					${process.execPath} ${symlinkPath} "$@"
+					`.replace(/^\s+/mg, '').trim(),
+				);
+			} else {
+				await fs.symlink(hookPath, symlinkPath, 'file');
+				await fs.chmod(symlinkPath, 0o755);
+			}
 			console.log(`${green('✔')} Hook installed`);
 			return;
 		}
