@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import { testSuite, expect } from 'manten';
 import { createFixture, createGit, files } from '../utils.js';
 
@@ -20,7 +22,14 @@ export default testSuite(({ describe }) => {
 			const git = await createGit(fixture.path);
 
 			const { stdout } = await aicommits(['hook', 'install']);
+			console.log({ stdout });
 			expect(stdout).toMatch('Hook installed');
+
+			const fixtureFiles = await fs.readdir(fixture.path);
+			console.log(fixtureFiles);
+
+			const gitHooksFiles = await fs.readdir(path.join(fixture.path, '.git/hooks'));
+			console.log(gitHooksFiles);
 
 			await git('add', ['data.json']);
 			await git('commit', ['--no-edit'], {
@@ -37,3 +46,4 @@ export default testSuite(({ describe }) => {
 		});
 	});
 });
+
