@@ -14,8 +14,8 @@ const hookPath = fileURLToPath(new URL('cli.mjs', import.meta.url));
 
 export const isCalledFromGitHook = (
 	process.argv[1]
-	.replace(/\\/g, '/') // Replace Windows back slashes with forward slashes
-	.endsWith(`/${symlinkPath}`)
+		.replace(/\\/g, '/') // Replace Windows back slashes with forward slashes
+		.endsWith(`/${symlinkPath}`)
 );
 
 const isWindows = process.platform === 'win32';
@@ -28,7 +28,6 @@ export default command({
 	name: 'hook',
 	parameters: ['<install/uninstall>'],
 }, (argv) => {
-
 	(async () => {
 		await assertGitRepo();
 
