@@ -20,7 +20,6 @@ export default testSuite(({ describe }) => {
 			const git = await createGit(fixture.path);
 
 			const { stdout } = await aicommits(['hook', 'install']);
-			console.log({ stdout });
 			expect(stdout).toMatch('Hook installed');
 
 			await git('add', ['data.json']);

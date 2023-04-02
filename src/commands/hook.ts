@@ -12,7 +12,6 @@ const symlinkPath = `.git/hooks/${hookName}`;
 
 const hookPath = fileURLToPath(new URL('cli.mjs', import.meta.url));
 
-console.log('process.argv', process.argv);
 export const isCalledFromGitHook = (
 	process.argv[1]
 	.replace(/\\/g, '/') // Replace Windows back slashes with forward slashes
@@ -51,12 +50,6 @@ export default command({
 			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
 
 			if (isWindows) {
-				console.log({
-					windowsHook,
-					symlinkPath,
-					resolvedSymLinkPath: path.resolve(symlinkPath),
-					hookPath,
-				});
 				await fs.writeFile(
 					symlinkPath,
 					windowsHook,
