@@ -72,3 +72,8 @@ export const createFixture = async (
 		aicommits,
 	};
 };
+
+export const files = Object.freeze({
+	'.aicommits': `OPENAI_KEY=${process.env.OPENAI_KEY}`,
+	'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
+});

@@ -1,7 +1,5 @@
 import { testSuite, expect } from 'manten';
-import { createFixture, createGit } from '../../utils.js';
-
-const { OPENAI_KEY } = process.env;
+import { createFixture, createGit, files } from '../../utils.js';
 
 export default testSuite(({ describe }) => {
 	if (process.platform === 'win32') {
@@ -10,17 +8,12 @@ export default testSuite(({ describe }) => {
 		return;
 	}
 
-	if (!OPENAI_KEY) {
+	if (!process.env.OPENAI_KEY) {
 		console.warn('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
 		return;
 	}
 
 	describe('CLI', async ({ test, describe }) => {
-		const files = {
-			'.aicommits': `OPENAI_KEY=${OPENAI_KEY}`,
-			'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
-		} as const;
-
 		test('Excludes files', async () => {
 			const { fixture, aicommits } = await createFixture(files);
 			const git = await createGit(fixture.path);

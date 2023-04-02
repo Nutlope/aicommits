@@ -50,14 +50,32 @@ export default () => (async () => {
 	} finally {
 		s.stop('Changes analyzed');
 	}
+
+	/**
+	 * When `--no-edit` is passed in, the base commit message is empty,
+	 * and even when you use pass in comments via #, they are ignored.
+	 *
+	 * Note: `--no-edit` cannot be detected in argvs so this is the only way to check
+	 */
+	const baseMessage = await fs.readFile(messageFilePath, 'utf8');
+	const supportsComments = baseMessage !== '';
 	const hasMultipleMessages = messages.length > 1;
-	let instructions = `# 🤖 AI generated commit${hasMultipleMessages ? 's' : ''}\n`;
+
+	let instructions = '';
+
+	if (supportsComments) {
+		instructions = `# 🤖 AI generated commit${hasMultipleMessages ? 's' : ''}\n`;
+	}
 
 	if (hasMultipleMessages) {
-		instructions += '# Select one of the following messages by uncommeting:\n';
+		if (supportsComments) {
+			instructions += '# Select one of the following messages by uncommeting:\n';
+		}
 		instructions += `\n${messages.map(message => `# ${message}`).join('\n')}`;
 	} else {
-		instructions += '# Edit the message below and commit:\n';
+		if (supportsComments) {
+			instructions += '# Edit the message below and commit:\n';
+		}
 		instructions += `\n${messages[0]}\n`;
 	}
 
