@@ -50,6 +50,7 @@ export default () => (async () => {
 	} finally {
 		s.stop('Changes analyzed');
 	}
+	console.log(1);
 	const hasMultipleMessages = messages.length > 1;
 	let instructions = `# 🤖 AI generated commit${hasMultipleMessages ? 's' : ''}\n`;
 
@@ -60,12 +61,15 @@ export default () => (async () => {
 		instructions += '# Edit the message below and commit:\n';
 		instructions += `\n${messages[0]}\n`;
 	}
+	console.log(2);
 
 	await fs.appendFile(
 		messageFilePath,
 		instructions,
 	);
+	console.log(3);
 	outro(`${green('✔')} Saved commit message!`);
+	console.log(4);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	handleCliError(error);

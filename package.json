@@ -20,7 +20,7 @@
 	},
 	"scripts": {
 		"prepare": "simple-git-hooks",
-		"build": "pkgroll --minify",
+		"build": "pkgroll",
 		"lint": "eslint --cache .",
 		"type-check": "tsc",
 		"test": "tsx tests",
