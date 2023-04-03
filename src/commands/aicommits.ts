@@ -1,24 +1,29 @@
+import {
+	intro,
+	isCancel,
+	outro,
+	select,
+	spinner,
+	text,
+} from '@clack/prompts';
 import { execa } from 'execa';
 import {
-	black, dim, green, red, bgCyan,
+	bgCyan,
+	black, dim, green, red,
 } from 'kolorist';
-import {
-	intro, outro, spinner, select, confirm, isCancel, text,
-} from '@clack/prompts';
+import { getConfig } from '../utils/config.js';
+import { KnownError, handleCliError } from '../utils/error.js';
 import {
 	assertGitRepo,
-	getStagedDiff,
 	getDetectedMessage,
+	getStagedDiff,
 } from '../utils/git.js';
-import { getConfig } from '../utils/config.js';
 import { generateCommitMessage } from '../utils/openai.js';
-import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
 	generate: number | undefined,
 	excludeFiles: string[],
 	stageAll: boolean,
-	editBeforeCommit: boolean,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
@@ -35,17 +40,22 @@ export default async (
 
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
-		throw new KnownError('No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.');
+		throw new KnownError(
+			'No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.',
+		);
 	}
 
-	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
-		staged.files.map(file => `     ${file}`).join('\n')
-	}`);
+	detectingFiles.stop(
+		`${getDetectedMessage(staged.files)}:\n${staged.files
+			.map(file => `     ${file}`)
+			.join('\n')}`,
+	);
 
 	const { env } = process;
 	const config = await getConfig({
 		OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
-		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
+		proxy:
+			env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		generate: generate?.toString(),
 	});
 
@@ -72,13 +82,29 @@ export default async (
 	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
-		const confirmed = await confirm({
+		const selected = await select({
 			message: `Use this commit message?\n\n   ${message}\n`,
+			options: ['Commit', 'Edit'].map(value => ({ label: value, value })),
 		});
 
-		if (!confirmed || isCancel(confirmed)) {
+		if (isCancel(selected)) {
 			outro('Commit cancelled');
 			return;
+		}
+
+		if (selected === 'Edit') {
+			const updatedMessage = await text({
+				message: 'Edit commit message',
+				initialValue: message,
+				placeholder: 'Add a commit message here',
+			});
+
+			if (isCancel(updatedMessage)) {
+				outro('Commit cancelled');
+				return;
+			}
+
+			message = updatedMessage as string;
 		}
 	} else {
 		const selected = await select({
@@ -92,21 +118,6 @@ export default async (
 		}
 
 		message = selected;
-	}
-
-	if (editBeforeCommit) {
-		const updatedMessage = await text({
-			message: 'Edit commit message',
-			initialValue: message,
-			placeholder: 'Add a commit message here',
-		});
-
-		if (isCancel(updatedMessage)) {
-			outro('Commit cancelled');
-			return;
-		}
-
-		message = updatedMessage as string;
 	}
 
 	await execa('git', ['commit', '-m', message, ...rawArgv]);

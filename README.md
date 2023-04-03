@@ -65,19 +65,17 @@ aicommits --all # or -a
 
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
 
-### Generate multiple recommendations
+#### Generate multiple recommendations
 
 Sometimes the recommended commit message isn't the best so you want it to generate a few to pick from. You can generate multiple commit messages at once by passing in the `--generate <i>` flag, where 'i' is the number of generated messages:
 ```sh
 aicommits --generate <i> # or -g <i>
 ```
+
 > Warning: this uses more tokens, meaning it costs more.
 
-### Edit the commit message before committing
-If you want to alter the final commit messgae before actually commiting it. Use `--edit` flag:
-
 ```sh
-aicommits --edit # or -e
+aicommits --all
 ```
 
 ### Git hook

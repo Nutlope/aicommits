@@ -45,7 +45,7 @@ export default testSuite(({ describe }) => {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					committing.stdin!.write('y');
+					committing.stdin!.write('\r');
 					committing.stdin!.end();
 				}
 			});
@@ -57,6 +57,29 @@ export default testSuite(({ describe }) => {
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
 			console.log('Committed with:', commitMessage);
+
+			await fixture.rm();
+		});
+
+		test('Edit the generated commit message', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			await git('add', ['data.json']);
+
+			const committing = aicommits();
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					// simulate pressing down arrow
+					committing.stdin!.write('\u001B[B');
+					committing.stdin!.write('\r');
+					committing.stdin!.end();
+				}
+			});
+
+			const { stdout } = await committing;
+			expect(stdout).toMatch('Edit commit message');
 
 			await fixture.rm();
 		});
@@ -77,7 +100,7 @@ export default testSuite(({ describe }) => {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					committing.stdin!.write('y');
+					committing.stdin!.write('\r');
 					committing.stdin!.end();
 				}
 			});
@@ -89,29 +112,6 @@ export default testSuite(({ describe }) => {
 
 			const { stdout: commitMessage } = await git('log', ['-n1', '--oneline']);
 			console.log('Committed with:', commitMessage);
-
-			await fixture.rm();
-		});
-
-		test('Accepts --edit flag, letting user edit commit message', async () => {
-			const { fixture, aicommits } = await createFixture(files);
-			const git = await createGit(fixture.path);
-
-			await git('add', ['data.json']);
-			const statusBefore = await git('status', ['--short', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe('A  data.json');
-
-			const committing = aicommits(['--edit']);
-			committing.stdout!.on('data', (buffer: Buffer) => {
-				const stdout = buffer.toString();
-				if (stdout.match('└')) {
-					committing.stdin!.write('y');
-					committing.stdin!.end();
-				}
-			});
-
-			const { stdout } = await committing;
-			expect(stdout).toMatch(/edit commit message/gi);
 
 			await fixture.rm();
 		});
@@ -172,7 +172,7 @@ export default testSuite(({ describe }) => {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					committing.stdin!.write('y');
+					committing.stdin!.write('\r');
 					committing.stdin!.end();
 				}
 			});
