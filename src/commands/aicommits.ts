@@ -84,7 +84,7 @@ export default async (
 		[message] = messages;
 		const selected = await select({
 			message: `Use this commit message?\n\n   ${message}\n`,
-			options: ['Commit', 'Edit'].map(value => ({ label: value, value })),
+			options: ['Commit', 'Edit message'].map(value => ({ label: value, value })),
 		});
 
 		if (isCancel(selected)) {
@@ -92,7 +92,7 @@ export default async (
 			return;
 		}
 
-		if (selected === 'Edit') {
+		if (selected === 'Edit message') {
 			const updatedMessage = await text({
 				message: 'Edit commit message',
 				initialValue: message,
