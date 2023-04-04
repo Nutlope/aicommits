@@ -1,7 +1,7 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
-import { type TiktokenModel, encoding_for_model as encodingForModel } from '@dqbd/tiktoken';
+import { type TiktokenModel } from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
@@ -108,14 +108,6 @@ export const generateCommitMessage = async (
 	proxy?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);
-
-	/**
-	 * text-davinci-003 has a token limit of 4000
-	 * https://platform.openai.com/docs/models/overview#:~:text=to%20Sep%202021-,text%2Ddavinci%2D003,-Can%20do%20any
-	 */
-	if (encodingForModel(model).encode(prompt).length > 4000) {
-		throw new KnownError('The diff is too large for the OpenAI API. Try reducing the number of staged changes, or write your own commit message.');
-	}
 
 	try {
 		const completion = await createChatCompletion(
