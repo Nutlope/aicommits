@@ -275,6 +275,40 @@ export default testSuite(({ describe }) => {
 
 				await fixture.rm();
 			});
+
+			test('Accepts empty --type flag', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\ntype=conventional`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits([
+					'--type', '',
+				]);
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+				expect(commitMessage).not.toMatch(conventionalCommitPattern);
+
+				await fixture.rm();
+			});
 		});
 
 		describe('proxy', ({ test }) => {
