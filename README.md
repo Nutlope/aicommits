@@ -74,8 +74,11 @@ aicommits --generate <i> # or -g <i>
 
 > Warning: this uses more tokens, meaning it costs more.
 
+#### Update the request timeout
+The default timeout of OPENAI API requests in the CLI is 10s. But ths value can be changed through the config
+
 ```sh
-aicommits --all
+aicommits config set timeout=20000 // 20s
 ```
 
 ### Git hook

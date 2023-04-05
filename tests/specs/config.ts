@@ -49,6 +49,31 @@ export default testSuite(({ describe }) => {
 			expect(stderr).toBe('');
 		});
 
+		await test('setting invalid timeout config', async () => {
+			const { stderr } = await aicommits(['config', 'set', 'timeout=abc'], {
+				reject: false,
+			});
+
+			expect(stderr).toMatch('Must be an integer');
+		});
+
+		await test('setting timeout config less than default', async () => {
+			const { stderr } = await aicommits(['config', 'set', 'timeout=1000'], {
+				reject: false,
+			});
+
+			expect(stderr).toMatch('Must be greater than the default timeout of 10s');
+		});
+
+		await test('setting valid timeout config', async () => {
+			const timeout = 'timeout=20000';
+			await aicommits(['config', 'set', timeout]);
+
+			const configFile = await fs.readFile(configPath, 'utf8');
+
+			expect(configFile).toMatch(timeout);
+		});
+
 		await fixture.rm();
 	});
 });
