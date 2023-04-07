@@ -83,7 +83,7 @@ export default async (
 	if (messages.length === 1) {
 		[message] = messages;
 		const selected = await select({
-			message: `Use this commit message?\n\n   ${message}\n`,
+			message: `Here is the suggested commit message:\n\n   ${message}\n`,
 			options: ['Commit', 'Edit message'].map(value => ({ label: value, value })),
 		});
 
@@ -107,17 +107,41 @@ export default async (
 			message = updatedMessage as string;
 		}
 	} else {
-		const selected = await select({
+		const selectedMessage = await select({
 			message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
 			options: messages.map(value => ({ label: value, value })),
 		});
 
-		if (isCancel(selected)) {
+		if (isCancel(selectedMessage)) {
 			outro('Commit cancelled');
 			return;
 		}
 
-		message = selected;
+		const selectedAction = await select({
+			message: 'Choose a action?\n',
+			options: ['Commit', 'Edit message'].map(value => ({ label: value, value })),
+		});
+
+		if (isCancel(selectedAction)) {
+			outro('Commit cancelled');
+			return;
+		}
+
+		message = selectedMessage as string;
+
+		if (selectedAction === 'Edit message') {
+			const updatedMessage = await text({
+				message: 'Edit commit message',
+				initialValue: selectedMessage as string,
+				placeholder: 'Add a commit message here',
+			});
+
+			if (isCancel(updatedMessage)) {
+				outro('Commit cancelled');
+				return;
+			}
+			message = updatedMessage as string;
+		}
 	}
 
 	await execa('git', ['commit', '-m', message, ...rawArgv]);
