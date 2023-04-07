@@ -83,7 +83,7 @@ export default async (
 	if (messages.length === 1) {
 		[message] = messages;
 		const selected = await select({
-			message: `Here is the suggested commit message:\n\n   ${message}\n`,
+			message: `Here is the suggested commit message. Choose an action:\n\n   ${message}\n`,
 			options: ['Commit', 'Edit message'].map(value => ({ label: value, value })),
 		});
 
@@ -118,7 +118,7 @@ export default async (
 		}
 
 		const selectedAction = await select({
-			message: 'Choose a action?\n',
+			message: 'Choose an action?\n',
 			options: ['Commit', 'Edit message'].map(value => ({ label: value, value })),
 		});
 
