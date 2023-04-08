@@ -77,3 +77,9 @@ export const files = Object.freeze({
 	'.aicommits': `OPENAI_KEY=${process.env.OPENAI_KEY}`,
 	'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
 });
+
+export const assertOpenAiToken = () => {
+	if (!process.env.OPENAI_KEY) {
+		throw new Error('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
+	}
+};
