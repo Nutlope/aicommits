@@ -51,7 +51,7 @@ const httpsPost = async (
 	request.on('error', reject);
 	request.on('timeout', () => {
 		request.destroy();
-		reject(new KnownError('Request timed out'));
+		reject(new KnownError(`Time out error: request took over ${timeout}ms. Try increasing the \`timeout\` config, or checking the OpenAI API status https://status.openai.com`));
 	});
 
 	request.write(postContent);

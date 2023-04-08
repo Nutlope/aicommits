@@ -277,7 +277,7 @@ export default testSuite(({ describe }) => {
 			const { stdout, exitCode } = await committing;
 
 			expect(exitCode).toBe(1);
-			expect(stdout).toMatch('Request timed out');
+			expect(stdout).toMatch('Time out error: request took over 500ms.');
 
 			await fixture.rm();
 		});
