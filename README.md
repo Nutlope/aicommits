@@ -186,7 +186,7 @@ The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of 
 
 
 #### timeout
-The timeout for network requests to the OpenAI API.
+The timeout for network requests to the OpenAI API in milliseconds.
 
 Default: `10000` (10 seconds)
 
