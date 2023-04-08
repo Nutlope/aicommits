@@ -76,7 +76,7 @@ const configParsers = {
 		parseAssert('timeout', /^\d+$/.test(timeout), 'Must be an integer');
 
 		const parsed = Number(timeout);
-		parseAssert('timeout', parsed > 500, 'Must be greater than 500ms');
+		parseAssert('timeout', parsed >= 500, 'Must be greater than 500ms');
 
 		return parsed;
 	},
