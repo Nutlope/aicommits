@@ -68,6 +68,18 @@ const configParsers = {
 
 		return model as TiktokenModel;
 	},
+	timeout(timeout?: string) {
+		if (!timeout) {
+			return 10_000;
+		}
+
+		parseAssert('timeout', /^\d+$/.test(timeout), 'Must be an integer');
+
+		const parsed = Number(timeout);
+		parseAssert('timeout', parsed >= 500, 'Must be greater than 500ms');
+
+		return parsed;
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;

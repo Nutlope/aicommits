@@ -74,10 +74,6 @@ aicommits --generate <i> # or -g <i>
 
 > Warning: this uses more tokens, meaning it costs more.
 
-```sh
-aicommits --all
-```
-
 ### Git hook
 
 You can also integrate _aicommits_ with Git via the [`prepare-commit-msg`](https://git-scm.com/docs/githooks#_prepare_commit_msg) hook. This lets you use Git like you normally would, and edit the commit message before committing.
@@ -188,6 +184,15 @@ The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of 
 
 > Tip: If you have access, try upgrading to [`gpt-4`](https://platform.openai.com/docs/models/gpt-4) for next-level code analysis. It can handle double the input size, but comes at a higher cost. Check out OpenAI's website to learn more.
 
+
+#### timeout
+The timeout for network requests to the OpenAI API in milliseconds.
+
+Default: `10000` (10 seconds)
+
+```sh
+aicommits config set timeout=20000 # 20s
+```
 
 ## How it works
 

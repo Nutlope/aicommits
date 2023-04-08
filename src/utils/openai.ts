@@ -10,6 +10,7 @@ const httpsPost = async (
 	path: string,
 	headers: Record<string, string>,
 	json: unknown,
+	timeout: number,
 	proxy?: string,
 ) => new Promise<{
 	request: ClientRequest;
@@ -28,7 +29,7 @@ const httpsPost = async (
 				'Content-Type': 'application/json',
 				'Content-Length': Buffer.byteLength(postContent),
 			},
-			timeout: 10_000, // 10s
+			timeout,
 			agent: (
 				proxy
 					? createHttpsProxyAgent(proxy)
@@ -50,7 +51,7 @@ const httpsPost = async (
 	request.on('error', reject);
 	request.on('timeout', () => {
 		request.destroy();
-		reject(new KnownError('Request timed out'));
+		reject(new KnownError(`Time out error: request took over ${timeout}ms. Try increasing the \`timeout\` config, or checking the OpenAI API status https://status.openai.com`));
 	});
 
 	request.write(postContent);
@@ -60,6 +61,7 @@ const httpsPost = async (
 const createChatCompletion = async (
 	apiKey: string,
 	json: CreateChatCompletionRequest,
+	timeout: number,
 	proxy?: string,
 ) => {
 	const { response, data } = await httpsPost(
@@ -69,6 +71,7 @@ const createChatCompletion = async (
 			Authorization: `Bearer ${apiKey}`,
 		},
 		json,
+		timeout,
 		proxy,
 	);
 
@@ -105,6 +108,7 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	timeout: number,
 	proxy?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);
@@ -126,6 +130,7 @@ export const generateCommitMessage = async (
 				stream: false,
 				n: completions,
 			},
+			timeout,
 			proxy,
 		);
 
