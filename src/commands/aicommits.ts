@@ -37,7 +37,9 @@ export default async (
 		throw new KnownError('No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.');
 	}
 
-	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${staged.files.map(file => `     ${file}`).join('\n')}`);
+	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
+		staged.files.map(file => `     ${file}`).join('\n')
+	}`);
 
 	const { env } = process;
 	const config = await getConfig({
@@ -56,8 +58,8 @@ export default async (
 			config.locale,
 			staged.diff,
 			config.generate,
-			config.proxy,
 			config.timeout,
+			config.proxy,
 		);
 	} finally {
 		s.stop('Changes analyzed');

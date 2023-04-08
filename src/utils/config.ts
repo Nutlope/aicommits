@@ -69,15 +69,14 @@ const configParsers = {
 		return model as TiktokenModel;
 	},
 	timeout(timeout?: string) {
-		const defaultTimeout = 10_000; // 10s
 		if (!timeout) {
-			return defaultTimeout;
+			return 10_000;
 		}
 
 		parseAssert('timeout', /^\d+$/.test(timeout), 'Must be an integer');
 
 		const parsed = Number(timeout);
-		parseAssert('timeout', parsed > defaultTimeout, 'Must be greater than the default timeout of 10s');
+		parseAssert('timeout', parsed > 500, 'Must be greater than 500ms');
 
 		return parsed;
 	},

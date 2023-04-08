@@ -10,8 +10,8 @@ const httpsPost = async (
 	path: string,
 	headers: Record<string, string>,
 	json: unknown,
+	timeout: number,
 	proxy?: string,
-	timeout?: number,
 ) => new Promise<{
 	request: ClientRequest;
 	response: IncomingMessage;
@@ -61,8 +61,8 @@ const httpsPost = async (
 const createChatCompletion = async (
 	apiKey: string,
 	json: CreateChatCompletionRequest,
+	timeout: number,
 	proxy?: string,
-	timeout?: number,
 ) => {
 	const { response, data } = await httpsPost(
 		'api.openai.com',
@@ -71,8 +71,8 @@ const createChatCompletion = async (
 			Authorization: `Bearer ${apiKey}`,
 		},
 		json,
-		proxy,
 		timeout,
+		proxy,
 	);
 
 	if (
@@ -108,8 +108,8 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	timeout: number,
 	proxy?: string,
-	timeout?: number,
 ) => {
 	const prompt = getPrompt(locale, diff);
 
@@ -130,8 +130,8 @@ export const generateCommitMessage = async (
 				stream: false,
 				n: completions,
 			},
-			proxy,
 			timeout,
+			proxy,
 		);
 
 		return deduplicateMessages(
