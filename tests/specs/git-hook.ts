@@ -1,8 +1,15 @@
 import { testSuite, expect } from 'manten';
-import { createFixture, createGit, files } from '../utils.js';
+import {
+	assertOpenAiToken,
+	createFixture,
+	createGit,
+	files,
+} from '../utils.js';
 
 export default testSuite(({ describe }) => {
 	describe('Git hook', ({ test }) => {
+		assertOpenAiToken();
+
 		test('errors when not in Git repo', async () => {
 			const { fixture, aicommits } = await createFixture(files);
 			const { exitCode, stderr } = await aicommits(['hook', 'install'], {

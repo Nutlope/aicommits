@@ -1,5 +1,10 @@
 import { testSuite, expect } from 'manten';
-import { createFixture, createGit, files } from '../../utils.js';
+import {
+	assertOpenAiToken,
+	createFixture,
+	createGit,
+	files,
+} from '../../utils.js';
 
 export default testSuite(({ describe }) => {
 	if (process.platform === 'win32') {
@@ -8,10 +13,7 @@ export default testSuite(({ describe }) => {
 		return;
 	}
 
-	if (!process.env.OPENAI_KEY) {
-		console.warn('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
-		return;
-	}
+	assertOpenAiToken();
 
 	describe('CLI', async ({ test, describe }) => {
 		test('Excludes files', async () => {
