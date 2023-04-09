@@ -106,6 +106,7 @@ const getPrompt = (locale: string, diff: string) => `Write a git commit message 
 const getTokens = (prompt: string, model: TiktokenModel) => {
 	const encoder = encoding_for_model(model);
 	const tokens = encoder.encode(prompt).length;
+	// Free the encoder to avoid possible memory leaks.
 	encoder.free();
 	return tokens;
 };
