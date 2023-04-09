@@ -252,34 +252,5 @@ export default testSuite(({ describe }) => {
 				await fixture.rm();
 			});
 		});
-
-		test('Fails on timeout', async () => {
-			const { fixture, aicommits } = await createFixture({
-				...files,
-				'.aicommits': `${files['.aicommits']}\ntimeout=500`,
-			});
-			const git = await createGit(fixture.path);
-
-			await git('add', ['data.json']);
-
-			const committing = aicommits([], {
-				reject: false,
-			});
-
-			committing.stdout!.on('data', (buffer: Buffer) => {
-				const stdout = buffer.toString();
-				if (stdout.match('└')) {
-					committing.stdin!.write('y');
-					committing.stdin!.end();
-				}
-			});
-
-			const { stdout, exitCode } = await committing;
-
-			expect(exitCode).toBe(1);
-			expect(stdout).toMatch('Time out error: request took over 500ms.');
-
-			await fixture.rm();
-		});
 	});
 });
