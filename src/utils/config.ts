@@ -83,8 +83,8 @@ const configParsers = {
 	length(length?: string) {
 		if (!length) {
 			// One token in OpenAI generally corresponds to `~4` characters of common English text.
-			// So `15 tokens ~= 60 characters`. Learn more about it https://platform.openai.com/tokenizer
-			return 15;
+			// So `20 tokens ~= 80 characters`. Learn more about it https://platform.openai.com/tokenizer
+			return 20;
 		}
 
 		parseAssert('length', /^\d+$/.test(length), 'Must be an integer');
