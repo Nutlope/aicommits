@@ -68,6 +68,33 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
+		await describe('length', ({ test }) => {
+			test('setting invalid length config', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'length=abc'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch('Must be an integer');
+			});
+
+			test('setting length config less than 5 tokens(20 characters)', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'length=4'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch('Must be greater than 5 tokens(20 characters))');
+			});
+
+			test('setting valid length config', async () => {
+				const length = 'length=100';
+				await aicommits(['config', 'set', length]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+
+				expect(configFile).toMatch(length);
+			});
+		});
+
 		await fixture.rm();
 	});
 });

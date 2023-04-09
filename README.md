@@ -194,6 +194,17 @@ Default: `10000` (10 seconds)
 aicommits config set timeout=20000 # 20s
 ```
 
+#### length
+The maximum number of tokens to be generated for the commit message.
+
+Default: `15` (60 characters)
+
+> Important: One token in OpenAI generally corresponds to `~4` characters of text for common English text. So `15 tokens ~= 60 characters`. Learn more about it [here](https://platform.openai.com/tokenizer)
+
+```sh
+aicommits config set length=30 # 120 chars
+```
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.

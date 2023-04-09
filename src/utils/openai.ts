@@ -108,6 +108,7 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	length: number,
 	timeout: number,
 	proxy?: string,
 ) => {
@@ -126,7 +127,7 @@ export const generateCommitMessage = async (
 				top_p: 1,
 				frequency_penalty: 0,
 				presence_penalty: 0,
-				max_tokens: 200,
+				max_tokens: length,
 				stream: false,
 				n: completions,
 			},

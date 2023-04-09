@@ -80,6 +80,21 @@ const configParsers = {
 
 		return parsed;
 	},
+	length(length?: string) {
+		if (!length) {
+			// One token in OpenAI generally corresponds to `~4` characters of common English text.
+			// So `15 tokens ~= 60 characters`. Learn more about it https://platform.openai.com/tokenizer
+			return 15;
+		}
+
+		parseAssert('length', /^\d+$/.test(length), 'Must be an integer');
+
+		const parsed = Number(length);
+		parseAssert('length', parsed >= 5, 'Must be greater than 5 tokens(20 characters))');
+
+		return parsed;
+	},
+
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;
