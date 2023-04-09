@@ -1,7 +1,8 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
-import { type TiktokenModel } from '@dqbd/tiktoken';
+// eslint-disable-next-line camelcase
+import { TiktokenModel, encoding_for_model } from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
@@ -102,6 +103,13 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getPrompt = (locale: string, diff: string) => `Write a git commit message in present tense for the following diff without prefacing it with anything. Do not be needlessly verbose and make sure the answer is concise and to the point. The response must be in the language ${locale}:\n${diff}`;
 
+const getTokens = (prompt: string, model: TiktokenModel) => {
+	const encoder = encoding_for_model(model);
+	const tokens = encoder.encode(prompt).length;
+	encoder.free();
+	return tokens;
+};
+
 export const generateCommitMessage = async (
 	apiKey: string,
 	model: TiktokenModel,
@@ -113,6 +121,9 @@ export const generateCommitMessage = async (
 	proxy?: string,
 ) => {
 	const prompt = getPrompt(locale, diff);
+
+	// The token limit is shared between the prompt and the completion.
+	const maxTokens = length + getTokens(prompt, model);
 
 	try {
 		const completion = await createChatCompletion(
@@ -127,7 +138,7 @@ export const generateCommitMessage = async (
 				top_p: 1,
 				frequency_penalty: 0,
 				presence_penalty: 0,
-				max_tokens: length,
+				max_tokens: maxTokens,
 				stream: false,
 				n: completions,
 			},
