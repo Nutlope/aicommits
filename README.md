@@ -195,14 +195,12 @@ aicommits config set timeout=20000 # 20s
 ```
 
 #### length
-The maximum number of tokens to be generated for the commit message.
+The maximum character length to be generated for the commit message.
 
-Default: `20` (80 characters)
-
-> Important: One token in OpenAI generally corresponds to `~4` characters of text for common English text. So `20 tokens ~= 80 characters`. Learn more about it [here](https://platform.openai.com/tokenizer)
+Default: `50`
 
 ```sh
-aicommits config set length=30 # 120 characters
+aicommits config set length=100
 ```
 
 ## How it works

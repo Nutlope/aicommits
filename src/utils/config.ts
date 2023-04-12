@@ -9,11 +9,7 @@ import { KnownError } from './error.js';
 const { hasOwnProperty } = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
 
-const parseAssert = (
-	name: string,
-	condition: any,
-	message: string,
-) => {
+const parseAssert = (name: string, condition: any, message: string) => {
 	if (!condition) {
 		throw new KnownError(`Invalid config property ${name}: ${message}`);
 	}
@@ -36,7 +32,6 @@ const configParsers = {
 
 		parseAssert('locale', locale, 'Cannot be empty');
 		parseAssert('locale', /^[a-z-]+$/i.test(locale), 'Must be a valid locale (letters and dashes/underscores). You can consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes');
-
 		return locale;
 	},
 	generate(count?: string) {
@@ -82,19 +77,16 @@ const configParsers = {
 	},
 	length(length?: string) {
 		if (!length) {
-			// One token in OpenAI generally corresponds to `~4` characters of common English text.
-			// So `20 tokens ~= 80 characters`. Learn more about it https://platform.openai.com/tokenizer
-			return 20;
+			return 50;
 		}
 
 		parseAssert('length', /^\d+$/.test(length), 'Must be an integer');
 
 		const parsed = Number(length);
-		parseAssert('length', parsed >= 5, 'Must be greater than 5 tokens(20 characters))');
+		parseAssert('length', parsed >= 20, 'Must be greater than 20 characters');
 
 		return parsed;
 	},
-
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;
@@ -132,9 +124,7 @@ export const getConfig = async (cliConfig?: RawConfig): Promise<ValidConfig> => 
 	return parsedConfig as ValidConfig;
 };
 
-export const setConfigs = async (
-	keyValues: [key: string, value: string][],
-) => {
+export const setConfigs = async (keyValues: [key: string, value: string][]) => {
 	const config = await readConfigFile();
 
 	for (const [key, value] of keyValues) {

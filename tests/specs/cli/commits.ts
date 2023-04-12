@@ -51,6 +51,8 @@ export default testSuite(({ describe }) => {
 			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
+			expect(commitMessage.length <= 50 + 5).toBe(true);
+
 			console.log('Committed with:', commitMessage);
 
 			await fixture.rm();

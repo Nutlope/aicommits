@@ -31,11 +31,7 @@ const httpsPost = async (
 				'Content-Length': Buffer.byteLength(postContent),
 			},
 			timeout,
-			agent: (
-				proxy
-					? createHttpsProxyAgent(proxy)
-					: undefined
-			),
+			agent: proxy ? createHttpsProxyAgent(proxy) : undefined,
 		},
 		(response) => {
 			const body: Buffer[] = [];
@@ -101,7 +97,17 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getPrompt = (locale: string, diff: string) => `Write a git commit message in present tense for the following diff without prefacing it with anything. Do not be needlessly verbose and make sure the answer is concise and to the point. The response must be in the language ${locale}:\n${diff}`;
+const getPrompt = (locale: string, diff: string, length: number) => `Write a git commit message in present tense for the following diff without prefacing it with anything. Do not be needlessly verbose and make sure the answer is concise and to the point. The response must be no longer than ${length} characters. The response must be in the language ${locale}:\n${diff}`;
+
+const generateStringFromLength = (length: number) => {
+	let result = '';
+	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+	for (let i = 0; i < length; i += 1) {
+		const randomIndex = Math.floor(Math.random() * characters.length);
+		result += characters.charAt(randomIndex);
+	}
+	return result;
+};
 
 const getTokens = (prompt: string, model: TiktokenModel) => {
 	const encoder = encoding_for_model(model);
@@ -121,10 +127,16 @@ export const generateCommitMessage = async (
 	timeout: number,
 	proxy?: string,
 ) => {
-	const prompt = getPrompt(locale, diff);
+	const prompt = getPrompt(locale, diff, length);
+
+	// Padded by 5 for more room for the completion.
+	length += 5;
+	const stringFromLength = generateStringFromLength(length);
+	const tokenFromLength = getTokens(stringFromLength, model);
+	const tokenFromPrompt = getTokens(prompt, model);
 
 	// The token limit is shared between the prompt and the completion.
-	const maxTokens = length + getTokens(prompt, model);
+	const maxTokens = tokenFromLength + tokenFromPrompt;
 
 	try {
 		const completion = await createChatCompletion(

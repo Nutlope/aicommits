@@ -77,16 +77,16 @@ export default testSuite(({ describe }) => {
 				expect(stderr).toMatch('Must be an integer');
 			});
 
-			test('setting length config less than 5 tokens(20 characters)', async () => {
-				const { stderr } = await aicommits(['config', 'set', 'length=4'], {
+			test('setting length config less than 10 characters)', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'length=10'], {
 					reject: false,
 				});
 
-				expect(stderr).toMatch('Must be greater than 5 tokens(20 characters))');
+				expect(stderr).toMatch(/must be greater than 20 characters/i);
 			});
 
-			test('setting valid length config', async () => {
-				const length = 'length=100';
+			test('setting length config less than 60 characters', async () => {
+				const length = 'length=60';
 				await aicommits(['config', 'set', length]);
 
 				const configFile = await fs.readFile(configPath, 'utf8');
