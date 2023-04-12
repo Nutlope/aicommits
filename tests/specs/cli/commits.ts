@@ -51,9 +51,31 @@ export default testSuite(({ describe }) => {
 			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
-			expect(commitMessage.length <= 50 + 5).toBe(true);
 
 			console.log('Committed with:', commitMessage);
+
+			await fixture.rm();
+		});
+
+		test('Generated commit message must be under 50 characters', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			await git('add', ['data.json']);
+
+			const committing = aicommits();
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					committing.stdin!.write('y');
+					committing.stdin!.end();
+				}
+			});
+
+			await committing;
+
+			const { stdout: commitMessage } = await git('log', ['--oneline']);
+			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
 		});

@@ -130,8 +130,7 @@ export const generateCommitMessage = async (
 	const prompt = getPrompt(locale, diff, length);
 
 	// Padded by 5 for more room for the completion.
-	length += 5;
-	const stringFromLength = generateStringFromLength(length);
+	const stringFromLength = generateStringFromLength(length + 5);
 	const tokenFromLength = getTokens(stringFromLength, model);
 	const tokenFromPrompt = getTokens(prompt, model);
 
