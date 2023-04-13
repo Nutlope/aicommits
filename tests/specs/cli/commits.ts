@@ -6,6 +6,12 @@ import {
 	files,
 } from '../../utils.js';
 
+export const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
+	setTimeout(() => {
+		resolve();
+	}, ms);
+});
+
 export default testSuite(({ describe }) => {
 	if (process.platform === 'win32') {
 		// https://github.com/nodejs/node/issues/31409
@@ -40,7 +46,7 @@ export default testSuite(({ describe }) => {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					committing.stdin!.write('y');
+					committing.stdin!.write('\r');
 					committing.stdin!.end();
 				}
 			});
@@ -51,6 +57,38 @@ export default testSuite(({ describe }) => {
 			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
+			console.log('Committed with:', commitMessage);
+
+			await fixture.rm();
+		});
+
+		test('Choose the "Edit message" option', async ({ onTestFail }) => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			await git('add', ['data.json']);
+
+			const committing = aicommits();
+			committing.stdout!.on('data', async (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				if (stdout.match('└')) {
+					// Pressing down arrow to select the second choice "Edit message"
+					committing.stdin!.write('\u001B[B');
+					committing.stdin!.write('\r');
+					// Atleast 1s delayrequried to process the input and animate the prompt
+					await sleep(1000);
+					committing.stdin!.write('\r');
+					committing.stdin!.end();
+				}
+			});
+
+			const { stdout } = await committing;
+			const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
+
+			onTestFail(() => console.log({ stdout }));
+			expect(countChoices).toBe(4);
+
+			const { stdout: commitMessage } = await git('log', ['-n1', '--oneline']);
 			console.log('Committed with:', commitMessage);
 
 			await fixture.rm();
@@ -72,7 +110,7 @@ export default testSuite(({ describe }) => {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					committing.stdin!.write('y');
+					committing.stdin!.write('\r');
 					committing.stdin!.end();
 				}
 			});
@@ -103,9 +141,11 @@ export default testSuite(({ describe }) => {
 			]);
 
 			// Hit enter to accept the commit message
-			committing.stdout!.on('data', function onPrompt(buffer: Buffer) {
+			committing.stdout!.on('data', async function onPrompt(buffer: Buffer) {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
+					committing.stdin!.write('\r');
+					await sleep(1000);
 					committing.stdin!.write('\r');
 					committing.stdin!.end();
 					committing.stdout?.off('data', onPrompt);
@@ -116,7 +156,7 @@ export default testSuite(({ describe }) => {
 			const countChoices = stdout.match(/ {2}[●○]/g)?.length ?? 0;
 
 			onTestFail(() => console.log({ stdout }));
-			expect(countChoices).toBe(2);
+			expect(countChoices).toBe(4);
 
 			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
@@ -144,7 +184,7 @@ export default testSuite(({ describe }) => {
 			committing.stdout!.on('data', (buffer: Buffer) => {
 				const stdout = buffer.toString();
 				if (stdout.match('└')) {
-					committing.stdin!.write('y');
+					committing.stdin!.write('\r');
 					committing.stdin!.end();
 				}
 			});
