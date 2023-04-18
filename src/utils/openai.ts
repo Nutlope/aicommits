@@ -101,10 +101,9 @@ const getPrompt = (locale: string, diff: string, length: number) => `Write a git
 
 const generateStringFromLength = (length: number) => {
 	let result = '';
-	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+	const highestTokenChar = 'z';
 	for (let i = 0; i < length; i += 1) {
-		const randomIndex = Math.floor(Math.random() * characters.length);
-		result += characters.charAt(randomIndex);
+		result += highestTokenChar;
 	}
 	return result;
 };
@@ -131,11 +130,9 @@ export const generateCommitMessage = async (
 
 	// Padded by 5 for more room for the completion.
 	const stringFromLength = generateStringFromLength(length + 5);
-	const tokenFromLength = getTokens(stringFromLength, model);
-	const tokenFromPrompt = getTokens(prompt, model);
 
 	// The token limit is shared between the prompt and the completion.
-	const maxTokens = tokenFromLength + tokenFromPrompt;
+	const maxTokens = getTokens(stringFromLength + prompt, model);
 
 	try {
 		const completion = await createChatCompletion(

@@ -195,7 +195,7 @@ aicommits config set timeout=20000 # 20s
 ```
 
 #### length
-The maximum character length to be generated for the commit message.
+The maximum character length of the generated commit message.
 
 Default: `50`
 

@@ -124,7 +124,9 @@ export const getConfig = async (cliConfig?: RawConfig): Promise<ValidConfig> => 
 	return parsedConfig as ValidConfig;
 };
 
-export const setConfigs = async (keyValues: [key: string, value: string][]) => {
+export const setConfigs = async (
+	keyValues: [key: string, value: string][],
+) => {
 	const config = await readConfigFile();
 
 	for (const [key, value] of keyValues) {
