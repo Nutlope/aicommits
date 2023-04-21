@@ -1,15 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { testSuite, expect } from 'manten';
-import { createFixture } from 'fs-fixture';
-import { createAicommits } from '../utils.js';
+import { createFixture } from '../utils.js';
 
 export default testSuite(({ describe }) => {
-	describe('config', async ({ test }) => {
-		const fixture = await createFixture();
-		const aicommits = createAicommits({
-			home: fixture.path,
-		});
+	describe('config', async ({ test, describe }) => {
+		const { fixture, aicommits } = await createFixture();
 		const configPath = path.join(fixture.path, '.aicommits');
 		const openAiToken = 'OPENAI_KEY=sk-abc';
 
@@ -51,6 +47,25 @@ export default testSuite(({ describe }) => {
 
 			expect(stdout).toBe('');
 			expect(stderr).toBe('');
+		});
+
+		await describe('timeout', ({ test }) => {
+			test('setting invalid timeout config', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'timeout=abc'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch('Must be an integer');
+			});
+
+			test('setting valid timeout config', async () => {
+				const timeout = 'timeout=20000';
+				await aicommits(['config', 'set', timeout]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+
+				expect(configFile).toMatch(timeout);
+			});
 		});
 
 		await fixture.rm();

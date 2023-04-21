@@ -21,13 +21,24 @@ cli(
 		flags: {
 			generate: {
 				type: Number,
-				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
+				description: 'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
 			noninteractive: {
 				type: Boolean,
 				description: 'Non interactive mode',
 				alias: 'y',
+        default: false,
+			},
+			exclude: {
+				type: [String],
+				description: 'Files to exclude from AI analysis',
+				alias: 'x',
+			},
+			all: {
+				type: Boolean,
+				description: 'Automatically stage changes in tracked files for the commit',
+				alias: 'a',
 				default: false,
 			},
 		},
@@ -50,6 +61,8 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				argv.flags.noninteractive,
+				argv.flags.exclude,
+				argv.flags.all,
 				rawArgv,
 			);
 		}

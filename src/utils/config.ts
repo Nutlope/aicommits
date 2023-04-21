@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import ini from 'ini';
+import type { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
@@ -48,6 +49,34 @@ const configParsers = {
 		const parsed = Number(count);
 		parseAssert('generate', parsed > 0, 'Must be greater than 0');
 		parseAssert('generate', parsed <= 5, 'Must be less or equal to 5');
+
+		return parsed;
+	},
+	proxy(url?: string) {
+		if (!url || url.length === 0) {
+			return undefined;
+		}
+
+		parseAssert('proxy', /^https?:\/\//.test(url), 'Must be a valid URL');
+
+		return url;
+	},
+	model(model?: string) {
+		if (!model || model.length === 0) {
+			return 'gpt-3.5-turbo';
+		}
+
+		return model as TiktokenModel;
+	},
+	timeout(timeout?: string) {
+		if (!timeout) {
+			return 10_000;
+		}
+
+		parseAssert('timeout', /^\d+$/.test(timeout), 'Must be an integer');
+
+		const parsed = Number(timeout);
+		parseAssert('timeout', parsed >= 500, 'Must be greater than 500ms');
 
 		return parsed;
 	},
