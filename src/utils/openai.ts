@@ -1,8 +1,11 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
-// eslint-disable-next-line camelcase
-import { TiktokenModel, encoding_for_model } from '@dqbd/tiktoken';
+import {
+	TiktokenModel,
+	// eslint-disable-next-line camelcase
+	encoding_for_model,
+} from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 
@@ -31,7 +34,11 @@ const httpsPost = async (
 				'Content-Length': Buffer.byteLength(postContent),
 			},
 			timeout,
-			agent: proxy ? createHttpsProxyAgent(proxy) : undefined,
+			agent: (
+				proxy
+					? createHttpsProxyAgent(proxy)
+					: undefined
+			),
 		},
 		(response) => {
 			const body: Buffer[] = [];

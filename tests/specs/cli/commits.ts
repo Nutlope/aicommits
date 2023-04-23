@@ -51,14 +51,18 @@ export default testSuite(({ describe }) => {
 			expect(statusAfter.stdout).toBe('');
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
-
 			console.log('Committed with:', commitMessage);
+			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
 		});
 
-		test('Generated commit message must be under 50 characters', async () => {
-			const { fixture, aicommits } = await createFixture(files);
+		test('Generated commit message must be under 20 characters', async () => {
+			const { fixture, aicommits } = await createFixture({
+				...files,
+				'.aicommits': `${files['.aicommits']}\nlength=20`,
+			});
+
 			const git = await createGit(fixture.path);
 
 			await git('add', ['data.json']);
@@ -75,7 +79,8 @@ export default testSuite(({ describe }) => {
 			await committing;
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
-			expect(commitMessage.length <= 50).toBe(true);
+			console.log('20 Committed with:', commitMessage);
+			expect(commitMessage.length <= 20).toBe(true);
 
 			await fixture.rm();
 		});
@@ -108,6 +113,7 @@ export default testSuite(({ describe }) => {
 
 			const { stdout: commitMessage } = await git('log', ['-n1', '--oneline']);
 			console.log('Committed with:', commitMessage);
+			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
 		});
@@ -147,6 +153,7 @@ export default testSuite(({ describe }) => {
 
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
 			console.log('Committed with:', commitMessage);
+			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
 		});
@@ -181,6 +188,7 @@ export default testSuite(({ describe }) => {
 			const { stdout: commitMessage } = await git('log', ['--oneline']);
 			console.log('Committed with:', commitMessage);
 			expect(commitMessage).toMatch(japanesePattern);
+			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
 		});
@@ -241,6 +249,7 @@ export default testSuite(({ describe }) => {
 
 				const { stdout: commitMessage } = await git('log', ['--oneline']);
 				console.log('Committed with:', commitMessage);
+				expect(commitMessage.length <= 50).toBe(true);
 
 				await fixture.rm();
 			});
@@ -272,6 +281,7 @@ export default testSuite(({ describe }) => {
 
 				const { stdout: commitMessage } = await git('log', ['--oneline']);
 				console.log('Committed with:', commitMessage);
+				expect(commitMessage.length <= 50).toBe(true);
 
 				await fixture.rm();
 			});
