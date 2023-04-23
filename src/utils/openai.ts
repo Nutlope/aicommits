@@ -106,14 +106,8 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getPrompt = (locale: string, diff: string, length: number) => `Write a git commit message in present tense for the following diff without prefacing it with anything. Do not be needlessly verbose and make sure the answer is concise and to the point. The response must be no longer than ${length} characters. The response must be in the language ${locale}:\n${diff}`;
 
-const generateStringFromLength = (length: number) => {
-	let result = '';
-	const highestTokenChar = 'z';
-	for (let i = 0; i < length; i += 1) {
-		result += highestTokenChar;
-	}
-	return result;
-};
+const highestTokenCharacter = 'z';
+const generateStringFromLength = (length: number) => Array.from({ length }, () => highestTokenCharacter).join('');
 
 const getTokens = (prompt: string, model: TiktokenModel) => {
 	const encoder = encoding_for_model(model);
