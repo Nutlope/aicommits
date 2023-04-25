@@ -15,7 +15,7 @@ export default testSuite(({ describe }) => {
 
 	assertOpenAiToken();
 
-	describe('CLI', async ({ test, describe }) => {
+	describe('Commits', async ({ test, describe }) => {
 		test('Excludes files', async () => {
 			const { fixture, aicommits } = await createFixture(files);
 			const git = await createGit(fixture.path);
