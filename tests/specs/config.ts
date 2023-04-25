@@ -86,12 +86,10 @@ export default testSuite(({ describe }) => {
 				expect(stderr).toMatch(/must be greater than 20 characters/i);
 			});
 
-			test('default config', async () => {
-				const { stdout } = await aicommits(['config', 'get', 'max-length']);
-				expect(stdout).toBe('max-length=50');
-			});
-
 			test('updates config', async () => {
+				const defaultConfig = await aicommits(['config', 'get', 'max-length']);
+				expect(defaultConfig.stdout).toBe('max-length=50');
+
 				const maxLength = 'max-length=60';
 				await aicommits(['config', 'set', maxLength]);
 
