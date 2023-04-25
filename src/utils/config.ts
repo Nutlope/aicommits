@@ -115,14 +115,24 @@ const readConfigFile = async (): Promise<RawConfig> => {
 	return ini.parse(configString);
 };
 
-export const getConfig = async (cliConfig?: RawConfig): Promise<ValidConfig> => {
+export const getConfig = async (
+	cliConfig?: RawConfig,
+	suppressErrors?: boolean,
+): Promise<ValidConfig> => {
 	const config = await readConfigFile();
 	const parsedConfig: Record<string, unknown> = {};
 
 	for (const key of Object.keys(configParsers) as ConfigKeys[]) {
 		const parser = configParsers[key];
 		const value = cliConfig?.[key] ?? config[key];
-		parsedConfig[key] = parser(value);
+
+		if (suppressErrors) {
+			try {
+				parsedConfig[key] = parser(value);
+			} catch {}
+		} else {
+			parsedConfig[key] = parser(value);
+		}
 	}
 
 	return parsedConfig as ValidConfig;

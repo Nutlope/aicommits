@@ -25,19 +25,6 @@ export default testSuite(({ describe }) => {
 			expect(stderr).toMatch('Invalid config property OPENAI_KEY: Must start with "sk-"');
 		});
 
-		await test('set config file', async () => {
-			await aicommits(['config', 'set', openAiToken]);
-
-			const configFile = await fs.readFile(configPath, 'utf8');
-			expect(configFile).toMatch(openAiToken);
-		});
-
-		await test('get config file', async () => {
-			const { stdout } = await aicommits(['config', 'get', 'OPENAI_KEY']);
-
-			expect(stdout).toBe(openAiToken);
-		});
-
 		await test('reading unknown config', async () => {
 			await fs.appendFile(configPath, 'UNKNOWN=1');
 
@@ -63,8 +50,10 @@ export default testSuite(({ describe }) => {
 				await aicommits(['config', 'set', timeout]);
 
 				const configFile = await fs.readFile(configPath, 'utf8');
-
 				expect(configFile).toMatch(timeout);
+
+				const get = await aicommits(['config', 'get', 'timeout']);
+				expect(get.stdout).toBe(timeout);
 			});
 		});
 
@@ -90,9 +79,21 @@ export default testSuite(({ describe }) => {
 				await aicommits(['config', 'set', length]);
 
 				const configFile = await fs.readFile(configPath, 'utf8');
-
 				expect(configFile).toMatch(length);
 			});
+		});
+
+		await test('set config file', async () => {
+			await aicommits(['config', 'set', openAiToken]);
+
+			const configFile = await fs.readFile(configPath, 'utf8');
+			expect(configFile).toMatch(openAiToken);
+		});
+
+		await test('get config file', async () => {
+			const { stdout } = await aicommits(['config', 'get', 'OPENAI_KEY']);
+
+			expect(stdout).toBe(openAiToken);
 		});
 
 		await fixture.rm();
