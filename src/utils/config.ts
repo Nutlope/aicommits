@@ -79,15 +79,15 @@ const configParsers = {
 
 		return parsed;
 	},
-	length(length?: string) {
-		if (!length) {
+	'max-length'(maxLength?: string) {
+		if (!maxLength) {
 			return 50;
 		}
 
-		parseAssert('length', /^\d+$/.test(length), 'Must be an integer');
+		parseAssert('max-length', /^\d+$/.test(maxLength), 'Must be an integer');
 
-		const parsed = Number(length);
-		parseAssert('length', parsed >= 20, 'Must be greater than 20 characters');
+		const parsed = Number(maxLength);
+		parseAssert('max-length', parsed >= 20, 'Must be greater than 20 characters');
 
 		return parsed;
 	},

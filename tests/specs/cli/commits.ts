@@ -60,7 +60,7 @@ export default testSuite(({ describe }) => {
 		test('Generated commit message must be under 20 characters', async () => {
 			const { fixture, aicommits } = await createFixture({
 				...files,
-				'.aicommits': `${files['.aicommits']}\nlength=20`,
+				'.aicommits': `${files['.aicommits']}\nmax-length=20`,
 			});
 
 			const git = await createGit(fixture.path);
@@ -78,8 +78,8 @@ export default testSuite(({ describe }) => {
 
 			await committing;
 
-			const { stdout: commitMessage } = await git('log', ['--oneline']);
-			console.log('20 Committed with:', commitMessage);
+			const { stdout: commitMessage } = await git('log', ['--pretty=format:%s']);
+			console.log('20 Committed with:', commitMessage, commitMessage.length);
 			expect(commitMessage.length <= 20).toBe(true);
 
 			await fixture.rm();

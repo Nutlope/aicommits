@@ -25,6 +25,18 @@ export default testSuite(({ describe }) => {
 			expect(stderr).toMatch('Invalid config property OPENAI_KEY: Must start with "sk-"');
 		});
 
+		await test('set config file', async () => {
+			await aicommits(['config', 'set', openAiToken]);
+
+			const configFile = await fs.readFile(configPath, 'utf8');
+			expect(configFile).toMatch(openAiToken);
+		});
+
+		await test('get config file', async () => {
+			const { stdout } = await aicommits(['config', 'get', 'OPENAI_KEY']);
+			expect(stdout).toBe(openAiToken);
+		});
+
 		await test('reading unknown config', async () => {
 			await fs.appendFile(configPath, 'UNKNOWN=1');
 
@@ -57,29 +69,37 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
-		await describe('length', ({ test }) => {
-			test('setting invalid length config', async () => {
-				const { stderr } = await aicommits(['config', 'set', 'length=abc'], {
+		await describe('max-length', ({ test }) => {
+			test('must be an integer', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'max-length=abc'], {
 					reject: false,
 				});
 
 				expect(stderr).toMatch('Must be an integer');
 			});
 
-			test('setting length config less than 10 characters)', async () => {
-				const { stderr } = await aicommits(['config', 'set', 'length=10'], {
+			test('must be at least 20 characters', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'max-length=10'], {
 					reject: false,
 				});
 
 				expect(stderr).toMatch(/must be greater than 20 characters/i);
 			});
 
-			test('setting length config less than 60 characters', async () => {
-				const length = 'length=60';
-				await aicommits(['config', 'set', length]);
+			test('default config', async () => {
+				const { stdout } = await aicommits(['config', 'get', 'max-length']);
+				expect(stdout).toBe('max-length=50');
+			});
+
+			test('updates config', async () => {
+				const maxLength = 'max-length=60';
+				await aicommits(['config', 'set', maxLength]);
 
 				const configFile = await fs.readFile(configPath, 'utf8');
-				expect(configFile).toMatch(length);
+				expect(configFile).toMatch(maxLength);
+
+				const get = await aicommits(['config', 'get', 'max-length']);
+				expect(get.stdout).toBe(maxLength);
 			});
 		});
 
@@ -92,7 +112,6 @@ export default testSuite(({ describe }) => {
 
 		await test('get config file', async () => {
 			const { stdout } = await aicommits(['config', 'get', 'OPENAI_KEY']);
-
 			expect(stdout).toBe(openAiToken);
 		});
 
