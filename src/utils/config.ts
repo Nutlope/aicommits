@@ -36,7 +36,6 @@ const configParsers = {
 
 		parseAssert('locale', locale, 'Cannot be empty');
 		parseAssert('locale', /^[a-z-]+$/i.test(locale), 'Must be a valid locale (letters and dashes/underscores). You can consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes');
-
 		return locale;
 	},
 	generate(count?: string) {
@@ -77,6 +76,18 @@ const configParsers = {
 
 		const parsed = Number(timeout);
 		parseAssert('timeout', parsed >= 500, 'Must be greater than 500ms');
+
+		return parsed;
+	},
+	'max-length'(maxLength?: string) {
+		if (!maxLength) {
+			return 50;
+		}
+
+		parseAssert('max-length', /^\d+$/.test(maxLength), 'Must be an integer');
+
+		const parsed = Number(maxLength);
+		parseAssert('max-length', parsed >= 20, 'Must be greater than 20 characters');
 
 		return parsed;
 	},

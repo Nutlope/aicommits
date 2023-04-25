@@ -194,6 +194,15 @@ Default: `10000` (10 seconds)
 aicommits config set timeout=20000 # 20s
 ```
 
+#### max-length
+The maximum character length of the generated commit message.
+
+Default: `50`
+
+```sh
+aicommits config set max-length=100
+```
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.

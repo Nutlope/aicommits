@@ -45,6 +45,7 @@ export default () => (async () => {
 			config.locale,
 			staged!.diff,
 			config.generate,
+			config['max-length'],
 			config.timeout,
 			config.proxy,
 		);
