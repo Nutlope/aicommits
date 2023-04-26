@@ -111,8 +111,8 @@ const getPrompt = (
 ) => `${[
 	'Generate a concise git commit message written in present tense for the following code diff with the given specifications.',
 	`Message language: ${locale}`,
-	`Message max character length: ${maxLength}`,
-	'Do not include anything unnecessary such as the original translation—your entire response will be passed directly into git commit.',
+	`Max message character length: ${maxLength}`,
+	'Exclude anything unnecessary such as the original translation—your entire response will be passed directly into git commit.',
 ].join('\n')}\n\n${diff}`;
 
 const generateStringFromLength = (length: number) => {
