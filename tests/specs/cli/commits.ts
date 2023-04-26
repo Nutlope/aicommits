@@ -50,8 +50,11 @@ export default testSuite(({ describe }) => {
 			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
 
-			const { stdout: commitMessage } = await git('log', ['--oneline']);
-			console.log('Committed with:', commitMessage);
+			const { stdout: commitMessage } = await git('log', ['--pretty=format:%s']);
+			console.log({
+				commitMessage,
+				length: commitMessage.length,
+			});
 			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
@@ -79,7 +82,10 @@ export default testSuite(({ describe }) => {
 			await committing;
 
 			const { stdout: commitMessage } = await git('log', ['--pretty=format:%s']);
-			console.log('20 Committed with:', commitMessage, commitMessage.length);
+			console.log({
+				commitMessage,
+				length: commitMessage.length,
+			});
 			expect(commitMessage.length <= 20).toBe(true);
 
 			await fixture.rm();
@@ -111,8 +117,11 @@ export default testSuite(({ describe }) => {
 			const statusAfter = await git('status', ['--short', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
 
-			const { stdout: commitMessage } = await git('log', ['-n1', '--oneline']);
-			console.log('Committed with:', commitMessage);
+			const { stdout: commitMessage } = await git('log', ['-n1', '--pretty=format:%s']);
+			console.log({
+				commitMessage,
+				length: commitMessage.length,
+			});
 			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
@@ -151,8 +160,11 @@ export default testSuite(({ describe }) => {
 			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
 
-			const { stdout: commitMessage } = await git('log', ['--oneline']);
-			console.log('Committed with:', commitMessage);
+			const { stdout: commitMessage } = await git('log', ['--pretty=format:%s']);
+			console.log({
+				commitMessage,
+				length: commitMessage.length,
+			});
 			expect(commitMessage.length <= 50).toBe(true);
 
 			await fixture.rm();
@@ -185,8 +197,11 @@ export default testSuite(({ describe }) => {
 			const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 			expect(statusAfter.stdout).toBe('');
 
-			const { stdout: commitMessage } = await git('log', ['--oneline']);
-			console.log('Committed with:', commitMessage);
+			const { stdout: commitMessage } = await git('log', ['--pretty=format:%s']);
+			console.log({
+				commitMessage,
+				length: commitMessage.length,
+			});
 			expect(commitMessage).toMatch(japanesePattern);
 			expect(commitMessage.length <= 50).toBe(true);
 
@@ -247,8 +262,11 @@ export default testSuite(({ describe }) => {
 				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 				expect(statusAfter.stdout).toBe('');
 
-				const { stdout: commitMessage } = await git('log', ['--oneline']);
-				console.log('Committed with:', commitMessage);
+				const { stdout: commitMessage } = await git('log', ['--pretty=format:%s']);
+				console.log({
+					commitMessage,
+					length: commitMessage.length,
+				});
 				expect(commitMessage.length <= 50).toBe(true);
 
 				await fixture.rm();
@@ -279,8 +297,11 @@ export default testSuite(({ describe }) => {
 				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
 				expect(statusAfter.stdout).toBe('');
 
-				const { stdout: commitMessage } = await git('log', ['--oneline']);
-				console.log('Committed with:', commitMessage);
+				const { stdout: commitMessage } = await git('log', ['--pretty=format:%s']);
+				console.log({
+					commitMessage,
+					length: commitMessage.length,
+				});
 				expect(commitMessage.length <= 50).toBe(true);
 
 				await fixture.rm();

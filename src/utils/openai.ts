@@ -108,7 +108,12 @@ const getPrompt = (
 	locale: string,
 	diff: string,
 	maxLength: number,
-) => `Write a git commit message in present tense for the following diff without prefacing it with anything. Do not be needlessly verbose and make sure the answer is concise and to the point. The response must be no longer than ${maxLength} characters. The response must be in the language ${locale}:\n${diff}`;
+) => `${[
+	'Generate a concise git commit message written in present tense for the following code diff with the given specifications.',
+	`Message language: ${locale}`,
+	`Message max character length: ${maxLength}`,
+	'Do not include anything unnecessary such as the original translation—your entire response will be passed directly into git commit.',
+].join('\n')}\n\n${diff}`;
 
 const generateStringFromLength = (length: number) => {
 	let result = '';
