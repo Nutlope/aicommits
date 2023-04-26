@@ -104,7 +104,11 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getPrompt = (locale: string, diff: string, length: number) => `Write a git commit message in present tense for the following diff without prefacing it with anything. Do not be needlessly verbose and make sure the answer is concise and to the point. The response must be no longer than ${length} characters. The response must be in the language ${locale}:\n${diff}`;
+const getPrompt = (
+	locale: string,
+	diff: string,
+	maxLength: number,
+) => `Write a git commit message in present tense for the following diff without prefacing it with anything. Do not be needlessly verbose and make sure the answer is concise and to the point. The response must be no longer than ${maxLength} characters. The response must be in the language ${locale}:\n${diff}`;
 
 const generateStringFromLength = (length: number) => {
 	let result = '';
@@ -129,14 +133,14 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
-	length: number,
+	maxLength: number,
 	timeout: number,
 	proxy?: string,
 ) => {
-	const prompt = getPrompt(locale, diff, length);
+	const prompt = getPrompt(locale, diff, maxLength);
 
 	// Padded by 5 for more room for the completion.
-	const stringFromLength = generateStringFromLength(length + 5);
+	const stringFromLength = generateStringFromLength(maxLength + 5);
 
 	// The token limit is shared between the prompt and the completion.
 	const maxTokens = getTokens(stringFromLength + prompt, model);

@@ -75,7 +75,7 @@ export const createFixture = async (
 
 export const files = Object.freeze({
 	'.aicommits': `OPENAI_KEY=${process.env.OPENAI_KEY}`,
-	'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
+	'data.json': Array.from({ length: 10 }, (_, i) => `${i}. Lorem ipsum dolor sit amet`).join('\n'),
 });
 
 export const assertOpenAiToken = () => {
