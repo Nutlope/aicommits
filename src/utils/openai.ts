@@ -111,10 +111,12 @@ const getBasePrompt = (
 ) => `${[
 	'Generate a concise git commit message written in present tense for the code diff that I provide and with the given specifications below:',
 	`Message language: ${locale}`,
-	`Max commit message character length: ${maxLength}`,
+	`Commit message must be a maximum of ${maxLength} characters`,
 ].join('\n')}`;
 
-const getCommitMessageFormatPrompt = (type: CommitType) => {
+const getCommitMessageFormatOutputExample = (type: CommitType) => `The output response must be in format:\n${getCommitMessageFormat(type)}`;
+
+const getCommitMessageFormat = (type: CommitType) => {
 	if (type === 'conventional') {
 		return '<type>(<optional scope>): <commit message>';
 	}
@@ -183,18 +185,18 @@ export const generateCommitMessage = async (
 ) => {
 	const prompt = getBasePrompt(locale, maxLength);
 
-	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(
-		type,
-	);
-
 	const conventionalCommitsExtraContext = type === 'conventional'
 		? getExtraContextForConventionalCommits()
 		: '';
 
+	const commitMessageFormatOutputExample = getCommitMessageFormatOutputExample(
+		type,
+	);
+
 	const messages: ChatCompletionRequestMessage[] = [
 		{
 			role: 'system',
-			content: `${prompt}\n${commitMessageFormatPrompt}\n${conventionalCommitsExtraContext}`,
+			content: `${prompt}\n${conventionalCommitsExtraContext}\n${commitMessageFormatOutputExample}`,
 		},
 		{
 			role: 'user',

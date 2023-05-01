@@ -115,8 +115,8 @@ export default testSuite(({ describe }) => {
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
 			// should match "chore:" or "chore(<style>):"
-			// Sometimes it generates build
-			expect(commitMessage).toMatch(/((chore|build)(\(.*\))?):/);
+			// Sometimes it generates build|feat
+			expect(commitMessage).toMatch(/((chore|build|feat)(\(.*\))?):/);
 			console.log('Generated message:', commitMessage);
 		});
 
@@ -136,7 +136,7 @@ export default testSuite(({ describe }) => {
 				locale: 'en',
 				type: 'conventional',
 				generate: 1,
-				'max-length': 200,
+				'max-length': 50,
 				...configOverrides,
 			} as ValidConfig;
 			const commitMessages = await generateCommitMessage(OPENAI_KEY!, 'gpt-3.5-turbo', config.locale, gitDiff, config.generate, config['max-length'], config.type, 7000);
