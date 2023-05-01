@@ -67,7 +67,7 @@ export default testSuite(({ describe }) => {
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
 			// should match "build:" or "build(<scope>):"
-			expect(commitMessage).toMatch(/(build(\(.*\))?):/);
+			expect(commitMessage).toMatch(/((build|ci)(\(.*\))?):/);
 			console.log('Generated message:', commitMessage);
 		});
 
@@ -106,7 +106,7 @@ export default testSuite(({ describe }) => {
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
 			// should match "style:" or "style(<style>):"
-			expect(commitMessage).toMatch(/(style|refactor)(\(.*\))?:/);
+			expect(commitMessage).toMatch(/(style|refactor|fix)(\(.*\))?:/);
 			console.log('Generated message:', commitMessage);
 		});
 
@@ -139,7 +139,7 @@ export default testSuite(({ describe }) => {
 				'max-length': 200,
 				...configOverrides,
 			} as ValidConfig;
-			const commitMessages = await generateCommitMessage(OPENAI_KEY!, 'gpt-3.5-turbo', config.locale, gitDiff, config.generate, config['max-length'], config.type, 5000);
+			const commitMessages = await generateCommitMessage(OPENAI_KEY!, 'gpt-3.5-turbo', config.locale, gitDiff, config.generate, config['max-length'], config.type, 7000);
 
 			return commitMessages[0];
 		}

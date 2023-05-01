@@ -107,14 +107,12 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 const getBasePrompt = (
 	locale: string,
-	diff: string,
 	maxLength: number,
 ) => `${[
-	'Generate a concise git commit message written in present tense for the following code diff with the given specifications.',
+	'Generate a concise git commit message written in present tense for the code diff that I provide and with the given specifications below:',
 	`Message language: ${locale}`,
-	`Max message character length: ${maxLength}`,
-	'Exclude anything unnecessary such as the original translation—your entire response will be passed directly into git commit.',
-].join('\n')}\n\n${diff}`;
+	`Max commit message character length: ${maxLength}`,
+].join('\n')}`;
 
 const getCommitMessageFormatPrompt = (type: CommitType) => {
 	if (type === 'conventional') {
@@ -183,7 +181,7 @@ export const generateCommitMessage = async (
 	timeout: number,
 	proxy?: string,
 ) => {
-	const prompt = getBasePrompt(locale, diff, maxLength);
+	const prompt = getBasePrompt(locale, maxLength);
 
 	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(
 		type,
@@ -197,6 +195,10 @@ export const generateCommitMessage = async (
 		{
 			role: 'system',
 			content: `${prompt}\n${commitMessageFormatPrompt}\n${conventionalCommitsExtraContext}`,
+		},
+		{
+			role: 'user',
+			content: diff,
 		},
 	];
 
