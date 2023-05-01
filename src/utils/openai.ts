@@ -183,7 +183,7 @@ export const generateCommitMessage = async (
 	timeout: number,
 	proxy?: string,
 ) => {
-	const basePrompt = getBasePrompt(locale, diff, maxLength);
+	const prompt = getBasePrompt(locale, diff, maxLength);
 
 	const commitMessageFormatPrompt = getCommitMessageFormatPrompt(
 		type,
@@ -196,7 +196,7 @@ export const generateCommitMessage = async (
 	const messages: ChatCompletionRequestMessage[] = [
 		{
 			role: 'system',
-			content: `${basePrompt}\n${commitMessageFormatPrompt}\n${conventionalCommitsExtraContext}`,
+			content: `${prompt}\n${commitMessageFormatPrompt}\n${conventionalCommitsExtraContext}`,
 		},
 	];
 

@@ -136,9 +136,10 @@ export default testSuite(({ describe }) => {
 				locale: 'en',
 				type: 'conventional',
 				generate: 1,
+				'max-length': 200,
 				...configOverrides,
 			} as ValidConfig;
-			const commitMessages = await generateCommitMessage(OPENAI_KEY!, 'gpt-3.5-turbo', config.locale, gitDiff, config.generate, config.type);
+			const commitMessages = await generateCommitMessage(OPENAI_KEY!, 'gpt-3.5-turbo', config.locale, gitDiff, config.generate, config['max-length'], config.type, 5000);
 
 			return commitMessages[0];
 		}
