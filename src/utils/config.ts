@@ -60,12 +60,9 @@ const configParsers = {
 			return '';
 		}
 
-		const typeLower = type.toLowerCase();
-		parseAssert('type', commitTypes.includes(typeLower as CommitType), 'Invalid commit type');
+		parseAssert('type', commitTypes.includes(type as CommitType), 'Invalid commit type');
 
-		const parsed: CommitType = typeLower as CommitType;
-
-		return parsed as CommitType;
+		return type as CommitType;
 	},
 	proxy(url?: string) {
 		if (!url || url.length === 0) {
