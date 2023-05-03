@@ -1,0 +1,47 @@
+diff --git a/src/features/newFeature.js b/src/features/newFeature.js
+new file mode 100644
+index 0000000..b6e5789
+--- /dev/null
++++ b/src/features/newFeature.js
+@@ -0,0 +1,18 @@
++/**
++ * New feature: Calculates the factorial of a given number.
++ * @param {number} n - The input number.
++ * @returns {number} - The factorial of the input number.
++ */
++function factorial(n) {
++  if (n === 0 || n === 1) {
++    return 1;
++  }
++  return n * factorial(n - 1);
++}
++
++module.exports = {
++  factorial,
++};
++
+diff --git a/src/app.js b/src/app.js
+index 8741c37..91b2e74 100644
+--- a/src/app.js
++++ b/src/app.js
+@@ -2,6 +2,7 @@
+ const express = require('express');
+ const bodyParser = require('body-parser');
+ const userRoutes = require('./routes/userRoutes');
++const { factorial } = require('./features/newFeature');
+
+ const app = express();
+ app.use(bodyParser.json());
+@@ -21,6 +22,12 @@
+   res.send('Welcome to the API!');
+ });
+
++app.get('/factorial/:number', (req, res) => {
++  const number = parseInt(req.params.number, 10);
++  const result = factorial(number);
++  res.send(`Factorial of ${number} is ${result}`);
++});
++
+ // Other routes...
+
+ module.exports = app;

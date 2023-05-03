@@ -16,29 +16,39 @@ import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
 	generate: number | undefined,
-  prefix: string,
+	prefix: string,
+	excludeFiles: string[],
+	stageAll: boolean,
+	commitType: string | undefined,
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
-
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
+
+	if (stageAll) {
+		// This should be equivalent behavior to `git commit --all`
+		await execa('git', ['add', '--update']);
+	}
+
 	detectingFiles.start('Detecting staged files');
-	const staged = await getStagedDiff();
+	const staged = await getStagedDiff(excludeFiles);
 
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
-		throw new KnownError('No staged changes found. Make sure to stage your changes with `git add`.');
+		throw new KnownError('No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.');
 	}
 
-	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${
-		staged.files.map(file => `     ${file}`).join('\n')
-	}`);
+	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${staged.files.map(file => `     ${file}`).join('\n')
+		}`);
 
+	const { env } = process;
 	const config = await getConfig({
-		OPENAI_KEY: process.env.OPENAI_KEY ?? process.env.OPENAI_API_KEY,
+		OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
+		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		generate: generate?.toString(),
+		type: commitType?.toString(),
 	});
 
 	const s = spinner();
@@ -47,9 +57,14 @@ export default async (
 	try {
 		messages = await generateCommitMessage(
 			config.OPENAI_KEY,
+			config.model,
 			config.locale,
 			staged.diff,
 			config.generate,
+			config['max-length'],
+			config.type,
+			config.timeout,
+			config.proxy,
 		);
 	} finally {
 		s.stop('Changes analyzed');

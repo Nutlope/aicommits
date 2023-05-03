@@ -2,26 +2,39 @@ import { execa } from 'execa';
 import { KnownError } from './error.js';
 
 export const assertGitRepo = async () => {
-	const { stdout } = await execa('git', ['rev-parse', '--is-inside-work-tree'], { reject: false });
+	const { stdout, failed } = await execa('git', ['rev-parse', '--show-toplevel'], { reject: false });
 
-	if (stdout !== 'true') {
+	if (failed) {
 		throw new KnownError('The current directory must be a Git repository!');
 	}
+
+	return stdout;
 };
 
-const excludeFromDiff = [
+const excludeFromDiff = (path: string) => `:(exclude)${path}`;
+
+const filesToExclude = [
 	'package-lock.json',
 	'pnpm-lock.yaml',
 
 	// yarn.lock, Cargo.lock, Gemfile.lock, Pipfile.lock, etc.
 	'*.lock',
-].map(file => `:(exclude)${file}`);
+].map(excludeFromDiff);
 
-export const getStagedDiff = async () => {
-	const diffCached = ['diff', '--cached'];
+export const getStagedDiff = async (excludeFiles?: string[]) => {
+	const diffCached = ['diff', '--cached', '--diff-algorithm=minimal'];
 	const { stdout: files } = await execa(
 		'git',
-		[...diffCached, '--name-only', ...excludeFromDiff],
+		[
+			...diffCached,
+			'--name-only',
+			...filesToExclude,
+			...(
+				excludeFiles
+					? excludeFiles.map(excludeFromDiff)
+					: []
+			),
+		],
 	);
 
 	if (!files) {
@@ -30,7 +43,15 @@ export const getStagedDiff = async () => {
 
 	const { stdout: diff } = await execa(
 		'git',
-		[...diffCached, ...excludeFromDiff],
+		[
+			...diffCached,
+			...filesToExclude,
+			...(
+				excludeFiles
+					? excludeFiles.map(excludeFromDiff)
+					: []
+			),
+		],
 	);
 
 	return {

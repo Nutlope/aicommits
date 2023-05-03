@@ -1,0 +1,26 @@
+diff --git a/src/loop.js b/src/loop.js
+index 1d45a2b..8c52e81 100644
+--- a/src/loop.js
++++ b/src/loop.js
+@@ -5,14 +5,14 @@ const items = generateItems(100000);
+ function processData(items) {
+   let sum = 0;
+
+-  for (let i = 0; i < items.length; i++) {
+-    const item = items[i];
+-    if (item.isValid()) {
+-      sum += item.value;
+-    }
++  for (const item of items) {
++    if (item.isValid()) sum += item.value;
+   }
+
+   return sum;
+ }
+
+ const startTime = Date.now();
+-const result = processData(items);
++const result = processData(items); // Improved loop iteration
+ const endTime = Date.now();
+
+ console.log(`Result: ${result}, Time: ${endTime - startTime} ms`);

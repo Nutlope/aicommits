@@ -56,13 +56,23 @@ git add <files...>
 aicommits
 ```
 
-`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit) (with some exceptions (e.g. `--all`):
+`aicommits` passes down unknown flags to `git commit`, so you can pass in [`commit` flags](https://git-scm.com/docs/git-commit).
 
+For example, you can stage all changes in tracked files with as you commit:
 ```sh
-aicommits --dry-run
+aicommits --all # or -a
 ```
 
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
+
+#### Generate multiple recommendations
+
+Sometimes the recommended commit message isn't the best so you want it to generate a few to pick from. You can generate multiple commit messages at once by passing in the `--generate <i>` flag, where 'i' is the number of generated messages:
+```sh
+aicommits --generate <i> # or -g <i>
+```
+
+> Warning: this uses more tokens, meaning it costs more.
 
 ### Git hook
 
@@ -96,6 +106,102 @@ aicommits hook uninstall
 
 3. Save and close the editor to commit!
 
+## Configuration
+
+### Reading a configuration value
+To retrieve a configuration option, use the command:
+
+```sh
+aicommits config get <key>
+```
+
+For example, to retrieve the API key, you can use:
+```sh
+aicommits config get OPENAI_KEY
+```
+
+You can also retrieve multiple configuration options at once by separating them with spaces:
+
+```sh
+aicommits config get OPENAI_KEY generate
+```
+
+### Setting a configuration value
+
+To set a configuration option, use the command:
+
+```sh
+aicommits config set <key>=<value>
+```
+
+For example, to set the API key, you can use:
+
+```sh
+aicommits config set OPENAI_KEY=<your-api-key>
+```
+
+You can also set multiple configuration options at once by separating them with spaces, like
+
+```sh
+aicommits config set OPENAI_KEY=<your-api-key> generate=3 locale=en
+```
+
+### Options
+#### OPENAI_KEY
+
+Required
+
+The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
+
+#### locale
+Default: `en`
+
+The locale to use for the generated commit messages. Consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes.
+
+#### generate
+
+Default: `1`
+
+The number of commit messages to generate to pick from.
+
+Note, this will use more tokens as it generates more results.
+
+#### proxy
+
+Set a HTTP/HTTPS proxy to use for requests.
+
+To clear the proxy option, you can use the command (note the empty value after the equals sign):
+
+```sh
+aicommits config set proxy=
+```
+
+#### model
+
+Default: `gpt-3.5-turbo`
+
+The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of models available in the [OpenAI Documentation](https://platform.openai.com/docs/models/model-endpoint-compatibility).
+
+> Tip: If you have access, try upgrading to [`gpt-4`](https://platform.openai.com/docs/models/gpt-4) for next-level code analysis. It can handle double the input size, but comes at a higher cost. Check out OpenAI's website to learn more.
+
+
+#### timeout
+The timeout for network requests to the OpenAI API in milliseconds.
+
+Default: `10000` (10 seconds)
+
+```sh
+aicommits config set timeout=20000 # 20s
+```
+
+#### max-length
+The maximum character length of the generated commit message.
+
+Default: `50`
+
+```sh
+aicommits config set max-length=100
+```
 
 ## How it works
 

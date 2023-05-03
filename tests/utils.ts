@@ -1,26 +1,26 @@
 import path from 'path';
+import fs from 'fs/promises';
 import { execa, execaNode, type Options } from 'execa';
+import {
+	createFixture as createFixtureBase,
+	type FileTree,
+	type FsFixture,
+} from 'fs-fixture';
 
 const aicommitsPath = path.resolve('./dist/cli.mjs');
 
-export const createAicommits = ({
-	cwd,
-	home,
-}: {
-	cwd?: string;
-	home: string;
-}) => {
+const createAicommits = (fixture: FsFixture) => {
 	const homeEnv = {
-		HOME: home, // Linux
-		USERPROFILE: home, // Windows
+		HOME: fixture.path, // Linux
+		USERPROFILE: fixture.path, // Windows
 	};
 
 	return (
 		args?: string[],
 		options?: Options,
 	) => execaNode(aicommitsPath, args, {
+		cwd: fixture.path,
 		...options,
-		cwd,
 		extendEnv: false,
 		env: {
 			...homeEnv,
@@ -61,3 +61,32 @@ export const createGit = async (cwd: string) => {
 
 	return git;
 };
+
+export const createFixture = async (
+	source?: string | FileTree,
+) => {
+	const fixture = await createFixtureBase(source);
+	const aicommits = createAicommits(fixture);
+
+	return {
+		fixture,
+		aicommits,
+	};
+};
+
+export const files = Object.freeze({
+	'.aicommits': `OPENAI_KEY=${process.env.OPENAI_KEY}`,
+	'data.json': Array.from({ length: 10 }, (_, i) => `${i}. Lorem ipsum dolor sit amet`).join('\n'),
+});
+
+export const assertOpenAiToken = () => {
+	if (!process.env.OPENAI_KEY) {
+		throw new Error('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
+	}
+};
+
+// See ./diffs/README.md in order to generate diff files
+export const getDiff = async (diffName: string): Promise<string> => fs.readFile(
+	new URL(`fixtures/${diffName}`, import.meta.url),
+	'utf8',
+);

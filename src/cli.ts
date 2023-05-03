@@ -21,13 +21,29 @@ cli(
 		flags: {
 			generate: {
 				type: Number,
-				description: 'Number of messages to generate. (Warning: generating multiple costs more) (default: 1)',
+				description: 'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
 			prefix: {
 				type: String,
 				description: 'String to prefix to the generated commit message.',
 				default: '',
+			},
+			exclude: {
+				type: [String],
+				description: 'Files to exclude from AI analysis',
+				alias: 'x',
+			},
+			all: {
+				type: Boolean,
+				description: 'Automatically stage changes in tracked files for the commit',
+				alias: 'a',
+				default: false,
+			},
+			type: {
+				type: String,
+				description: 'Type of commit message to generate',
+				alias: 't',
 			},
 		},
 
@@ -49,6 +65,9 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				argv.flags.prefix,
+				argv.flags.exclude,
+				argv.flags.all,
+				argv.flags.type,
 				rawArgv,
 			);
 		}
