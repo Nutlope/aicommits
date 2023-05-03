@@ -27,7 +27,8 @@ export default async (
 	const detectingFiles = spinner();
 
 	if (stageAll) {
-		await execa('git', ['add', '--all']);
+		// This should be equivalent behavior to `git commit --all`
+		await execa('git', ['add', '--update']);
 	}
 
 	detectingFiles.start('Detecting staged files');

@@ -98,10 +98,11 @@ export default testSuite(({ describe }) => {
 			await git('add', ['data.json']);
 			await git('commit', ['-m', 'wip']);
 
+			// Change tracked file
 			await fixture.writeFile('data.json', 'Test');
 
-			const statusBefore = await git('status', ['--short', '--untracked-files=no']);
-			expect(statusBefore.stdout).toBe(' M data.json');
+			const statusBefore = await git('status', ['--short']);
+			expect(statusBefore.stdout).toBe(' M data.json\n?? .aicommits');
 
 			const committing = aicommits(['--all']);
 			committing.stdout!.on('data', (buffer: Buffer) => {
@@ -114,8 +115,8 @@ export default testSuite(({ describe }) => {
 
 			await committing;
 
-			const statusAfter = await git('status', ['--short', '--untracked-files=no']);
-			expect(statusAfter.stdout).toBe('');
+			const statusAfter = await git('status', ['--short']);
+			expect(statusAfter.stdout).toBe('?? .aicommits');
 
 			const { stdout: commitMessage } = await git('log', ['-n1', '--pretty=format:%s']);
 			console.log({
