@@ -2,9 +2,8 @@ import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { ChatCompletionRequestMessage, CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
 import {
-	TiktokenModel,
-	// eslint-disable-next-line camelcase
-	encoding_for_model,
+	type TiktokenModel,
+	// encoding_for_model,
 } from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
@@ -151,22 +150,22 @@ const getExtraContextForConventionalCommits = () => (
 	}`
 );
 
-const generateStringFromLength = (length: number) => {
-	let result = '';
-	const highestTokenChar = 'z';
-	for (let i = 0; i < length; i += 1) {
-		result += highestTokenChar;
-	}
-	return result;
-};
+// const generateStringFromLength = (length: number) => {
+// 	let result = '';
+// 	const highestTokenChar = 'z';
+// 	for (let i = 0; i < length; i += 1) {
+// 		result += highestTokenChar;
+// 	}
+// 	return result;
+// };
 
-const getTokens = (prompt: string, model: TiktokenModel) => {
-	const encoder = encoding_for_model(model);
-	const tokens = encoder.encode(prompt).length;
-	// Free the encoder to avoid possible memory leaks.
-	encoder.free();
-	return tokens;
-};
+// const getTokens = (prompt: string, model: TiktokenModel) => {
+// 	const encoder = encoding_for_model(model);
+// 	const tokens = encoder.encode(prompt).length;
+// 	// Free the encoder to avoid possible memory leaks.
+// 	encoder.free();
+// 	return tokens;
+// };
 
 export const generateCommitMessage = async (
 	apiKey: string,
@@ -198,12 +197,6 @@ export const generateCommitMessage = async (
 		},
 	];
 
-	// Padded by 5 for more room for the completion.
-	const stringFromLength = generateStringFromLength(maxLength + 5);
-
-	// The token limit is shared between the prompt and the completion.
-	const maxTokens = getTokens(stringFromLength + prompt, model);
-
 	try {
 		const completion = await createChatCompletion(
 			apiKey,
@@ -214,7 +207,7 @@ export const generateCommitMessage = async (
 				top_p: 1,
 				frequency_penalty: 0,
 				presence_penalty: 0,
-				max_tokens: maxTokens,
+				max_tokens: 200,
 				stream: false,
 				n: completions,
 			},
