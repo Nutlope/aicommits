@@ -1,3 +1,4 @@
+import path from 'path';
 import { testSuite, expect } from 'manten';
 import {
 	assertOpenAiToken,
@@ -18,6 +19,25 @@ export default testSuite(({ describe }) => {
 
 			expect(exitCode).toBe(1);
 			expect(stderr).toMatch('The current directory must be a Git repository');
+
+			await fixture.rm();
+		});
+
+		test('installs from Git repo subdirectory', async () => {
+			const { fixture, aicommits } = await createFixture({
+				...files,
+				'some-dir': {
+					'file.txt': '',
+				},
+			});
+			await createGit(fixture.path);
+
+			const { stdout } = await aicommits(['hook', 'install'], {
+				cwd: path.join(fixture.path, 'some-dir'),
+			});
+			expect(stdout).toMatch('Hook installed');
+
+			expect(await fixture.exists('.git/hooks/prepare-commit-msg')).toBe(true);
 
 			await fixture.rm();
 		});

@@ -19,8 +19,8 @@ const createAicommits = (fixture: FsFixture) => {
 		args?: string[],
 		options?: Options,
 	) => execaNode(aicommitsPath, args, {
-		...options,
 		cwd: fixture.path,
+		...options,
 		extendEnv: false,
 		env: {
 			...homeEnv,

@@ -2,11 +2,13 @@ import { execa } from 'execa';
 import { KnownError } from './error.js';
 
 export const assertGitRepo = async () => {
-	const { stdout } = await execa('git', ['rev-parse', '--is-inside-work-tree'], { reject: false });
+	const { stdout, failed } = await execa('git', ['rev-parse', '--show-toplevel'], { reject: false });
 
-	if (stdout !== 'true') {
+	if (failed) {
 		throw new KnownError('The current directory must be a Git repository!');
 	}
+
+	return stdout;
 };
 
 const excludeFromDiff = (path: string) => `:(exclude)${path}`;

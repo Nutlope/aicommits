@@ -29,16 +29,16 @@ export default command({
 	parameters: ['<install/uninstall>'],
 }, (argv) => {
 	(async () => {
-		await assertGitRepo();
-
+		const gitRepoPath = await assertGitRepo();
 		const { installUninstall: mode } = argv._;
 
-		const hookExists = await fileExists(symlinkPath);
+		const absoltueSymlinkPath = path.join(gitRepoPath, symlinkPath);
+		const hookExists = await fileExists(absoltueSymlinkPath);
 		if (mode === 'install') {
 			if (hookExists) {
 				// If the symlink is broken, it will throw an error
 				// eslint-disable-next-line @typescript-eslint/no-empty-function
-				const realpath = await fs.realpath(symlinkPath).catch(() => {});
+				const realpath = await fs.realpath(absoltueSymlinkPath).catch(() => {});
 				if (realpath === hookPath) {
 					console.warn('The hook is already installed');
 					return;
@@ -46,16 +46,16 @@ export default command({
 				throw new KnownError(`A different ${hookName} hook seems to be installed. Please remove it before installing aicommits.`);
 			}
 
-			await fs.mkdir(path.dirname(symlinkPath), { recursive: true });
+			await fs.mkdir(path.dirname(absoltueSymlinkPath), { recursive: true });
 
 			if (isWindows) {
 				await fs.writeFile(
-					symlinkPath,
+					absoltueSymlinkPath,
 					windowsHook,
 				);
 			} else {
-				await fs.symlink(hookPath, symlinkPath, 'file');
-				await fs.chmod(symlinkPath, 0o755);
+				await fs.symlink(hookPath, absoltueSymlinkPath, 'file');
+				await fs.chmod(absoltueSymlinkPath, 0o755);
 			}
 			console.log(`${green('✔')} Hook installed`);
 			return;
@@ -68,20 +68,20 @@ export default command({
 			}
 
 			if (isWindows) {
-				const scriptContent = await fs.readFile(symlinkPath, 'utf8');
+				const scriptContent = await fs.readFile(absoltueSymlinkPath, 'utf8');
 				if (scriptContent !== windowsHook) {
 					console.warn('Hook is not installed');
 					return;
 				}
 			} else {
-				const realpath = await fs.realpath(symlinkPath);
+				const realpath = await fs.realpath(absoltueSymlinkPath);
 				if (realpath !== hookPath) {
 					console.warn('Hook is not installed');
 					return;
 				}
 			}
 
-			await fs.rm(symlinkPath);
+			await fs.rm(absoltueSymlinkPath);
 			console.log(`${green('✔')} Hook uninstalled`);
 			return;
 		}
