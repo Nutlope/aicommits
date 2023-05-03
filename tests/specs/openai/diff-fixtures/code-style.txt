@@ -1,0 +1,28 @@
+diff --git a/src/app.js b/src/app.js
+index 8741c37..91b2e74 100644
+--- a/src/app.js
++++ b/src/app.js
+@@ -10,12 +10,12 @@ app.use(express.json());
+ // Routes
+ app.get('/', (req, res) => {
+-  res.send('Welcome to the API!');
++    res.send('Welcome to the API!');
+ });
+
+ app.post('/users', (req, res) => {
+-  const user = createUser(req.body);
+-  res.status(201).send(user);
++    const user = createUser(req.body);
++    res.status(201).send(user);
+ });
+
+ app.get('/users/:id', (req, res) => {
+@@ -27,7 +27,7 @@ app.get('/users/:id', (req, res) => {
+     if (user) {
+         res.send(user);
+     } else {
+-      res.status(404).send('User not found');
++        res.status(404).send('User not found');
+     }
+ });
+

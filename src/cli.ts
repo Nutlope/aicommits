@@ -35,6 +35,11 @@ cli(
 				alias: 'a',
 				default: false,
 			},
+			type: {
+				type: String,
+				description: 'Type of commit message to generate',
+				alias: 't',
+			},
 		},
 
 		commands: [
@@ -56,6 +61,7 @@ cli(
 				argv.flags.generate,
 				argv.flags.exclude,
 				argv.flags.all,
+				argv.flags.type,
 				rawArgv,
 			);
 		}

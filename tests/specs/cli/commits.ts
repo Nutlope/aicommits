@@ -86,7 +86,7 @@ export default testSuite(({ describe }) => {
 				commitMessage,
 				length: commitMessage.length,
 			});
-			expect(commitMessage.length <= 20).toBe(true);
+			expect(commitMessage.length).toBeLessThanOrEqual(20);
 
 			await fixture.rm();
 		});
@@ -206,6 +206,140 @@ export default testSuite(({ describe }) => {
 			expect(commitMessage.length).toBeLessThanOrEqual(50);
 
 			await fixture.rm();
+		});
+
+		describe('commit types', ({ test }) => {
+			test('Should not use conventional commits by default', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits();
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+				expect(commitMessage).not.toMatch(conventionalCommitPattern);
+
+				await fixture.rm();
+			});
+
+			test('Conventional commits', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\ntype=conventional`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits();
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+				expect(commitMessage).toMatch(conventionalCommitPattern);
+
+				await fixture.rm();
+			});
+
+			test('Accepts --type flag, overriding config', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\ntype=other`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				// Generate flag should override generate config
+				const committing = aicommits([
+					'--type', 'conventional',
+				]);
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+				expect(commitMessage).toMatch(conventionalCommitPattern);
+
+				await fixture.rm();
+			});
+
+			test('Accepts empty --type flag', async () => {
+				const conventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\ntype=conventional`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits([
+					'--type', '',
+				]);
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', ['--porcelain', '--untracked-files=no']);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: commitMessage } = await git('log', ['--oneline']);
+				console.log('Committed with:', commitMessage);
+				expect(commitMessage).not.toMatch(conventionalCommitPattern);
+
+				await fixture.rm();
+			});
 		});
 
 		describe('proxy', ({ test }) => {

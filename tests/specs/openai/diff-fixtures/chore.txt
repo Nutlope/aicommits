@@ -1,0 +1,18 @@
+diff --git a/package.json b/package.json
+index 2a7398e..6b2a3f0 100644
+--- a/package.json
++++ b/package.json
+@@ -3,7 +3,7 @@
+   "version": "1.0.0",
+   "description": "A sample project",
+   "main": "index.js",
+-  "scripts": {
++  "scripts": {
+     "start": "node index.js",
+     "test": "mocha",
+-    "lint": "eslint ."
++    "lint": "eslint .",
++    "clean": "rm -rf node_modules && npm install"
+   },
+   "dependencies": {
+     "express": "^4.17.1",

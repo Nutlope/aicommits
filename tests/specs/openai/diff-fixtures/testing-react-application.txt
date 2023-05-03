@@ -1,0 +1,22 @@
+diff --git a/src/components/MyComponent.test.js b/src/components/MyComponent.test.js
+index 37eabf2..976c6bf 100644
+--- a/src/components/MyComponent.test.js
++++ b/src/components/MyComponent.test.js
+@@ -10,6 +10,7 @@ describe("MyComponent", () => {
+     });
+
+     it("renders the component correctly", () => {
++        const props = { name: "John Doe", age: 25 };
+         const tree = renderer.create(<MyComponent {...props} />).toJSON();
+         expect(tree).toMatchSnapshot();
+     });
+@@ -25,6 +26,11 @@ describe("MyComponent", () => {
+         expect(wrapper.find("h1").text()).toEqual("Hello, John Doe!");
+     });
+
++    it("displays the correct age", () => {
++        const props = { name: "Jane Doe", age: 30 };
++        const wrapper = shallow(<MyComponent {...props} />);
++        expect(wrapper.find("p").text()).toEqual("Age: 30");
++    });
+ });

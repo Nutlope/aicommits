@@ -6,6 +6,10 @@ import type { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
+const commitTypes = ['', 'conventional'] as const;
+
+export type CommitType = typeof commitTypes[number];
+
 const { hasOwnProperty } = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
 
@@ -50,6 +54,15 @@ const configParsers = {
 		parseAssert('generate', parsed <= 5, 'Must be less or equal to 5');
 
 		return parsed;
+	},
+	type(type?: string) {
+		if (!type) {
+			return '';
+		}
+
+		parseAssert('type', commitTypes.includes(type as CommitType), 'Invalid commit type');
+
+		return type as CommitType;
 	},
 	proxy(url?: string) {
 		if (!url || url.length === 0) {
@@ -99,7 +112,7 @@ type RawConfig = {
 	[key in ConfigKeys]?: string;
 };
 
-type ValidConfig = {
+export type ValidConfig = {
 	[Key in ConfigKeys]: ReturnType<typeof configParsers[Key]>;
 };
 
