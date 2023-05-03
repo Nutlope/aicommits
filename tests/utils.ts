@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs/promises';
 import { execa, execaNode, type Options } from 'execa';
 import {
 	createFixture as createFixtureBase,
@@ -83,3 +84,9 @@ export const assertOpenAiToken = () => {
 		throw new Error('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
 	}
 };
+
+// See ./diffs/README.md in order to generate diff files
+export const getDiff = async (diffName: string): Promise<string> => fs.readFile(
+	new URL(`fixtures/${diffName}`, import.meta.url),
+	'utf8',
+);
