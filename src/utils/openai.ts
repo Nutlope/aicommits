@@ -134,14 +134,9 @@ const getExtraContextForConventionalCommits = () => {
 	 * Conventional Changelog:
 	 * https://github.com/conventional-changelog/conventional-changelog/blob/d0e5d5926c8addba74bc962553dd8bcfba90e228/packages/conventional-changelog-conventionalcommits/writer-opts.js#L182-L193
 	 */
-	const conventionalCommitTypes: Record<string, string> = {
-		/*
-			Commented out because they are too common and
-			will cause the model to generate them too often.
-		*/
+	return `Choose a type from the type-to-description JSON below that best describes the git diff:\n${JSON.stringify({
 		docs: 'Documentation only changes',
-		style:
-			'Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)',
+		style: 'Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)',
 		refactor: 'A code change that neither fixes a bug nor adds a feature',
 		perf: 'A code change that improves performance',
 		test: 'Adding missing tests or correcting existing tests',
@@ -151,9 +146,7 @@ const getExtraContextForConventionalCommits = () => {
 		revert: 'Reverts a previous commit',
 		feat: 'A new feature',
 		fix: 'A bug fix',
-	};
-
-	return `Choose a type from the type-to-description JSON below that best describes the git diff:\n${JSON.stringify(conventionalCommitTypes, null, 2)}`;
+	}, null, 2)}`;
 };
 
 const generateStringFromLength = (length: number) => {
@@ -190,9 +183,7 @@ export const generateCommitMessage = async (
 		? getExtraContextForConventionalCommits()
 		: '';
 
-	const commitMessageFormatOutputExample = getCommitMessageFormatOutputExample(
-		type,
-	);
+	const commitMessageFormatOutputExample = getCommitMessageFormatOutputExample(type);
 
 	const messages: ChatCompletionRequestMessage[] = [
 		{
