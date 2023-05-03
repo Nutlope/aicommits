@@ -55,7 +55,7 @@ export default testSuite(({ describe }) => {
 				commitMessage,
 				length: commitMessage.length,
 			});
-			expect(commitMessage.length <= 50).toBe(true);
+			expect(commitMessage.length).toBeLessThanOrEqual(50);
 
 			await fixture.rm();
 		});
@@ -122,7 +122,7 @@ export default testSuite(({ describe }) => {
 				commitMessage,
 				length: commitMessage.length,
 			});
-			expect(commitMessage.length <= 50).toBe(true);
+			expect(commitMessage.length).toBeLessThanOrEqual(50);
 
 			await fixture.rm();
 		});
@@ -165,7 +165,7 @@ export default testSuite(({ describe }) => {
 				commitMessage,
 				length: commitMessage.length,
 			});
-			expect(commitMessage.length <= 50).toBe(true);
+			expect(commitMessage.length).toBeLessThanOrEqual(50);
 
 			await fixture.rm();
 		});
@@ -203,7 +203,7 @@ export default testSuite(({ describe }) => {
 				length: commitMessage.length,
 			});
 			expect(commitMessage).toMatch(japanesePattern);
-			expect(commitMessage.length <= 50).toBe(true);
+			expect(commitMessage.length).toBeLessThanOrEqual(50);
 
 			await fixture.rm();
 		});
@@ -267,7 +267,7 @@ export default testSuite(({ describe }) => {
 					commitMessage,
 					length: commitMessage.length,
 				});
-				expect(commitMessage.length <= 50).toBe(true);
+				expect(commitMessage.length).toBeLessThanOrEqual(50);
 
 				await fixture.rm();
 			});
@@ -302,7 +302,7 @@ export default testSuite(({ describe }) => {
 					commitMessage,
 					length: commitMessage.length,
 				});
-				expect(commitMessage.length <= 50).toBe(true);
+				expect(commitMessage.length).toBeLessThanOrEqual(50);
 
 				await fixture.rm();
 			});
