@@ -80,6 +80,8 @@ const createChatCompletion = async (
 		proxy,
 	);
 
+	const dataParsed = JSON.parse(data)
+
 	if (
 		!response.statusCode
 		|| response.statusCode < 200
@@ -88,7 +90,7 @@ const createChatCompletion = async (
 		let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
 
 		if (data) {
-			errorMessage += `\n\n${data}`;
+			errorMessage += `\n\n${dataParsed.error.message}`;
 		}
 
 		if (response.statusCode === 500) {
@@ -98,7 +100,7 @@ const createChatCompletion = async (
 		throw new KnownError(errorMessage);
 	}
 
-	return JSON.parse(data) as CreateChatCompletionResponse;
+	return dataParsed as CreateChatCompletionResponse;
 };
 
 const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '').replace(/(\w)\.$/, '$1');
