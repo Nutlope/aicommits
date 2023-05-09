@@ -32,6 +32,8 @@
 
     This will create a `.aicommits` file in your home directory.
 
+    *Note:* `aicommits` CLI will also automatically [read your OPENAI_KEY and OPENAI_API_KEY](./src/commands/aicommits.ts:47) env vars so be sure to check those in case you have problems.
+
 
 ### Upgrading
 
