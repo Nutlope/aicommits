@@ -61,14 +61,13 @@ export const getStagedDiff = async (excludeFiles?: string[]) => {
 };
 
 export const getStagedDiffFromTrunk = async (trunkBranch?: string, excludeFiles?: string[]) => {
-	const diffCached = ['diff', '--cached'];
 	const trunk = trunkBranch ?? 'main';
 	const branchesToCompare = `${trunk}..HEAD`;
 
 	const { stdout: files } = await execa(
 		'git',
 		[
-			...diffCached,
+			'diff',
 			branchesToCompare,
 			'--name-only',
 			...filesToExclude,
@@ -87,7 +86,7 @@ export const getStagedDiffFromTrunk = async (trunkBranch?: string, excludeFiles?
 	const { stdout: diff } = await execa(
 		'git',
 		[
-			...diffCached,
+			'diff',
 			branchesToCompare,
 			...filesToExclude,
 			...(
