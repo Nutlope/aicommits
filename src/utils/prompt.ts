@@ -52,5 +52,5 @@ export const generatePullRequestPrompt = (
 ) => [
 	'Generate the content for a descriptive Github Pull Request written in present tense for the following code diff with the given specifications below:',
 	`Message language: ${locale}`,
-	'Exclude anything unnecessary such as translation. Use Markdown syntax if you want to emphasize certain changes, list out lists of changes, or separate the content with headings. Assume your audience is a team member who has no context on what you\'re working on. Your entire response will be passed directly into gh pr create.',
+	'Exclude anything unnecessary such as translation. Use Markdown syntax if you want to emphasize certain changes, list out lists of changes, or separate the content with headings and newlines. Assume your audience is a team member who has no context on what you\'re working on. Your entire response will be passed directly into gh pr create.',
 ].filter(Boolean).join('\n');

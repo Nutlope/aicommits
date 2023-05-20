@@ -214,7 +214,7 @@ export const generatePullRequest = async (
 		return deduplicateMessages(
 			completion.choices
 				.filter(choice => choice.message?.content)
-				.map(choice => sanitizeMessage(choice.message!.content)),
+				.map(choice => choice.message!.content),
 		);
 	} catch (error) {
 		const errorAsAny = error as any;

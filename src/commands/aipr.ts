@@ -24,8 +24,6 @@ import { getConfig } from '../utils/config.js';
 import { generatePullRequest } from '../utils/openai.js';
 import { KnownError, handleCliError } from '../utils/error.js';
 
-const rawArgv = process.argv.slice(2);
-
 export default command(
 	{
 		name: 'pr',
@@ -146,7 +144,7 @@ export default command(
 				message = selected;
 			}
 
-			await execa('gh', ['pr', 'create', '-b', message, ...rawArgv]);
+			await execa('gh', ['pr', 'create', '-b', `"${message}"`, '-t', `"${message.split('\n')[0]}"`]);
 
 			outro(`${green('✔')} Successfully created!`);
 		})().catch((error) => {
