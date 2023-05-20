@@ -8,7 +8,7 @@ import {
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 import type { CommitType } from './config.js';
-import { generateCommitPrompt } from './prompt.js';
+import { generateCommitPrompt, generatePullRequestPrompt } from './prompt.js';
 
 const httpsPost = async (
 	hostname: string,
@@ -181,8 +181,6 @@ export const generatePullRequest = async (
 	locale: string,
 	diff: string,
 	completions: number,
-	maxLength: number,
-	type: CommitType,
 	timeout: number,
 	proxy?: string,
 ) => {
@@ -194,7 +192,7 @@ export const generatePullRequest = async (
 				messages: [
 					{
 						role: 'system',
-						content: generateCommitPrompt(locale, maxLength, type),
+						content: generatePullRequestPrompt(locale),
 					},
 					{
 						role: 'user',
