@@ -34,7 +34,7 @@ const commitTypes: Record<CommitType, string> = {
 	}`,
 };
 
-export const generatePrompt = (
+export const generateCommitPrompt = (
 	locale: string,
 	maxLength: number,
 	type: CommitType,
