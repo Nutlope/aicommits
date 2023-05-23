@@ -28,7 +28,7 @@ cli(
 				type: Boolean,
 				description: 'Non interactive mode',
 				alias: 'y',
-        default: false,
+				default: false,
 			},
 			exclude: {
 				type: [String],
@@ -40,6 +40,11 @@ cli(
 				description: 'Automatically stage changes in tracked files for the commit',
 				alias: 'a',
 				default: false,
+			},
+			type: {
+				type: String,
+				description: 'Type of commit message to generate',
+				alias: 't',
 			},
 		},
 
@@ -63,6 +68,7 @@ cli(
 				argv.flags.noninteractive,
 				argv.flags.exclude,
 				argv.flags.all,
+				argv.flags.type,
 				rawArgv,
 			);
 		}

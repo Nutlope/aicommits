@@ -61,7 +61,7 @@
 		"extends": "@pvtnbr",
 		"rules": {
 			"unicorn/no-process-exit": "off",
-			"complexity": ["error", { "max": 11 }]
+			"complexity": ["error", { "max": 14 }]
 		},
 		"overrides": [
 			{

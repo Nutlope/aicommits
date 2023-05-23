@@ -194,8 +194,21 @@ Default: `10000` (10 seconds)
 aicommits config set timeout=20000 # 20s
 ```
 
-5. Enable non-interactive mode to use automatically the commit retrieved withot review:
-  `aicommits -y` or `aicommits --noninteractive`
+#### max-length
+The maximum character length of the generated commit message.
+
+Default: `50`
+
+```sh
+aicommits config set max-length=100
+```
+
+#### Non-interactive mode
+Enable non-interactive mode to use automatically the commit retrieved without review, specially useful for automations:
+```sh
+aicommits --noninteractive # or -y
+```
+>>>>>>> 7631c2fc0bd207b9456b2bf0f24d0a49eaec57de
 
 ## How it works
 

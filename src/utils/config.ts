@@ -6,6 +6,10 @@ import type { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
+const commitTypes = ['', 'conventional'] as const;
+
+export type CommitType = typeof commitTypes[number];
+
 const { hasOwnProperty } = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
 
@@ -36,7 +40,6 @@ const configParsers = {
 
 		parseAssert('locale', locale, 'Cannot be empty');
 		parseAssert('locale', /^[a-z-]+$/i.test(locale), 'Must be a valid locale (letters and dashes/underscores). You can consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes');
-
 		return locale;
 	},
 	generate(count?: string) {
@@ -51,6 +54,15 @@ const configParsers = {
 		parseAssert('generate', parsed <= 5, 'Must be less or equal to 5');
 
 		return parsed;
+	},
+	type(type?: string) {
+		if (!type) {
+			return '';
+		}
+
+		parseAssert('type', commitTypes.includes(type as CommitType), 'Invalid commit type');
+
+		return type as CommitType;
 	},
 	proxy(url?: string) {
 		if (!url || url.length === 0) {
@@ -80,6 +92,18 @@ const configParsers = {
 
 		return parsed;
 	},
+	'max-length'(maxLength?: string) {
+		if (!maxLength) {
+			return 50;
+		}
+
+		parseAssert('max-length', /^\d+$/.test(maxLength), 'Must be an integer');
+
+		const parsed = Number(maxLength);
+		parseAssert('max-length', parsed >= 20, 'Must be greater than 20 characters');
+
+		return parsed;
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;
@@ -88,7 +112,7 @@ type RawConfig = {
 	[key in ConfigKeys]?: string;
 };
 
-type ValidConfig = {
+export type ValidConfig = {
 	[Key in ConfigKeys]: ReturnType<typeof configParsers[Key]>;
 };
 
@@ -104,14 +128,24 @@ const readConfigFile = async (): Promise<RawConfig> => {
 	return ini.parse(configString);
 };
 
-export const getConfig = async (cliConfig?: RawConfig): Promise<ValidConfig> => {
+export const getConfig = async (
+	cliConfig?: RawConfig,
+	suppressErrors?: boolean,
+): Promise<ValidConfig> => {
 	const config = await readConfigFile();
 	const parsedConfig: Record<string, unknown> = {};
 
 	for (const key of Object.keys(configParsers) as ConfigKeys[]) {
 		const parser = configParsers[key];
 		const value = cliConfig?.[key] ?? config[key];
-		parsedConfig[key] = parser(value);
+
+		if (suppressErrors) {
+			try {
+				parsedConfig[key] = parser(value);
+			} catch {}
+		} else {
+			parsedConfig[key] = parser(value);
+		}
 	}
 
 	return parsedConfig as ValidConfig;

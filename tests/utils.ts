@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs/promises';
 import { execa, execaNode, type Options } from 'execa';
 import {
 	createFixture as createFixtureBase,
@@ -18,8 +19,8 @@ const createAicommits = (fixture: FsFixture) => {
 		args?: string[],
 		options?: Options,
 	) => execaNode(aicommitsPath, args, {
-		...options,
 		cwd: fixture.path,
+		...options,
 		extendEnv: false,
 		env: {
 			...homeEnv,
@@ -75,7 +76,7 @@ export const createFixture = async (
 
 export const files = Object.freeze({
 	'.aicommits': `OPENAI_KEY=${process.env.OPENAI_KEY}`,
-	'data.json': 'Lorem ipsum dolor sit amet '.repeat(10),
+	'data.json': Array.from({ length: 10 }, (_, i) => `${i}. Lorem ipsum dolor sit amet`).join('\n'),
 });
 
 export const assertOpenAiToken = () => {
@@ -83,3 +84,9 @@ export const assertOpenAiToken = () => {
 		throw new Error('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
 	}
 };
+
+// See ./diffs/README.md in order to generate diff files
+export const getDiff = async (diffName: string): Promise<string> => fs.readFile(
+	new URL(`fixtures/${diffName}`, import.meta.url),
+	'utf8',
+);

@@ -1,0 +1,27 @@
+diff --git a/Controllers/FeatureController.cs b/Controllers/FeatureController.cs
+index 8a3b7c1..3e29f9a 100644
+--- a/Controllers/FeatureController.cs
++++ b/Controllers/FeatureController.cs
+@@ -1,16 +1,7 @@
+ using Microsoft.AspNetCore.Mvc;
+ using System.Collections.Generic;
+
+ namespace MyWebApi.Controllers
+ {
+     [Route("api/[controller]")]
+     [ApiController]
+     public class FeatureController : ControllerBase
+     {
+-        [HttpGet("old-feature")]
+-        public ActionResult<string> GetOldFeature()
+-        {
+-            return "This is the removed old feature.";
+-        }
+-
+         [HttpGet("new-feature")]
+         public ActionResult<string> GetNewFeature()
+         {
+             return "This is the new feature.";
+         }
+     }
+ }

@@ -1,9 +1,14 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type { CreateChatCompletionRequest, CreateChatCompletionResponse } from 'openai';
-import { type TiktokenModel } from '@dqbd/tiktoken';
+import {
+	type TiktokenModel,
+	// encoding_for_model,
+} from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
+import type { CommitType } from './config.js';
+import { generatePrompt } from './prompt.js';
 
 const httpsPost = async (
 	hostname: string,
@@ -100,7 +105,22 @@ const sanitizeMessage = (message: string) => message.trim().replace(/[\n\r]/g, '
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const getPrompt = (locale: string, diff: string) => `Write an insightful but concise Git commit message in a complete sentence in present tense for the following diff without prefacing it with anything, the response must be in the language ${locale}:\n${diff}`;
+// const generateStringFromLength = (length: number) => {
+// 	let result = '';
+// 	const highestTokenChar = 'z';
+// 	for (let i = 0; i < length; i += 1) {
+// 		result += highestTokenChar;
+// 	}
+// 	return result;
+// };
+
+// const getTokens = (prompt: string, model: TiktokenModel) => {
+// 	const encoder = encoding_for_model(model);
+// 	const tokens = encoder.encode(prompt).length;
+// 	// Free the encoder to avoid possible memory leaks.
+// 	encoder.free();
+// 	return tokens;
+// };
 
 export const generateCommitMessage = async (
 	apiKey: string,
@@ -108,20 +128,26 @@ export const generateCommitMessage = async (
 	locale: string,
 	diff: string,
 	completions: number,
+	maxLength: number,
+	type: CommitType,
 	timeout: number,
 	proxy?: string,
 ) => {
-	const prompt = getPrompt(locale, diff);
-
 	try {
 		const completion = await createChatCompletion(
 			apiKey,
 			{
 				model,
-				messages: [{
-					role: 'user',
-					content: prompt,
-				}],
+				messages: [
+					{
+						role: 'system',
+						content: generatePrompt(locale, maxLength, type),
+					},
+					{
+						role: 'user',
+						content: diff,
+					},
+				],
 				temperature: 0.7,
 				top_p: 1,
 				frequency_penalty: 0,
