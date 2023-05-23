@@ -24,6 +24,12 @@ cli(
 				description: 'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
+			noninteractive: {
+				type: Boolean,
+				description: 'Non interactive mode',
+				alias: 'y',
+				default: false,
+			},
 			exclude: {
 				type: [String],
 				description: 'Files to exclude from AI analysis',
@@ -59,6 +65,7 @@ cli(
 		} else {
 			aicommits(
 				argv.flags.generate,
+				argv.flags.noninteractive,
 				argv.flags.exclude,
 				argv.flags.all,
 				argv.flags.type,
