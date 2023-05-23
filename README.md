@@ -208,7 +208,6 @@ Enable non-interactive mode to use automatically the commit retrieved without re
 ```sh
 aicommits --noninteractive # or -y
 ```
->>>>>>> 7631c2fc0bd207b9456b2bf0f24d0a49eaec57de
 
 ## How it works
 
