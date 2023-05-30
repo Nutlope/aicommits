@@ -24,3 +24,6 @@ dist
 
 # Eslint cache
 .eslintcache
+
+# idea
+.idea/

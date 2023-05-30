@@ -49,6 +49,7 @@ export default () => (async () => {
 			config.type,
 			config.timeout,
 			config.proxy,
+			config['reverse-proxy'],
 		);
 	} finally {
 		s.stop('Changes analyzed');
