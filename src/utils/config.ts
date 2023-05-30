@@ -33,11 +33,11 @@ const configParsers = {
 
 		return key;
 	},
-	'reverse-proxy'(key?: string): string {
-		if (!key) {
+	'reverse-proxy'(reverseProxy?: string): string {
+		if (!reverseProxy) {
 			return 'api.openai.com';
 		}
-		return key;
+		return reverseProxy;
 	},
 	locale(locale?: string) {
 		if (!locale) {
