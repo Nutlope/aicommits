@@ -31,6 +31,10 @@
     ```
 
     This will create a `.aicommits` file in your home directory.
+    > **Tip**: You might want to set your key using a password manager.
+    ```sh
+    export OPENAI_KEY=$(<your command to get the key>)
+    ```
 
 
 ### Upgrading
