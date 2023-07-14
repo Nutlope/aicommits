@@ -24,6 +24,11 @@ cli(
 				description: 'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
+			prefix: {
+				type: String,
+				description: 'String to prefix to the generated commit message.',
+				default: '',
+			},
 			exclude: {
 				type: [String],
 				description: 'Files to exclude from AI analysis',
@@ -59,6 +64,7 @@ cli(
 		} else {
 			aicommits(
 				argv.flags.generate,
+				argv.flags.prefix,
 				argv.flags.exclude,
 				argv.flags.all,
 				argv.flags.type,
