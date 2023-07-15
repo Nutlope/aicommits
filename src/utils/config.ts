@@ -104,6 +104,16 @@ const configParsers = {
 
 		return parsed;
 	},
+	hostname(hostname?: string) {
+		if (!hostname) {
+			return 'api.openai.com';
+		}
+
+		// eslint-disable-next-line regexp/no-unused-capturing-group
+		parseAssert('hostname', /^([a-zA-Z\d-]+\.)*[a-zA-Z\d-]+\.[a-zA-Z]+$/.test(hostname), 'Must be an hostname');
+
+		return hostname;
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;

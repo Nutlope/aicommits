@@ -101,6 +101,30 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
+		await describe('hostname', ({ test }) => {
+			test('must be an hostname', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'hostname=https://api.openai.com'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch('Must be an hostname');
+			});
+
+			test('updates config', async () => {
+				const defaultConfig = await aicommits(['config', 'get', 'hostname']);
+				expect(defaultConfig.stdout).toBe('hostname=api.openai.com');
+
+				const hostname = 'hostname=api.chatanywhere.com.cn';
+				await aicommits(['config', 'set', hostname]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(hostname);
+
+				const get = await aicommits(['config', 'get', 'hostname']);
+				expect(get.stdout).toBe(hostname);
+			});
+		});
+
 		await test('set config file', async () => {
 			await aicommits(['config', 'set', openAiToken]);
 
