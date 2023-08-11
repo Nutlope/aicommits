@@ -52,9 +52,9 @@ export const generateCodeReviewPrompt = (
 	maxLength: number,
 	type: CommitType,
 ) => [
-	'Generate a concise git code review message written in present tense for the following code diff with the given specifications below:',
+	'Generate a detailed and technical git code review message for the following code diff with the given specifications below:',
 	`Message language: ${locale}`,
-	'Exclude anything unnecessary such as translation. Your entire response will be passed directly into git commit.',
+	'Exclude anything unnecessary, such as translations. Your entire response will be part of the code analysis and review. Include a code analysis and a spelling check; if you find errors, redundancies, syntax errors, or typos, include them in the analysis.',
 	commitTypes[type],
 	specifyCommitFormat(type),
 ].filter(Boolean).join('\n');

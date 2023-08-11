@@ -29,27 +29,17 @@ export default command({
 			description: 'Type of commit message to generate',
 			alias: 't',
 		},
-		frombranch: {
-			type: String,
-			description: 'Branch from you want generate the code review',
-		},
-		tobranch: {
-			type: String,
-			description: 'Branch From you want generate the code review',
-			default: 'main',
-		},
 	},
 
-	// parameters: ['<mode>', '<key=value...>'],
+	parameters: ['<frombranch>', '<tobranch>'],
 }, (argv) => {
 	(async () => {
+		const { frombranch, tobranch } = argv._;
 		aicodereviews(
 			argv.flags.generate,
 			argv.flags.exclude,
-			argv.flags.all,
-			argv.flags.type,
-			argv.flags.frombranch,
-			argv.flags.tobranch,
+			frombranch,
+			tobranch,
 			rawArgv,
 		);
 	})().catch((error) => {

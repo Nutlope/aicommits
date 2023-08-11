@@ -17,16 +17,13 @@ export default async (
 	excludeFiles: string[],
 	frombranch: string,
 	tobranch: string,
-	commitType: string | undefined,
 ) => (async () => {
 	intro(bgCyan(black(' makecodereview ')));
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
-
 	detectingFiles.start('Detecting staged files');
 	const staged = await getBranchDiff(frombranch, tobranch, excludeFiles);
-
 	if (!staged) {
 		detectingFiles.stop('Detecting staged files');
 		throw new KnownError('No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.');
@@ -34,13 +31,13 @@ export default async (
 
 	detectingFiles.stop(`${getDetectedMessage(staged.files)}:\n${staged.files.map(file => `     ${file}`).join('\n')
 		}`);
-
+	//
 	const { env } = process;
 	const config = await getConfig({
 		OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
 		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		generate: generate?.toString(),
-		type: commitType?.toString(),
+		type: undefined,
 	});
 
 	const s = spinner();
@@ -91,11 +88,9 @@ export default async (
 		message = selected;
 	}
 
-	console.log(message);
-
 	// await execa('git', ['commit', '-m', message, ...rawArgv]);
 
-	outro(`${green('✔')} Successfully committed!`);
+	outro(`${green('✔')} Successfully reviewed!`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	handleCliError(error);
