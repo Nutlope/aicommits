@@ -24,3 +24,5 @@ dist
 
 # Eslint cache
 .eslintcache
+.idea/
+package-lock.json

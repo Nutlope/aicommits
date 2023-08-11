@@ -4,6 +4,7 @@ import aicommits from './commands/aicommits.js';
 import prepareCommitMessageHook from './commands/prepare-commit-msg-hook.js';
 import configCommand from './commands/config.js';
 import hookCommand, { isCalledFromGitHook } from './commands/hook.js';
+import makeCodeReview from './commands/codereview.js';
 
 const rawArgv = process.argv.slice(2);
 
@@ -45,6 +46,7 @@ cli(
 		commands: [
 			configCommand,
 			hookCommand,
+			makeCodeReview,
 		],
 
 		help: {

@@ -60,4 +60,43 @@ export const getStagedDiff = async (excludeFiles?: string[]) => {
 	};
 };
 
+export const getBranchDiff = async (
+	frombranch: string, tobranch: string, excludeFiles?: string[],
+) => {
+	const diffCached = ['diff', frombranch, tobranch];
+	const { stdout: files } = await execa(
+		'git',
+		[
+			...diffCached,
+			'--name-only',
+			...filesToExclude,
+			...(
+				excludeFiles
+					? excludeFiles.map(excludeFromDiff)
+					: []
+			),
+		],
+	);
+
+	if (!files) {
+		return;
+	}
+	const { stdout: diff } = await execa(
+		'git',
+		[
+			...diffCached,
+			...filesToExclude,
+			...(
+				excludeFiles
+					? excludeFiles.map(excludeFromDiff)
+					: []
+			),
+		],
+	);
+	return {
+		files: files.split('\n'),
+		diff,
+	};
+};
+
 export const getDetectedMessage = (files: string[]) => `Detected ${files.length.toLocaleString()} staged file${files.length > 1 ? 's' : ''}`;
