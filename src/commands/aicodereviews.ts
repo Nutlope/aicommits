@@ -67,21 +67,21 @@ export default async (
 	if (messages.length === 1) {
 		[message] = messages;
 		const confirmed = await confirm({
-			message: `Use this commit message?\n\n   ${message}\n`,
+			message: `Use this code review message?\n\n   ${message}\n`,
 		});
 
 		if (!confirmed || isCancel(confirmed)) {
-			outro('Commit cancelled');
+			outro('Code Review cancelled');
 			return;
 		}
 	} else {
 		const selected = await select({
-			message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
+			message: `Pick a review message to use: ${dim('(Ctrl+c to exit)')}`,
 			options: messages.map(value => ({ label: value, value })),
 		});
 
 		if (isCancel(selected)) {
-			outro('Commit cancelled');
+			outro('Code Review cancelled');
 			return;
 		}
 

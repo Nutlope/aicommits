@@ -49,12 +49,8 @@ export const generatePrompt = (
 
 export const generateCodeReviewPrompt = (
 	locale: string,
-	maxLength: number,
-	type: CommitType,
 ) => [
 	'Generate a detailed and technical git code review message for the following code diff with the given specifications below:',
 	`Message language: ${locale}`,
-	'Exclude anything unnecessary, such as translations. Your entire response will be part of the code analysis and review. Include a code analysis and a spelling check; if you find errors, redundancies, syntax errors, or typos, include them in the analysis.',
-	commitTypes[type],
-	specifyCommitFormat(type),
+	'Exclude anything unnecessary, such as translations. Your entire response will be part of the code analysis and review. Include a code analysis, a linter check, and a spelling check; if you find errors, redundancies, syntax errors, or typos, include them in the analysis. If findings are identified during the analysis, provide the relevant recommendations.',
 ].filter(Boolean).join('\n');
