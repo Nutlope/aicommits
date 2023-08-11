@@ -16,6 +16,7 @@
 	],
 	"bin": {
 		"aicommits": "./dist/cli.mjs",
+		"aicodereview": "./dist/cli.mjs",
 		"aic": "./dist/cli.mjs"
 	},
 	"scripts": {

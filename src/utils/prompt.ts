@@ -46,3 +46,15 @@ export const generatePrompt = (
 	commitTypes[type],
 	specifyCommitFormat(type),
 ].filter(Boolean).join('\n');
+
+export const generateCodeReviewPrompt = (
+	locale: string,
+	maxLength: number,
+	type: CommitType,
+) => [
+	'Generate a concise git code review message written in present tense for the following code diff with the given specifications below:',
+	`Message language: ${locale}`,
+	'Exclude anything unnecessary such as translation. Your entire response will be passed directly into git commit.',
+	commitTypes[type],
+	specifyCommitFormat(type),
+].filter(Boolean).join('\n');
