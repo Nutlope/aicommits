@@ -1,6 +1,6 @@
+[![asciicast](https://asciinema.org/a/9r5X6AwBf6FVmT1cghrLO9q68.svg)](https://asciinema.org/a/9r5X6AwBf6FVmT1cghrLO9q68)
 <div align="center">
   <div>
-    <img src=".github/screenshot.png" alt="AI Commits"/>
     <h1 align="center">AI Commits</h1>
   </div>
 	<p>A CLI that writes your git commit messages for you with AI. Never write a commit message again.</p>
