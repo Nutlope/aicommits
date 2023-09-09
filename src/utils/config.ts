@@ -104,6 +104,15 @@ const configParsers = {
 
 		return parsed;
 	},
+	'auto-confirm'(autoConfirm?: string) {
+		if (!autoConfirm) {
+			return false;
+		}
+
+		parseAssert('auto-confirm', /^(true|false)$/.test(autoConfirm), 'Must be a boolean');
+
+		return autoConfirm === 'true';
+	}
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;
