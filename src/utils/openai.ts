@@ -133,7 +133,7 @@ export const generateCommitMessage = async (
 	type: CommitType,
 	timeout: number,
 	proxy?: string,
-	reverseProxy?: string,
+	baseUrl?: string,
 ) => {
 	try {
 		const completion = await createChatCompletion(
@@ -160,7 +160,7 @@ export const generateCommitMessage = async (
 			},
 			timeout,
 			proxy,
-			reverseProxy,
+			baseUrl,
 		);
 
 		return deduplicateMessages(

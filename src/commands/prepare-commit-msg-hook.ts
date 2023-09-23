@@ -49,7 +49,7 @@ export default () => (async () => {
 			config.type,
 			config.timeout,
 			config.proxy,
-			config['reverse-proxy'],
+			config.BASE_URL,
 		);
 	} finally {
 		s.stop('Changes analyzed');
