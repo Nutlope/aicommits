@@ -107,7 +107,7 @@ export default async (
 	});
 
 	if (confirmedPush || !isCancel(confirmedPush)) {
-		await execa('git', ['push', 'origin', ...rawArgv]);
+		await execa('git', ['push', 'origin']);
 		outro(`${green('✔')} Changes Pushed!`);
 	} else {
 		outro('Push Omitted');
