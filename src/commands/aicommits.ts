@@ -101,6 +101,17 @@ export default async (
 	await execa('git', ['commit', '-m', message, ...rawArgv]);
 
 	outro(`${green('✔')} Successfully committed!`);
+
+	const confirmedPush = await confirm({
+		message: 'Push this commit to you current branch?\n\n',
+	});
+
+	if (confirmedPush || !isCancel(confirmedPush)) {
+		await execa('git', ['push', 'origin', ...rawArgv]);
+		outro(`${green('✔')} Changes Pushed!`);
+	} else {
+		outro('Push Omitted');
+	}
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	handleCliError(error);
