@@ -106,15 +106,16 @@ export default async (
 	const currentBranch = await getCurrentBranchName();
 
 	const confirmedPush = await confirm({
-		message: 'Push this commit to you current branch?\n\n',
+		message: `Push this commit to you current branch (${currentBranch})\n\n`,
 	});
 
-	outro(`${green(`Current branch selected ${currentBranch}!`)}`);
-
-	if (confirmedPush || !isCancel(confirmedPush)) {
-		await execa('git', ['push', 'origin']);
-		outro(`${green('✔')} Changes Pushed!`);
+	if (!confirmedPush || isCancel(confirmedPush)) {
+		outro('Pushed skipped!');
+		return;
 	}
+
+	await execa('git', ['push', 'origin']);
+	outro(`${green('✔')} Changes Pushed!`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	handleCliError(error);
