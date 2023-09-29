@@ -9,6 +9,7 @@ import {
 	assertGitRepo,
 	getStagedDiff,
 	getDetectedMessage,
+	getCurrentBranchName,
 } from '../utils/git.js';
 import { getConfig } from '../utils/config.js';
 import { generateCommitMessage } from '../utils/openai.js';
@@ -102,8 +103,10 @@ export default async (
 
 	outro(`${green('✔')} Successfully committed!`);
 
+	const currentBranch = await getCurrentBranchName();
+
 	const confirmedPush = await confirm({
-		message: 'Push this commit to you current branch?\n\n',
+		message: `Push this commit to you current branch?\n\n ${currentBranch}?\n`,
 	});
 
 	if (confirmedPush || !isCancel(confirmedPush)) {
