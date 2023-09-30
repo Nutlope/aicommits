@@ -71,8 +71,6 @@ export default async (
 		s.stop('Changes analyzed');
 	}
 
-	outro(`value of auto-push-current-branch: ${config['auto-push-current-branch']}`);
-
 	if (messages.length === 0) {
 		throw new KnownError('No commit messages were generated. Try again.');
 	}
