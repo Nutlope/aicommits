@@ -107,6 +107,8 @@ export default async (
 	if (config['auto-push-current-branch'] === false && config['ask-push-current-branch'] === false) {
 		return;
 	}
+	outro(`auto = ${config['auto-push-current-branch']}`);
+	outro(`ask = ${config['ask-push-current-branch']}`);
 
 	const currentBranch = await getCurrentBranchName();
 
