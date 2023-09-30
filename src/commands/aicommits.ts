@@ -104,11 +104,11 @@ export default async (
 
 	outro(`${green('✔')} Successfully committed!`);
 
-	const currentBranch = await getCurrentBranchName();
-
 	if (config['auto-push-current-branch'] === false) {
 		return;
 	}
+
+	const currentBranch = await getCurrentBranchName();
 
 	const confirmedPush = await confirm({
 		message: `Push this commit to you current branch (${currentBranch})?\n\n`,
