@@ -107,7 +107,7 @@ export default async (
 
 	if (config['auto-push-current-branch']) {
 		const confirmedPush = await confirm({
-			message: `Push this commit to you current branch (${currentBranch})\n\n`,
+			message: `Push this commit to you current branch (${currentBranch})?\n\n`,
 		});
 
 		if (!confirmedPush || isCancel(confirmedPush)) {
@@ -117,7 +117,7 @@ export default async (
 	}
 
 	await execa('git', ['push', 'origin']);
-	outro(`${green('✔')} Changes Pushed!`);
+	outro(`${green('✔')} Changes pushed to branch ${green(currentBranch)} !`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	handleCliError(error);
