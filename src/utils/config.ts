@@ -105,13 +105,13 @@ const configParsers = {
 		return parsed;
 	},
 	'auto-push-current-branch'(autoPushCurrentBranch?: string) {
-		if (!autoPushCurrentBranch) {
+		if (autoPushCurrentBranch === undefined) {
 			return false;
 		}
 
-		parseAssert('auto-push-current-branch', /^(?:true|false)$/.test(autoPushCurrentBranch), 'Must be a boolean');
+		parseAssert('auto-push-current-branch', /^(?:true|false)$/.test(String(autoPushCurrentBranch)), 'Must be a boolean');
 
-		return autoPushCurrentBranch === 'true';
+		return autoPushCurrentBranch;
 	},
 } as const;
 

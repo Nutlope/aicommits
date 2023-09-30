@@ -101,6 +101,30 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
+		await describe('auto-push-current-branch', ({ test }) => {
+			test('must be a boolean', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'auto-push-current-branch=abc'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch('Must be a boolean');
+			});
+
+			test('updates config auto-push-current-branch', async () => {
+				const defaultConfig = await aicommits(['config', 'get', 'auto-push-current-branch']);
+
+				expect(defaultConfig.stdout).toBe('auto-push-current-branch=false');
+				const autoPushCurrentBranch = 'auto-push-current-branch=true';
+				await aicommits(['config', 'set', autoPushCurrentBranch]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(autoPushCurrentBranch);
+
+				const get = await aicommits(['config', 'get', 'auto-push-current-branch']);
+				expect(get.stdout).toBe(autoPushCurrentBranch);
+			});
+		});
+
 		await test('set config file', async () => {
 			await aicommits(['config', 'set', openAiToken]);
 
