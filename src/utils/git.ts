@@ -61,3 +61,8 @@ export const getStagedDiff = async (excludeFiles?: string[]) => {
 };
 
 export const getDetectedMessage = (files: string[]) => `Detected ${files.length.toLocaleString()} staged file${files.length > 1 ? 's' : ''}`;
+
+export const getCurrentBranchName = async () => {
+	const { stdout: branchName } = await execa('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
+	return branchName;
+};

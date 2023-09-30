@@ -9,6 +9,7 @@ import {
 	assertGitRepo,
 	getStagedDiff,
 	getDetectedMessage,
+	getCurrentBranchName,
 } from '../utils/git.js';
 import { getConfig } from '../utils/config.js';
 import { generateCommitMessage } from '../utils/openai.js';
@@ -22,6 +23,7 @@ export default async (
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
+
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
@@ -101,6 +103,26 @@ export default async (
 	await execa('git', ['commit', '-m', message, ...rawArgv]);
 
 	outro(`${green('✔')} Successfully committed!`);
+
+	if (config['auto-push-current-branch'] === false && config['ask-push-current-branch'] === false) {
+		return;
+	}
+
+	const currentBranch = await getCurrentBranchName();
+
+	if (config['ask-push-current-branch']) {
+		const confirmedPush = await confirm({
+			message: `Push this commit to you current branch (${currentBranch})?\n\n`,
+		});
+
+		if (!confirmedPush || isCancel(confirmedPush)) {
+			outro('Pushed skipped!');
+			return;
+		}
+	}
+
+	await execa('git', ['push', 'origin']);
+	outro(`${green('✔')} Changes pushed to branch ${green(currentBranch)} !`);
 })().catch((error) => {
 	outro(`${red('✖')} ${error.message}`);
 	handleCliError(error);
