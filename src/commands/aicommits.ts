@@ -106,15 +106,17 @@ export default async (
 
 	const currentBranch = await getCurrentBranchName();
 
-	if (config['auto-push-current-branch']) {
-		const confirmedPush = await confirm({
-			message: `Push this commit to you current branch (${currentBranch})?\n\n`,
-		});
+	if (config['auto-push-current-branch'] === false) {
+		return;
+	}
 
-		if (!confirmedPush || isCancel(confirmedPush)) {
-			outro('Pushed skipped!');
-			return;
-		}
+	const confirmedPush = await confirm({
+		message: `Push this commit to you current branch (${currentBranch})?\n\n`,
+	});
+
+	if (!confirmedPush || isCancel(confirmedPush)) {
+		outro('Pushed skipped!');
+		return;
 	}
 
 	await execa('git', ['push', 'origin']);
