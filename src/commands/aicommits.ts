@@ -23,6 +23,7 @@ export default async (
 	rawArgv: string[],
 ) => (async () => {
 	intro(bgCyan(black(' aicommits ')));
+
 	await assertGitRepo();
 
 	const detectingFiles = spinner();
@@ -50,7 +51,7 @@ export default async (
 		generate: generate?.toString(),
 		type: commitType?.toString(),
 	});
-
+	outro(`value of auto-push-current-branch: ${config['auto-push-current-branch']}`);
 	const s = spinner();
 	s.start('The AI is analyzing your changes');
 	let messages: string[];
