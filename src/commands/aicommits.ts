@@ -121,9 +121,6 @@ export default async (
 		}
 	}
 
-	outro(`here auto = ${config['auto-push-current-branch']}`);
-	outro(`here ask = ${config['ask-push-current-branch']}`);
-
 	await execa('git', ['push', 'origin']);
 	outro(`${green('✔')} Changes pushed to branch ${green(currentBranch)} !`);
 })().catch((error) => {

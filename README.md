@@ -239,6 +239,16 @@ Automatically push the commit to the current branch without prompting the user.
 aicommits config set auto-push-current-branch=true
 ```
 
+#### ask-push-current-branch
+
+Default: `false`
+
+Ask to push the commit to the current branch prompting the user.
+
+```sh
+aicommits config set ask-push-current-branch=true
+```
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.
