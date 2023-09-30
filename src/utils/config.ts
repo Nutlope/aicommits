@@ -113,6 +113,15 @@ const configParsers = {
 
 		return autoPushCurrentBranch;
 	},
+	'ask-push-current-branch'(askPushCurrentBranch?: string) {
+		if (askPushCurrentBranch === undefined) {
+			return false;
+		}
+
+		parseAssert('ask-push-current-branch', /^(?:true|false)$/.test(String(askPushCurrentBranch)), 'Must be a boolean');
+
+		return askPushCurrentBranch;
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;
