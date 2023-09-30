@@ -107,8 +107,6 @@ export default async (
 	if (config['auto-push-current-branch'] === false && config['ask-push-current-branch'] === false) {
 		return;
 	}
-	outro(`auto = ${config['auto-push-current-branch']}`);
-	outro(`ask = ${config['ask-push-current-branch']}`);
 
 	const currentBranch = await getCurrentBranchName();
 
@@ -122,6 +120,9 @@ export default async (
 			return;
 		}
 	}
+
+	outro(`here auto = ${config['auto-push-current-branch']}`);
+	outro(`here ask = ${config['ask-push-current-branch']}`);
 
 	await execa('git', ['push', 'origin']);
 	outro(`${green('✔')} Changes pushed to branch ${green(currentBranch)} !`);
