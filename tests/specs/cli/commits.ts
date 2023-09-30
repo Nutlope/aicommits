@@ -388,8 +388,8 @@ export default testSuite(({ describe }) => {
 					const stdout = buffer.toString();
 					if (stdout.match('└')) {
 						committing.stdin!.write('y');
-						committing.stdin!.end();
 					}
+					committing.stdin!.end();
 				});
 
 				await committing;
