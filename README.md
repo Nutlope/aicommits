@@ -229,6 +229,16 @@ You can clear this option by setting it to an empty string:
 aicommits config set type=
 ```
 
+#### auto-push-current-branch
+
+Default: `false`
+
+Automatically push the commit to the current branch without prompting the user.
+
+```sh
+aicommits config set auto-push-current-branch=true
+```
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.
