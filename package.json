@@ -1,84 +1,91 @@
 {
-	"name": "aicommits",
-	"version": "0.0.0-semantic-release",
-	"description": "Writes your git commit messages for you with AI",
-	"keywords": [
-		"ai",
-		"git",
-		"commit"
-	],
-	"license": "MIT",
-	"repository": "Nutlope/aicommits",
-	"author": "Hassan El Mghari (@nutlope)",
-	"type": "module",
-	"files": [
-		"dist"
-	],
-	"bin": {
-		"aicommits": "./dist/cli.mjs",
-		"aic": "./dist/cli.mjs"
-	},
-	"scripts": {
-		"prepare": "simple-git-hooks",
-		"build": "pkgroll --minify",
-		"lint": "eslint --cache .",
-		"type-check": "tsc",
-		"test": "tsx tests",
-		"prepack": "pnpm build && clean-pkg-json"
-	},
-	"simple-git-hooks": {
-		"pre-commit": "pnpm lint-staged"
-	},
-	"lint-staged": {
-		"*.ts": "eslint --cache"
-	},
-	"dependencies": {
-		"@dqbd/tiktoken": "^1.0.2"
-	},
-	"devDependencies": {
-		"@clack/prompts": "^0.6.1",
-		"@pvtnbr/eslint-config": "^0.33.0",
-		"@types/ini": "^1.3.31",
-		"@types/inquirer": "^9.0.3",
-		"@types/node": "^18.14.2",
-		"clean-pkg-json": "^1.2.0",
-		"cleye": "^1.3.2",
-		"eslint": "^8.35.0",
-		"execa": "^7.0.0",
-		"fs-fixture": "^1.2.0",
-		"https-proxy-agent": "^5.0.1",
-		"ini": "^3.0.1",
-		"kolorist": "^1.7.0",
-		"lint-staged": "^13.1.2",
-		"manten": "^0.7.0",
-		"openai": "^3.2.1",
-		"pkgroll": "^1.9.0",
-		"simple-git-hooks": "^2.8.1",
-		"tsx": "^3.12.3",
-		"typescript": "^4.9.5"
-	},
-	"eslintConfig": {
-		"extends": "@pvtnbr",
-		"rules": {
-			"unicorn/no-process-exit": "off"
-		},
-		"overrides": [
-			{
-				"files": "./src/commands/prepare-commit-msg-hook.ts",
-				"rules": {
-					"unicorn/prevent-abbreviations": "off"
-				}
-			}
-		]
-	},
-	"release": {
-		"branches": [
-			"main"
-		]
-	},
-	"pnpm": {
-		"patchedDependencies": {
-			"@clack/prompts@0.6.1": "patches/@clack__prompts@0.6.1.patch"
-		}
-	}
+  "name": "aicommits",
+  "version": "0.0.0-semantic-release",
+  "description": "Writes your git commit messages for you with AI",
+  "keywords": [
+    "ai",
+    "git",
+    "commit"
+  ],
+  "license": "MIT",
+  "repository": "Nutlope/aicommits",
+  "author": "Hassan El Mghari (@nutlope)",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "aicommits": "./dist/cli.mjs",
+    "aic": "./dist/cli.mjs"
+  },
+  "scripts": {
+    "prepare": "simple-git-hooks",
+    "build": "pkgroll --minify",
+    "lint": "eslint --cache .",
+    "type-check": "tsc",
+    "test": "tsx tests",
+    "prepack": "pnpm build"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*.ts": "eslint --cache"
+  },
+  "dependencies": {
+    "@dqbd/tiktoken": "^1.0.2",
+    "socks-proxy-agent": "^8.0.2"
+  },
+  "devDependencies": {
+    "@clack/prompts": "^0.6.1",
+    "@pvtnbr/eslint-config": "^0.33.0",
+    "@types/ini": "^1.3.31",
+    "@types/inquirer": "^9.0.3",
+    "@types/node": "^18.14.2",
+    "clean-pkg-json": "^1.2.0",
+    "cleye": "^1.3.2",
+    "eslint": "^8.35.0",
+    "execa": "^7.0.0",
+    "fs-fixture": "^1.2.0",
+    "https-proxy-agent": "^5.0.1",
+    "ini": "^3.0.1",
+    "kolorist": "^1.7.0",
+    "lint-staged": "^13.1.2",
+    "manten": "^0.7.0",
+    "openai": "^3.2.1",
+    "pkgroll": "^1.9.0",
+    "simple-git-hooks": "^2.8.1",
+    "tsx": "^3.12.3",
+    "typescript": "^4.9.5"
+  },
+  "eslintConfig": {
+    "extends": "@pvtnbr",
+    "rules": {
+      "indent": [
+        "off",
+        2
+      ],
+      "unicorn/no-process-exit": "off",
+      "unicorn/empty-brace-spaces": "off",
+      "regexp/no-unused-capturing-group": "off"
+    },
+    "overrides": [
+      {
+        "files": "./src/commands/prepare-commit-msg-hook.ts",
+        "rules": {
+          "unicorn/prevent-abbreviations": "off"
+        }
+      }
+    ]
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@clack/prompts@0.6.1": "patches/@clack__prompts@0.6.1.patch"
+    }
+  }
 }
