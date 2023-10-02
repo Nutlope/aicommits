@@ -76,9 +76,15 @@ export default async (
 	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
-		const confirmed = await confirm({
-			message: `Use this commit message?\n\n   ${message}\n`,
-		});
+
+		let confirmed: boolean | symbol;
+		if (config['auto-confirm']) {
+			confirmed = true;
+		} else {
+			confirmed = await confirm({
+				message: `Use this commit message?\n\n   ${message}\n`,
+			});
+		}
 
 		if (!confirmed || isCancel(confirmed)) {
 			outro('Commit cancelled');

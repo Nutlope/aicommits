@@ -101,6 +101,30 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
+		await describe('auto-confirm', ({ test }) => {
+			test('must be a boolean', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'auto-confirm=abc'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch('Must be a boolean');
+			});
+
+			test('updates config', async () => {
+				const defaultConfig = await aicommits(['config', 'get', 'auto-confirm']);
+				expect(defaultConfig.stdout).toBe('auto-confirm=false');
+
+				const autoConfirm = 'auto-confirm=true';
+				await aicommits(['config', 'set', autoConfirm]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(autoConfirm);
+
+				const get = await aicommits(['config', 'get', 'auto-confirm']);
+				expect(get.stdout).toBe(autoConfirm);
+			});
+		});
+
 		await test('set config file', async () => {
 			await aicommits(['config', 'set', openAiToken]);
 
