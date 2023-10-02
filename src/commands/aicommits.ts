@@ -77,9 +77,9 @@ export default async (
 	if (messages.length === 1) {
 		[message] = messages;
 
-		let confirmed: boolean
+		let confirmed: boolean | symbol;
 		if (config['auto-confirm']) {
-			confirmed = true
+			confirmed = true;
 		} else {
 			confirmed = await confirm({
 				message: `Use this commit message?\n\n   ${message}\n`,
