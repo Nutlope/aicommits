@@ -171,6 +171,45 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		test('Accepts --non-interactive flag', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+
+			await git('add', ['data.json']);
+			await git('commit', ['-m', 'wip']);
+
+			// Change tracked file
+			await fixture.writeFile('data.json', 'Test');
+
+			const statusBefore = await git('status', ['--short']);
+			console.log(statusBefore);
+			expect(statusBefore.stdout).toBe(' M data.json\n?? .aicommits');
+
+			const committing = aicommits(['--all', '--non-interactive']);
+			committing.stdout!.on('data', (buffer: Buffer) => {
+				const stdout = buffer.toString();
+				console.log(stdout);
+				if (stdout.match('└')) {
+					committing.stdin!.end();
+				}
+			});
+
+			await committing;
+
+			const statusAfter = await git('status', ['--short']);
+			console.log(statusAfter);
+			expect(statusAfter.stdout).toBe('M  data.json\n?? .aicommits');
+
+			const { stdout: commitMessage } = await git('log', ['-n1', '--pretty=format:%s']);
+			console.log({
+				commitMessage,
+				length: commitMessage.length,
+			});
+			expect(commitMessage.length).toBeLessThanOrEqual(50);
+
+			await fixture.rm();
+		});
+
 		test('Generates Japanese commit message via locale config', async () => {
 			// https://stackoverflow.com/a/15034560/911407
 			const japanesePattern = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
