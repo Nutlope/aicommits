@@ -4,6 +4,7 @@ import aicommits from './commands/aicommits.js';
 import prepareCommitMessageHook from './commands/prepare-commit-msg-hook.js';
 import configCommand from './commands/config.js';
 import hookCommand, { isCalledFromGitHook } from './commands/hook.js';
+import prCommand from './commands/aipr.js';
 
 const rawArgv = process.argv.slice(2);
 
@@ -29,6 +30,11 @@ cli(
 				description: 'Non interactive mode',
 				alias: 'y',
 				default: false,
+      },
+			prefix: {
+				type: String,
+				description: 'String to prefix to the generated commit message.',
+				default: '',
 			},
 			exclude: {
 				type: [String],
@@ -51,6 +57,7 @@ cli(
 		commands: [
 			configCommand,
 			hookCommand,
+			prCommand,
 		],
 
 		help: {
@@ -66,6 +73,7 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				argv.flags.noninteractive,
+				argv.flags.prefix,
 				argv.flags.exclude,
 				argv.flags.all,
 				argv.flags.type,
