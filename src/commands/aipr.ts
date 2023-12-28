@@ -144,7 +144,7 @@ export default command(
 				message = selected;
 			}
 
-			await execa('gh', ['pr', 'create', '-b', `"${message}"`, '-t', `"${message.split('\n')[0]}"`, '-B', trunk ?? 'main']);
+			await execa('gh', ['pr', 'create', '-b', `${message}`, '-t', `${message.split('\n')[0]}`, '-B', trunk ?? 'main']);
 
 			outro(`${green('✔')} Successfully created!`);
 		})().catch((error) => {
