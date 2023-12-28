@@ -25,6 +25,12 @@ cli(
 				description: 'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
+			noninteractive: {
+				type: Boolean,
+				description: 'Non interactive mode',
+				alias: 'y',
+				default: false,
+      },
 			prefix: {
 				type: String,
 				description: 'String to prefix to the generated commit message.',
@@ -66,6 +72,7 @@ cli(
 		} else {
 			aicommits(
 				argv.flags.generate,
+				argv.flags.noninteractive,
 				argv.flags.prefix,
 				argv.flags.exclude,
 				argv.flags.all,

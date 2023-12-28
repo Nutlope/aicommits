@@ -213,6 +213,13 @@ Default: `50`
 aicommits config set max-length=100
 ```
 
+
+#### Non-interactive mode
+Enable non-interactive mode to use automatically the commit retrieved without review, specially useful for automations:
+```sh
+aicommits --noninteractive # or -y
+```
+
 #### type
 
 Default: `""` (Empty string)
