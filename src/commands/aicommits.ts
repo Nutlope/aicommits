@@ -17,6 +17,7 @@ import { KnownError, handleCliError } from '../utils/error.js';
 export default async (
 	generate: number | undefined,
 	noninteractive: boolean | undefined,
+	prefix: string,
 	excludeFiles: string[],
 	stageAll: boolean,
 	commitType: string | undefined,
@@ -77,7 +78,12 @@ export default async (
 	let message: string;
 	if (messages.length === 1) {
 		[message] = messages;
-		const confirmed = noninteractive ? true : await confirm({ message: `Use this commit message?\n\n   ${message}\n` });
+		const confirmed = noninteractive ? true : await confirm({ message: `Use this commit message?\n\n  ${prefix} ${message}\n` });
+		// message = `${prefix} ${message}`;
+
+		// const confirmed = await confirm({
+		//		message: `Use this commit message?\n\n   ${message}\n`,
+		// });
 
 		if (!confirmed || isCancel(confirmed)) {
 			outro('Commit cancelled');

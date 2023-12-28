@@ -31,6 +31,11 @@ cli(
 				alias: 'y',
 				default: false,
 			},
+			prefix: {
+				type: String,
+				description: 'String to prefix to the generated commit message.',
+				default: '',
+			},
 			exclude: {
 				type: [String],
 				description: 'Files to exclude from AI analysis',
@@ -68,6 +73,7 @@ cli(
 			aicommits(
 				argv.flags.generate,
 				argv.flags.noninteractive,
+				argv.flags.prefix,
 				argv.flags.exclude,
 				argv.flags.all,
 				argv.flags.type,
