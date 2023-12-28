@@ -79,7 +79,6 @@ export default async (
 	if (messages.length === 1) {
 		[message] = messages;
 		const confirmed = noninteractive ? true : await confirm({ message: `Use this commit message?\n\n  ${prefix} ${message}\n` });
-		//message = `${prefix} ${message}`;
 		if (!confirmed || isCancel(confirmed)) {
 			outro('Commit cancelled');
 			return;
