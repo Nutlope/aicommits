@@ -8,7 +8,7 @@ import {
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 import type { CommitType } from './config.js';
-import { generatePrompt } from './prompt.js';
+import { generateCommitPrompt, generatePullRequestPrompt } from './prompt.js';
 
 const httpsPost = async (
 	hostname: string,
@@ -141,7 +141,7 @@ export const generateCommitMessage = async (
 				messages: [
 					{
 						role: 'system',
-						content: generatePrompt(locale, maxLength, type),
+						content: generateCommitPrompt(locale, maxLength, type),
 					},
 					{
 						role: 'user',
@@ -164,6 +164,57 @@ export const generateCommitMessage = async (
 			completion.choices
 				.filter(choice => choice.message?.content)
 				.map(choice => sanitizeMessage(choice.message!.content)),
+		);
+	} catch (error) {
+		const errorAsAny = error as any;
+		if (errorAsAny.code === 'ENOTFOUND') {
+			throw new KnownError(`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`);
+		}
+
+		throw errorAsAny;
+	}
+};
+
+export const generatePullRequest = async (
+	apiKey: string,
+	model: TiktokenModel,
+	locale: string,
+	diff: string,
+	completions: number,
+	timeout: number,
+	proxy?: string,
+) => {
+	try {
+		const completion = await createChatCompletion(
+			apiKey,
+			{
+				model,
+				messages: [
+					{
+						role: 'system',
+						content: generatePullRequestPrompt(locale),
+					},
+					{
+						role: 'user',
+						content: diff,
+					},
+				],
+				temperature: 0.7,
+				top_p: 1,
+				frequency_penalty: 0,
+				presence_penalty: 0,
+				max_tokens: 200,
+				stream: false,
+				n: completions,
+			},
+			timeout,
+			proxy,
+		);
+
+		return deduplicateMessages(
+			completion.choices
+				.filter(choice => choice.message?.content)
+				.map(choice => choice.message!.content),
 		);
 	} catch (error) {
 		const errorAsAny = error as any;
