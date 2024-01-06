@@ -209,6 +209,11 @@ The maximum character length of the generated commit message.
 
 Default: `50`
 
+#### max-tokens
+The maximum number of tokens that the OpenAI models can generate.
+
+Default: `200`
+
 ```sh
 aicommits config set max-length=100
 ```

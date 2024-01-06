@@ -16,6 +16,7 @@ const httpsPost = async (
 	headers: Record<string, string>,
 	json: unknown,
 	timeout: number,
+	maxTokens: number,
 	proxy?: string,
 ) => new Promise<{
 	request: ClientRequest;
@@ -152,7 +153,7 @@ export const generateCommitMessage = async (
 				top_p: 1,
 				frequency_penalty: 0,
 				presence_penalty: 0,
-				max_tokens: 200,
+				max_tokens: maxTokens,
 				stream: false,
 				n: completions,
 			},
