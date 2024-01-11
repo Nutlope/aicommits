@@ -65,6 +65,15 @@ aicommits --all # or -a
 
 > 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
 
+#### Generate with a specific locale
+
+You can generate a commit message with a specific locale by passing in the `--locale <locale>` flag, where 'locale' is the locale code:
+```sh
+aicommits --locale <locale> # or -l <locale>
+```
+
+Consult the list of codes in: https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes.
+
 #### Generate multiple recommendations
 
 Sometimes the recommended commit message isn't the best so you want it to generate a few to pick from. You can generate multiple commit messages at once by passing in the `--generate <i>` flag, where 'i' is the number of generated messages:
@@ -166,7 +175,7 @@ The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://plat
 #### locale
 Default: `en`
 
-The locale to use for the generated commit messages. Consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes.
+The locale to use for the generated commit messages. Consult the list of codes in: https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes.
 
 #### generate
 

@@ -15,6 +15,7 @@ import { generateCommitMessage } from '../utils/openai.js';
 import { KnownError, handleCliError } from '../utils/error.js';
 
 export default async (
+	locale: string | undefined,
 	generate: number | undefined,
 	excludeFiles: string[],
 	stageAll: boolean,
@@ -46,6 +47,7 @@ export default async (
 	const config = await getConfig({
 		OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
 		proxy: env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
+		locale: locale?.toString(),
 		generate: generate?.toString(),
 		type: commitType?.toString(),
 	});
