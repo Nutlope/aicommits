@@ -20,6 +20,12 @@
     npm install -g aicommits
     ```
 
+    or
+
+    ```sh
+    brew install aicommits
+    ```
+
 2. Retrieve your API key from [OpenAI](https://platform.openai.com/account/api-keys)
 
     > Note: If you haven't already, you'll have to create an account and set up billing.
@@ -44,6 +50,12 @@ If it's not the [latest version](https://github.com/Nutlope/aicommits/releases/l
 
 ```sh
 npm update -g aicommits
+```
+
+or
+
+```sh
+brew upgrade aicommits
 ```
 
 ## Usage
