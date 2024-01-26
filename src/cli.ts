@@ -21,7 +21,8 @@ cli(
 		flags: {
 			generate: {
 				type: Number,
-				description: 'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
+				description:
+					'Number of messages to generate (Warning: generating multiple costs more) (default: 1)',
 				alias: 'g',
 			},
 			exclude: {
@@ -31,7 +32,8 @@ cli(
 			},
 			all: {
 				type: Boolean,
-				description: 'Automatically stage changes in tracked files for the commit',
+				description:
+					'Automatically stage changes in tracked files for the commit',
 				alias: 'a',
 				default: false,
 			},
@@ -42,16 +44,13 @@ cli(
 			},
 		},
 
-		commands: [
-			configCommand,
-			hookCommand,
-		],
+		commands: [configCommand, hookCommand],
 
 		help: {
 			description,
 		},
 
-		ignoreArgv: type => type === 'unknown-flag' || type === 'argument',
+		ignoreArgv: (type) => type === 'unknown-flag' || type === 'argument',
 	},
 	(argv) => {
 		if (isCalledFromGitHook) {
@@ -62,9 +61,9 @@ cli(
 				argv.flags.exclude,
 				argv.flags.all,
 				argv.flags.type,
-				rawArgv,
+				rawArgv
 			);
 		}
 	},
-	rawArgv,
+	rawArgv
 );
