@@ -105,7 +105,7 @@ export default async (
 				return;
 			}
 
-			message = selected;
+			message = selected as string;
 		}
 
 		await execa('git', ['commit', '-m', message, ...rawArgv]);
