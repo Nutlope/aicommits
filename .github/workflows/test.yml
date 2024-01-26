@@ -16,37 +16,37 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Use Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version-file: '.nvmrc'
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 7
-        run_install: true
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: true
 
-    - name: Type check
-      run: pnpm type-check
+      - name: Type check
+        run: pnpm type-check
 
-    - name: Lint
-      run: pnpm lint
+      - name: Lint
+        run: pnpm lint
 
-    - name: Build
-      run: pnpm build
+      - name: Build
+        run: pnpm build
 
-    - name: Install tinyproxy
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get install tinyproxy
-        tinyproxy
-    - name: Test
-      env:
-        OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-      run: |
-        pnpm test
-        pnpm --use-node-version=14.21.3 test
+      - name: Install tinyproxy
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get install tinyproxy
+          tinyproxy
+      - name: Test
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        run: |
+          pnpm test
+          pnpm --use-node-version=14.21.3 test
