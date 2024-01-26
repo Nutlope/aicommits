@@ -22,7 +22,9 @@ export default testSuite(({ describe }) => {
 				reject: false,
 			});
 
-			expect(stderr).toMatch('Invalid config property OPENAI_KEY: Must start with "sk-"');
+			expect(stderr).toMatch(
+				'Invalid config property OPENAI_KEY: Must start with "sk-"'
+			);
 		});
 
 		await test('set config file', async () => {
@@ -71,9 +73,12 @@ export default testSuite(({ describe }) => {
 
 		await describe('max-length', ({ test }) => {
 			test('must be an integer', async () => {
-				const { stderr } = await aicommits(['config', 'set', 'max-length=abc'], {
-					reject: false,
-				});
+				const { stderr } = await aicommits(
+					['config', 'set', 'max-length=abc'],
+					{
+						reject: false,
+					}
+				);
 
 				expect(stderr).toMatch('Must be an integer');
 			});

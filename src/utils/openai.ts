@@ -171,7 +171,7 @@ export const generateCommitMessage = async (
 		return deduplicateMessages(
 			completion.choices
 				.filter((choice) => choice.message?.content)
-				.map((choice) => sanitizeMessage(choice.message!.content))
+				.map((choice) => sanitizeMessage(choice.message!.content as string))
 		);
 	} catch (error) {
 		const errorAsAny = error as any;
