@@ -73,6 +73,8 @@ export default async (
 				config['max-length'],
 				config.type,
 				config.timeout,
+				config.hostname,
+				config.path,
 				config.proxy
 			);
 		} finally {
