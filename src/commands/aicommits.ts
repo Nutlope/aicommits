@@ -73,6 +73,7 @@ export default async (
 				config['max-length'],
 				config.type,
 				config.timeout,
+				config.authHeaderName,
 				config.hostname,
 				config.path,
 				config.proxy
