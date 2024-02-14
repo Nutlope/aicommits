@@ -75,7 +75,7 @@ export default () =>
 		if (hasMultipleMessages) {
 			if (supportsComments) {
 				instructions +=
-					'# Select one of the following messages by uncommeting:\n';
+					'# Select one of the following messages by uncommenting:\n';
 			}
 			instructions += `\n${messages
 				.map((message) => `# ${message}`)
