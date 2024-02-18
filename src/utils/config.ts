@@ -109,8 +109,8 @@ const configParsers = {
 			return 'api.openai.com';
 		}
 
-		// eslint-disable-next-line regexp/no-unused-capturing-group
-		parseAssert('hostname', /^([a-zA-Z\d-]+\.)*[a-zA-Z\d-]+\.[a-zA-Z]+$/.test(hostname), 'Must be an hostname');
+		parseAssert('hostname', /^(?:[a-zA-Z\d](?:[a-zA-Z\d-]{0,61}[a-zA-Z\d])?\.)+[a-zA-Z]{2,}$/.test(hostname)
+        || /^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname), 'Must be an hostname');
 
 		return hostname;
 	},

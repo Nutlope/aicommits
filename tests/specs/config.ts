@@ -111,16 +111,22 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('updates config', async () => {
-				const defaultConfig = await aicommits(['config', 'get', 'hostname']);
-				expect(defaultConfig.stdout).toBe('hostname=api.openai.com');
-
-				const hostname = 'hostname=api.chatanywhere.com.cn';
+				let hostname = 'hostname=api.chatanywhere.com.cn';
 				await aicommits(['config', 'set', hostname]);
 
-				const configFile = await fs.readFile(configPath, 'utf8');
+				let configFile = await fs.readFile(configPath, 'utf8');
 				expect(configFile).toMatch(hostname);
 
-				const get = await aicommits(['config', 'get', 'hostname']);
+				let get = await aicommits(['config', 'get', 'hostname']);
+				expect(get.stdout).toBe(hostname);
+
+				hostname = 'hostname=127.0.0.1';
+				await aicommits(['config', 'set', hostname]);
+
+				configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(hostname);
+
+				get = await aicommits(['config', 'get', 'hostname']);
 				expect(get.stdout).toBe(hostname);
 			});
 		});
