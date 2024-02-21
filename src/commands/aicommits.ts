@@ -69,7 +69,6 @@ export default async (
 			false
 		);
 
-
 		const s = spinner();
 		s.start('The AI is analyzing your changes');
 		let messages: string[];

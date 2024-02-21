@@ -79,7 +79,6 @@ const createChatCompletion = async (
 	let headers: any = {};
 	headers[authHeaderName] = `${apiKey}`;
 
-
 	const { response, data } = await httpsPost(
 		hostname,
 		apipath,

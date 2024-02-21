@@ -100,9 +100,7 @@ export default testSuite(({ describe }) => {
 			test('must be a hostname', async () => {
 				const { stderr } = await aicommits(
 					['config', 'set', 'hostname=https://api.openai.com/'],
-					{
-						reject: false,
-					}
+					{ reject: false }
 				);
 
 				expect(stderr).toMatch(
