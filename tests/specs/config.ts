@@ -97,15 +97,17 @@ export default testSuite(({ describe }) => {
 		});
 
 		await describe('hostname', ({ test }) => {
-			test('must be an hostname', async () => {
+			test('must be a hostname', async () => {
 				const { stderr } = await aicommits(
-					['config', 'set', 'hostname=https://api.openai.com'],
+					['config', 'set', 'hostname=https://api.openai.com/'],
 					{
 						reject: false,
 					}
 				);
 
-				expect(stderr).toMatch('Must be an hostname');
+				expect(stderr).toMatch(
+					'Do not include protocol or path in hostname, only hostname'
+				);
 			});
 
 			test('updates config', async () => {
