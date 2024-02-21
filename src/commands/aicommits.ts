@@ -52,19 +52,30 @@ export default async (
 		);
 
 		const { env } = process;
-		const config = await getConfig({
-			OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
-			proxy:
-				env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
-			generate: generate?.toString(),
-			type: commitType?.toString(),
-		});
+		const config = await getConfig(
+			{
+				OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
+				authHeaderName: env.authHeaderName,
+				hostname: env.hostname,
+				apipath: env.apipath,
+				proxy:
+					env.https_proxy ||
+					env.HTTPS_PROXY ||
+					env.http_proxy ||
+					env.HTTP_PROXY,
+				generate: generate?.toString(),
+				type: commitType?.toString(),
+			},
+			false
+		);
+
 
 		const s = spinner();
 		s.start('The AI is analyzing your changes');
 		let messages: string[];
 		try {
 			messages = await generateCommitMessage(
+				config.authHeaderName,
 				config.OPENAI_KEY,
 				config.model,
 				config.locale,
@@ -73,9 +84,8 @@ export default async (
 				config['max-length'],
 				config.type,
 				config.timeout,
-				config.authHeaderName,
 				config.hostname,
-				config.path,
+				config.apipath,
 				config.proxy
 			);
 		} finally {

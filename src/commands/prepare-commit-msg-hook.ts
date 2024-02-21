@@ -40,6 +40,7 @@ export default () =>
 		let messages: string[];
 		try {
 			messages = await generateCommitMessage(
+				config.authHeaderName,
 				config.OPENAI_KEY,
 				config.model,
 				config.locale,
@@ -49,7 +50,7 @@ export default () =>
 				config.type,
 				config.timeout,
 				config.hostname,
-				config.path,
+				config.apipath,
 				config.proxy
 			);
 		} finally {

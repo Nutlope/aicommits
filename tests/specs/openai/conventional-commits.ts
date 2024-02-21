@@ -3,7 +3,7 @@ import { generateCommitMessage } from '../../../src/utils/openai.js';
 import type { ValidConfig } from '../../../src/utils/config.js';
 import { getDiff } from '../../utils.js';
 
-const { OPENAI_KEY } = process.env;
+const { OPENAI_KEY, authHeaderName, hostname, apipath } = process.env;
 
 export default testSuite(({ describe }) => {
 	if (!OPENAI_KEY) {
@@ -139,6 +139,7 @@ export default testSuite(({ describe }) => {
 				...configOverrides,
 			} as ValidConfig;
 			const commitMessages = await generateCommitMessage(
+				authHeaderName ?? 'Authorization',
 				OPENAI_KEY!,
 				'gpt-3.5-turbo',
 				config.locale,
@@ -147,7 +148,8 @@ export default testSuite(({ describe }) => {
 				config['max-length'],
 				config.type,
 				7000,
-				config.hostname
+				hostname ?? 'api.openai.com',
+				apipath ?? '/v1/completions'
 			);
 
 			return commitMessages[0];

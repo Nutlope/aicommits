@@ -113,19 +113,32 @@ const configParsers = {
 
 		return parsed;
 	},
+	authHeaderName(authHeaderName?: string) {
+		if (!authHeaderName) {
+			return 'Authorization';
+		}
+
+		return authHeaderName;
+	},
 	hostname(hostname?: string) {
 		if (!hostname) {
 			return 'api.openai.com';
 		}
 
+		parseAssert(
+			'hostname',
+			!/^http/i.test(hostname) && !/\/$/.test(hostname),
+			'Do not include protocol or path in hostname, only hostname'
+		);
+
 		return hostname;
 	},
-	path(path?: string) {
-		if (!path) {
+	apipath(apipath?: string) {
+		if (!apipath) {
 			return '/v1/chat/completions';
 		}
 
-		return path;
+		return apipath;
 	},
 } as const;
 
