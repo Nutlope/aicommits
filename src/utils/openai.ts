@@ -15,7 +15,7 @@ import { generatePrompt } from './prompt.js';
 
 const httpsPost = async (
 	hostname: string,
-	path: string,
+	apipath: string,
 	headers: Record<string, string>,
 	json: unknown,
 	timeout: number,
@@ -31,7 +31,7 @@ const httpsPost = async (
 			{
 				port: 443,
 				hostname,
-				path,
+				path: apipath,
 				method: 'POST',
 				headers: {
 					...headers,
@@ -68,17 +68,21 @@ const httpsPost = async (
 	});
 
 const createChatCompletion = async (
+	authHeaderName: string,
 	apiKey: string,
 	json: CreateChatCompletionRequest,
 	timeout: number,
+	hostname: string,
+	apipath: string,
 	proxy?: string
 ) => {
+	let headers: any = {};
+	headers[authHeaderName] = `${apiKey}`;
+
 	const { response, data } = await httpsPost(
-		'api.openai.com',
-		'/v1/chat/completions',
-		{
-			Authorization: `Bearer ${apiKey}`,
-		},
+		hostname,
+		apipath,
+		headers,
 		json,
 		timeout,
 		proxy
@@ -131,6 +135,7 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 // };
 
 export const generateCommitMessage = async (
+	authHeaderName: string,
 	apiKey: string,
 	model: TiktokenModel,
 	locale: string,
@@ -139,10 +144,13 @@ export const generateCommitMessage = async (
 	maxLength: number,
 	type: CommitType,
 	timeout: number,
+	hostname: string,
+	apipath: string,
 	proxy?: string
 ) => {
 	try {
 		const completion = await createChatCompletion(
+			authHeaderName,
 			apiKey,
 			{
 				model,
@@ -165,6 +173,8 @@ export const generateCommitMessage = async (
 				n: completions,
 			},
 			timeout,
+			hostname,
+			apipath,
 			proxy
 		);
 

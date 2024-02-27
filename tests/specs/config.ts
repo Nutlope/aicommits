@@ -17,16 +17,6 @@ export default testSuite(({ describe }) => {
 			expect(stderr).toMatch('Invalid config property: UNKNOWN');
 		});
 
-		test('set invalid OPENAI_KEY', async () => {
-			const { stderr } = await aicommits(['config', 'set', 'OPENAI_KEY=abc'], {
-				reject: false,
-			});
-
-			expect(stderr).toMatch(
-				'Invalid config property OPENAI_KEY: Must start with "sk-"'
-			);
-		});
-
 		await test('set config file', async () => {
 			await aicommits(['config', 'set', openAiToken]);
 
@@ -103,6 +93,33 @@ export default testSuite(({ describe }) => {
 
 				const get = await aicommits(['config', 'get', 'max-length']);
 				expect(get.stdout).toBe(maxLength);
+			});
+		});
+
+		await describe('hostname', ({ test }) => {
+			test('must be an hostname', async () => {
+				const { stderr } = await aicommits(
+					['config', 'set', 'hostname=https://api.openai.com/'],
+					{ reject: false }
+				);
+
+				expect(stderr).toMatch(
+					'Do not include protocol or path in hostname, only hostname'
+				);
+			});
+
+			test('updates config', async () => {
+				const defaultConfig = await aicommits(['config', 'get', 'hostname']);
+				expect(defaultConfig.stdout).toBe('hostname=api.openai.com');
+
+				const hostname = 'hostname=api.chatanywhere.com.cn';
+				await aicommits(['config', 'set', hostname]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(hostname);
+
+				const get = await aicommits(['config', 'get', 'hostname']);
+				expect(get.stdout).toBe(hostname);
 			});
 		});
 

@@ -27,8 +27,6 @@ const configParsers = {
 				'Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`'
 			);
 		}
-		parseAssert('OPENAI_KEY', key.startsWith('sk-'), 'Must start with "sk-"');
-		// Key can range from 43~51 characters. There's no spec to assert this.
 
 		return key;
 	},
@@ -114,6 +112,33 @@ const configParsers = {
 		);
 
 		return parsed;
+	},
+	authHeaderName(authHeaderName?: string) {
+		if (!authHeaderName) {
+			return 'Authorization';
+		}
+
+		return authHeaderName;
+	},
+	hostname(hostname?: string) {
+		if (!hostname) {
+			return 'api.openai.com';
+		}
+
+		parseAssert(
+			'hostname',
+			!/^http/i.test(hostname) && !/\/$/.test(hostname),
+			'Do not include protocol or path in hostname, only hostname'
+		);
+
+		return hostname;
+	},
+	apipath(apipath?: string) {
+		if (!apipath) {
+			return '/v1/chat/completions';
+		}
+
+		return apipath;
 	},
 } as const;
 

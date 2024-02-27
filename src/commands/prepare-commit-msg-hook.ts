@@ -40,6 +40,7 @@ export default () =>
 		let messages: string[];
 		try {
 			messages = await generateCommitMessage(
+				config.authHeaderName,
 				config.OPENAI_KEY,
 				config.model,
 				config.locale,
@@ -48,6 +49,8 @@ export default () =>
 				config['max-length'],
 				config.type,
 				config.timeout,
+				config.hostname,
+				config.apipath,
 				config.proxy
 			);
 		} finally {
