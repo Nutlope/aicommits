@@ -6,7 +6,7 @@ import type { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
-const commitTypes = ['', 'conventional'] as const;
+const commitTypes = ['', 'conventional', 'gitmoji'] as const;
 
 export type CommitType = (typeof commitTypes)[number];
 
