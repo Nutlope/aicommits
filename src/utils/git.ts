@@ -23,6 +23,7 @@ const filesToExclude = [
 
 	// yarn.lock, Cargo.lock, Gemfile.lock, Pipfile.lock, etc.
 	'*.lock',
+	'*.lockb', // Binary lock file
 ].map(excludeFromDiff);
 
 export const getStagedDiff = async (excludeFiles?: string[]) => {
