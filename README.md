@@ -171,6 +171,14 @@ Required
 
 The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
 
+For local OpenAI-compatible API server an empty key should be specified as `no_api_key`.
+
+#### OPENAI_URL
+
+Optional
+
+The OpenAI server URL. Defaults to `https://api.openai.com`. Both `https` and `http` protocols supported.
+
 #### locale
 
 Default: `en`
