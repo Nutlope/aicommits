@@ -171,7 +171,7 @@ Required
 
 The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
 
-For local OpenAI-compatible API server an empty key should be specified as `no_api_key`.
+For local OpenAI-compatible API server an empty key can be specified as `no_api_key`. Different OpenAI-compatible API servers might enforce the key structure differently. Please consult your OpenAI-compatible API provider documentation for more details.
 
 #### OPENAI_URL
 
