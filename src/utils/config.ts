@@ -27,7 +27,6 @@ const configParsers = {
 				'Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`'
 			);
 		}
-		parseAssert('OPENAI_KEY', key.startsWith('sk-'), 'Must start with "sk-"');
 		// Key can range from 43~51 characters. There's no spec to assert this.
 
 		return key;
@@ -114,6 +113,15 @@ const configParsers = {
 		);
 
 		return parsed;
+	},
+	OPENAI_URL(url?: string) {
+		if (!url || url.length === 0) {
+			return undefined;
+		}
+
+		parseAssert('OPENAI_URL', /^https?:\/\//.test(url), 'Must be a valid URL');
+
+		return url;
 	},
 } as const;
 
