@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs/promises';
-import { execa, execaNode, type Options } from 'execa';
+import {execa, execaNode, type Options} from 'execa';
 import {
 	createFixture as createFixtureBase,
 	type FileTree,
@@ -59,9 +59,9 @@ export const createFixture = async (source?: string | FileTree) => {
 };
 
 export const files = Object.freeze({
-	'.aicommits': `OPENAI_KEY=${process.env.OPENAI_KEY}`,
+	'.aicommits': `OPENAI_KEY=${process.env.OPENAI_KEY}\nOPENAI_BASE_URL=${process.env.OPENAI_BASE_URL}`,
 	'data.json': Array.from(
-		{ length: 10 },
+		{length: 10},
 		(_, i) => `${i}. Lorem ipsum dolor sit amet`
 	).join('\n'),
 });
@@ -73,6 +73,13 @@ export const assertOpenAiToken = () => {
 		);
 	}
 };
+
+export const assertOpenAIBaseUrl = () => {
+	if (!process.env.OPENAI_KEY) {
+		// eslint-disable-next-line no-console
+		process.env.OPENAI_KEY = "https://api.openai.com/v1"
+	}
+}
 
 // See ./diffs/README.md in order to generate diff files
 export const getDiff = async (diffName: string): Promise<string> =>

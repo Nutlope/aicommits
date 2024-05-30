@@ -1,16 +1,17 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { testSuite, expect } from 'manten';
-import { createFixture } from '../utils.js';
+import {testSuite, expect} from 'manten';
+import {createFixture} from '../utils.js';
 
-export default testSuite(({ describe }) => {
-	describe('config', async ({ test, describe }) => {
-		const { fixture, aicommits } = await createFixture();
+export default testSuite(({describe}) => {
+	describe('config', async ({test, describe}) => {
+		const {fixture, aicommits} = await createFixture();
 		const configPath = path.join(fixture.path, '.aicommits');
 		const openAiToken = 'OPENAI_KEY=sk-abc';
+		const openAiBaseUrl = 'OPENAI_BASE_URL=https://api.openai.com/v1';
 
 		test('set unknown config file', async () => {
-			const { stderr } = await aicommits(['config', 'set', 'UNKNOWN=1'], {
+			const {stderr} = await aicommits(['config', 'set', 'UNKNOWN=1'], {
 				reject: false,
 			});
 
@@ -18,7 +19,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		test('set invalid OPENAI_KEY', async () => {
-			const { stderr } = await aicommits(['config', 'set', 'OPENAI_KEY=abc'], {
+			const {stderr} = await aicommits(['config', 'set', 'OPENAI_KEY=abc'], {
 				reject: false,
 			});
 
@@ -29,20 +30,25 @@ export default testSuite(({ describe }) => {
 
 		await test('set config file', async () => {
 			await aicommits(['config', 'set', openAiToken]);
+			await aicommits(['config', 'set', openAiBaseUrl]);
 
 			const configFile = await fs.readFile(configPath, 'utf8');
 			expect(configFile).toMatch(openAiToken);
+			expect(configFile).toMatch(openAiBaseUrl);
 		});
 
 		await test('get config file', async () => {
-			const { stdout } = await aicommits(['config', 'get', 'OPENAI_KEY']);
+			const {stdout} = await aicommits(['config', 'get', 'OPENAI_KEY']);
 			expect(stdout).toBe(openAiToken);
+			const {stdout: urlStdout} = await aicommits(['config', 'get', 'OPENAI_BASE_URL']);
+			expect(urlStdout).toBe(openAiBaseUrl);
+
 		});
 
 		await test('reading unknown config', async () => {
 			await fs.appendFile(configPath, 'UNKNOWN=1');
 
-			const { stdout, stderr } = await aicommits(['config', 'get', 'UNKNOWN'], {
+			const {stdout, stderr} = await aicommits(['config', 'get', 'UNKNOWN'], {
 				reject: false,
 			});
 
@@ -50,9 +56,9 @@ export default testSuite(({ describe }) => {
 			expect(stderr).toBe('');
 		});
 
-		await describe('timeout', ({ test }) => {
+		await describe('timeout', ({test}) => {
 			test('setting invalid timeout config', async () => {
-				const { stderr } = await aicommits(['config', 'set', 'timeout=abc'], {
+				const {stderr} = await aicommits(['config', 'set', 'timeout=abc'], {
 					reject: false,
 				});
 
@@ -71,9 +77,9 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
-		await describe('max-length', ({ test }) => {
+		await describe('max-length', ({test}) => {
 			test('must be an integer', async () => {
-				const { stderr } = await aicommits(
+				const {stderr} = await aicommits(
 					['config', 'set', 'max-length=abc'],
 					{
 						reject: false,
@@ -84,7 +90,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('must be at least 20 characters', async () => {
-				const { stderr } = await aicommits(['config', 'set', 'max-length=10'], {
+				const {stderr} = await aicommits(['config', 'set', 'max-length=10'], {
 					reject: false,
 				});
 
@@ -108,16 +114,21 @@ export default testSuite(({ describe }) => {
 
 		await test('set config file', async () => {
 			await aicommits(['config', 'set', openAiToken]);
+			await aicommits(['config', 'set', openAiBaseUrl]);
 
 			const configFile = await fs.readFile(configPath, 'utf8');
 			expect(configFile).toMatch(openAiToken);
+			expect(configFile).toMatch(openAiBaseUrl);
 		});
 
 		await test('get config file', async () => {
-			const { stdout } = await aicommits(['config', 'get', 'OPENAI_KEY']);
+			const {stdout} = await aicommits(['config', 'get', 'OPENAI_KEY']);
 			expect(stdout).toBe(openAiToken);
-		});
 
-		await fixture.rm();
+			const {stdout: urlStdout} = await aicommits(['config', 'get', 'OPENAI_BASE_URL']);
+			expect(urlStdout).toBe(openAiBaseUrl);
+
+			await fixture.rm();
+		});
 	});
-});
+})

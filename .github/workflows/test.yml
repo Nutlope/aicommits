@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     name: Test
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ ubuntu-latest, windows-latest ]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
@@ -44,6 +44,7 @@ jobs:
       - name: Test
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
         run: |
           pnpm test
           pnpm --use-node-version=14.21.3 test

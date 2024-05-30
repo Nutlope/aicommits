@@ -26,7 +26,7 @@
 3. Set the key so aicommits can use it:
 
    ```sh
-   aicommits config set OPENAI_KEY=<your token>
+   aicommits config set OPENAI_KEY=<your token> OPENAI_BASE_URL=<your-custom-openai-server-address>
    ```
 
    This will create a `.aicommits` file in your home directory.
@@ -137,10 +137,16 @@ For example, to retrieve the API key, you can use:
 aicommits config get OPENAI_KEY
 ```
 
+For example, to retrieve the API URL, you can use:
+
+```sh
+aicommits config get OPENAI_BASE_URL
+```
+
 You can also retrieve multiple configuration options at once by separating them with spaces:
 
 ```sh
-aicommits config get OPENAI_KEY generate
+aicommits config get OPENAI_KEY OPENAI_BASE_URL generate
 ```
 
 ### Setting a configuration value
@@ -157,10 +163,16 @@ For example, to set the API key, you can use:
 aicommits config set OPENAI_KEY=<your-api-key>
 ```
 
+For example, to set the API URL, you can use:
+
+```sh
+aicommits config set OPENAI_BASE_URL=<your-custom-openai-server-address>
+```
+
 You can also set multiple configuration options at once by separating them with spaces, like
 
 ```sh
-aicommits config set OPENAI_KEY=<your-api-key> generate=3 locale=en
+aicommits config set OPENAI_KEY=<your-api-key> OPENAI_BASE_URL=<your-custom-openai-server-address>  generate=3 locale=en
 ```
 
 ### Options
@@ -170,6 +182,15 @@ aicommits config set OPENAI_KEY=<your-api-key> generate=3 locale=en
 Required
 
 The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
+
+#### OPENAI_BASE_URL
+
+Default: `https://api.openai.com/v1`
+Optional
+
+The base URL for the OpenAI API. You can use this to point to a different API endpoint, such as a local development server.
+
+
 
 #### locale
 

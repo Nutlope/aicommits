@@ -54,6 +54,7 @@ export default async (
 		const { env } = process;
 		const config = await getConfig({
 			OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
+			OPENAI_BASE_URL: env.OPENAI_BASE_URL || env.OPENAI_API_BASE_URL,
 			proxy:
 				env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 			generate: generate?.toString(),
@@ -66,6 +67,7 @@ export default async (
 		try {
 			messages = await generateCommitMessage(
 				config.OPENAI_KEY,
+				config.OPENAI_BASE_URL,
 				config.model,
 				config.locale,
 				staged.diff,

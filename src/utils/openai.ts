@@ -69,12 +69,13 @@ const httpsPost = async (
 
 const createChatCompletion = async (
 	apiKey: string,
+	baseUrl:string,
 	json: CreateChatCompletionRequest,
 	timeout: number,
 	proxy?: string
 ) => {
 	const { response, data } = await httpsPost(
-		'api.openai.com',
+		baseUrl,
 		'/v1/chat/completions',
 		{
 			Authorization: `Bearer ${apiKey}`,
@@ -132,6 +133,7 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
 export const generateCommitMessage = async (
 	apiKey: string,
+	baseUrl: string,
 	model: TiktokenModel,
 	locale: string,
 	diff: string,
@@ -144,6 +146,7 @@ export const generateCommitMessage = async (
 	try {
 		const completion = await createChatCompletion(
 			apiKey,
+			baseUrl,
 			{
 				model,
 				messages: [

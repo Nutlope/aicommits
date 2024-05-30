@@ -2,15 +2,15 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import ini from 'ini';
-import type { TiktokenModel } from '@dqbd/tiktoken';
-import { fileExists } from './fs.js';
-import { KnownError } from './error.js';
+import type {TiktokenModel} from '@dqbd/tiktoken';
+import {fileExists} from './fs.js';
+import {KnownError} from './error.js';
 
 const commitTypes = ['', 'conventional'] as const;
 
 export type CommitType = (typeof commitTypes)[number];
 
-const { hasOwnProperty } = Object.prototype;
+const {hasOwnProperty} = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) =>
 	hasOwnProperty.call(object, key);
 
@@ -21,6 +21,18 @@ const parseAssert = (name: string, condition: any, message: string) => {
 };
 
 const configParsers = {
+	// Add the custom OPENAI_BASE_URL parameter to accommodate the custom proxy address
+	OPENAI_BASE_URL(url?: string) {
+		if (!url) {
+			// https://github.com/openai/openai-node/blob/ed4219a565976750637d8c68b2b35409aca447af/src/index.ts#L103
+			return 'https://api.openai.com/v1';
+		}
+
+		parseAssert('OPENAI_BASE_URL', /^https?:\/\//.test(url), 'Must be a valid URL');
+
+		return url;
+	},
+
 	OPENAI_KEY(key?: string) {
 		if (!key) {
 			throw new KnownError(
@@ -153,7 +165,8 @@ export const getConfig = async (
 		if (suppressErrors) {
 			try {
 				parsedConfig[key] = parser(value);
-			} catch {}
+			} catch {
+			}
 		} else {
 			parsedConfig[key] = parser(value);
 		}
