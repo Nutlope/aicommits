@@ -27,10 +27,13 @@ const configParsers = {
 			// https://github.com/openai/openai-node/blob/ed4219a565976750637d8c68b2b35409aca447af/src/index.ts#L103
 			return 'https://api.openai.com/v1';
 		}
+		// Remove the protocol from the URL
+		const domain = url.replace(/^https?:\/\//, '');
 
-		parseAssert('OPENAI_BASE_URL', /^https?:\/\//.test(url), 'Must be a valid URL');
+		// Validate the domain
+		parseAssert('OPENAI_BASE_URL', /^[a-zA-Z0-9.-]+$/.test(domain), 'Must be a valid domain');
 
-		return url;
+		return domain;
 	},
 
 	OPENAI_KEY(key?: string) {
