@@ -1,3 +1,4 @@
+import http from 'http';
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type {
@@ -28,7 +29,9 @@ const postCall = async (
 		data: string;
 	}>((resolve, reject) => {
 		const postContent = JSON.stringify(json);
-		const request = https.request(
+		const isHttps = port === 443;
+		const client = isHttps ? https : http;
+		const request = client.request(
 			{
 				port,
 				hostname,
