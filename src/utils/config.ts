@@ -32,6 +32,15 @@ const configParsers = {
 
 		return key;
 	},
+	API_URL: (apiUrlWithPort?: string) => {
+		if (!apiUrlWithPort) {
+			return 'https://api.openai.com:443';
+		}
+		// parse format as to be a valid URL with port
+		parseAssert('API_URL', /^https?:\/\/[^:]+:\d+$/.test(apiUrlWithPort), 'Must be a valid URL with port');
+
+		return apiUrlWithPort;
+	},
 	locale(locale?: string) {
 		if (!locale) {
 			return 'en';
@@ -153,7 +162,7 @@ export const getConfig = async (
 		if (suppressErrors) {
 			try {
 				parsedConfig[key] = parser(value);
-			} catch {}
+			} catch { }
 		} else {
 			parsedConfig[key] = parser(value);
 		}

@@ -171,6 +171,15 @@ Required
 
 The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
 
+#### API_URL
+
+Default: `https://api.openai.com:443`
+
+AI Commits uses the OpenAI API to generate commit messages. This option allows you to set a custom API URL.
+You can use your self-hosted Ollama instance or any other OpenAI-compatible API.
+
+Default Ollama URL: `http://localhost:11434`. For further information, check the [Ollama documentation](https://github.com/ollama/ollama/blob/main/README.md)
+
 #### locale
 
 Default: `en`

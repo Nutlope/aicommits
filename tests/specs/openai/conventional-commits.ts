@@ -139,8 +139,9 @@ export default testSuite(({ describe }) => {
 				...configOverrides,
 			} as ValidConfig;
 			const commitMessages = await generateCommitMessage(
+				config.API_URL,
 				OPENAI_KEY!,
-				'gpt-3.5-turbo',
+				config.model,
 				config.locale,
 				gitDiff,
 				config.generate,

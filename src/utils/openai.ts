@@ -1,3 +1,4 @@
+import http from 'http';
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
 import type {
@@ -13,8 +14,9 @@ import { KnownError } from './error.js';
 import type { CommitType } from './config.js';
 import { generatePrompt } from './prompt.js';
 
-const httpsPost = async (
+const postCall = async (
 	hostname: string,
+	port: number,
 	path: string,
 	headers: Record<string, string>,
 	json: unknown,
@@ -27,9 +29,11 @@ const httpsPost = async (
 		data: string;
 	}>((resolve, reject) => {
 		const postContent = JSON.stringify(json);
-		const request = https.request(
+		const isHttps = port === 443;
+		const client = isHttps ? https : http;
+		const request = client.request(
 			{
-				port: 443,
+				port,
 				hostname,
 				path,
 				method: 'POST',
@@ -68,13 +72,18 @@ const httpsPost = async (
 	});
 
 const createChatCompletion = async (
+	apiUrl: string,
 	apiKey: string,
 	json: CreateChatCompletionRequest,
 	timeout: number,
 	proxy?: string
 ) => {
-	const { response, data } = await httpsPost(
-		'api.openai.com',
+	const { hostname, port, protocol } = new URL(apiUrl);
+
+	const isHttps = protocol === 'https:';
+	const { response, data } = await postCall(
+		hostname,
+		isHttps ? 443 : Number(port),
 		'/v1/chat/completions',
 		{
 			Authorization: `Bearer ${apiKey}`,
@@ -131,6 +140,7 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 // };
 
 export const generateCommitMessage = async (
+	apiUrl: string,
 	apiKey: string,
 	model: TiktokenModel,
 	locale: string,
@@ -143,6 +153,7 @@ export const generateCommitMessage = async (
 ) => {
 	try {
 		const completion = await createChatCompletion(
+			apiUrl,
 			apiKey,
 			{
 				model,
