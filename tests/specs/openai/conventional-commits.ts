@@ -1,7 +1,5 @@
 import { expect, testSuite } from 'manten';
-import {
-	generateCommitMessage,
-} from '../../../src/utils/openai.js';
+import { generateCommitMessage } from '../../../src/utils/openai.js';
 import type { ValidConfig } from '../../../src/utils/config.js';
 import { getDiff } from '../../utils.js';
 
@@ -9,13 +7,16 @@ const { OPENAI_KEY } = process.env;
 
 export default testSuite(({ describe }) => {
 	if (!OPENAI_KEY) {
-		console.warn('⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...');
+		console.warn(
+			'⚠️  process.env.OPENAI_KEY is necessary to run these tests. Skipping...'
+		);
 		return;
 	}
 
 	describe('Conventional Commits', async ({ test }) => {
 		await test('Should not translate conventional commit type to Japanase when locale config is set to japanese', async () => {
-			const japaneseConventionalCommitPattern = /(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.*\))?: [\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
+			const japaneseConventionalCommitPattern =
+				/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.*\))?: [\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFF9F\u4E00-\u9FAF\u3400-\u4DBF]/;
 
 			const gitDiff = await getDiff('new-feature.diff');
 
@@ -58,9 +59,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		await test('Should use "build:" conventional commit when change relate to github action build pipeline', async () => {
-			const gitDiff = await getDiff(
-				'github-action-build-pipeline.diff',
-			);
+			const gitDiff = await getDiff('github-action-build-pipeline.diff');
 
 			const commitMessage = await runGenerateCommitMessage(gitDiff);
 
@@ -128,8 +127,10 @@ export default testSuite(({ describe }) => {
 			console.log('Generated message:', commitMessage);
 		});
 
-		async function runGenerateCommitMessage(gitDiff: string,
-			configOverrides: Partial<ValidConfig> = {}): Promise<string> {
+		async function runGenerateCommitMessage(
+			gitDiff: string,
+			configOverrides: Partial<ValidConfig> = {}
+		): Promise<string> {
 			const config = {
 				locale: 'en',
 				type: 'conventional',
@@ -137,7 +138,16 @@ export default testSuite(({ describe }) => {
 				'max-length': 50,
 				...configOverrides,
 			} as ValidConfig;
-			const commitMessages = await generateCommitMessage(OPENAI_KEY!, 'gpt-3.5-turbo', config.locale, gitDiff, config.generate, config['max-length'], config.type, 7000);
+			const commitMessages = await generateCommitMessage(
+				OPENAI_KEY!,
+				'gpt-3.5-turbo',
+				config.locale,
+				gitDiff,
+				config.generate,
+				config['max-length'],
+				config.type,
+				7000
+			);
 
 			return commitMessages[0];
 		}

@@ -8,16 +8,13 @@ import { KnownError } from './error.js';
 
 const commitTypes = ['', 'conventional'] as const;
 
-export type CommitType = typeof commitTypes[number];
+export type CommitType = (typeof commitTypes)[number];
 
 const { hasOwnProperty } = Object.prototype;
-export const hasOwn = (object: unknown, key: PropertyKey) => hasOwnProperty.call(object, key);
+export const hasOwn = (object: unknown, key: PropertyKey) =>
+	hasOwnProperty.call(object, key);
 
-const parseAssert = (
-	name: string,
-	condition: any,
-	message: string,
-) => {
+const parseAssert = (name: string, condition: any, message: string) => {
 	if (!condition) {
 		throw new KnownError(`Invalid config property ${name}: ${message}`);
 	}
@@ -26,7 +23,9 @@ const parseAssert = (
 const configParsers = {
 	OPENAI_KEY(key?: string) {
 		if (!key) {
-			throw new KnownError('Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`');
+			throw new KnownError(
+				'Please set your OpenAI API key via `aicommits config set OPENAI_KEY=<your token>`'
+			);
 		}
 		parseAssert('OPENAI_KEY', key.startsWith('sk-'), 'Must start with "sk-"');
 		// Key can range from 43~51 characters. There's no spec to assert this.
@@ -39,7 +38,11 @@ const configParsers = {
 		}
 
 		parseAssert('locale', locale, 'Cannot be empty');
-		parseAssert('locale', /^[a-z-]+$/i.test(locale), 'Must be a valid locale (letters and dashes/underscores). You can consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes');
+		parseAssert(
+			'locale',
+			/^[a-z-]+$/i.test(locale),
+			'Must be a valid locale (letters and dashes/underscores). You can consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes'
+		);
 		return locale;
 	},
 	generate(count?: string) {
@@ -60,7 +63,11 @@ const configParsers = {
 			return '';
 		}
 
-		parseAssert('type', commitTypes.includes(type as CommitType), 'Invalid commit type');
+		parseAssert(
+			'type',
+			commitTypes.includes(type as CommitType),
+			'Invalid commit type'
+		);
 
 		return type as CommitType;
 	},
@@ -100,7 +107,11 @@ const configParsers = {
 		parseAssert('max-length', /^\d+$/.test(maxLength), 'Must be an integer');
 
 		const parsed = Number(maxLength);
-		parseAssert('max-length', parsed >= 20, 'Must be greater than 20 characters');
+		parseAssert(
+			'max-length',
+			parsed >= 20,
+			'Must be greater than 20 characters'
+		);
 
 		return parsed;
 	},
@@ -113,7 +124,7 @@ type RawConfig = {
 };
 
 export type ValidConfig = {
-	[Key in ConfigKeys]: ReturnType<typeof configParsers[Key]>;
+	[Key in ConfigKeys]: ReturnType<(typeof configParsers)[Key]>;
 };
 
 const configPath = path.join(os.homedir(), '.aicommits');
@@ -130,7 +141,7 @@ const readConfigFile = async (): Promise<RawConfig> => {
 
 export const getConfig = async (
 	cliConfig?: RawConfig,
-	suppressErrors?: boolean,
+	suppressErrors?: boolean
 ): Promise<ValidConfig> => {
 	const config = await readConfigFile();
 	const parsedConfig: Record<string, unknown> = {};
@@ -151,9 +162,7 @@ export const getConfig = async (
 	return parsedConfig as ValidConfig;
 };
 
-export const setConfigs = async (
-	keyValues: [key: string, value: string][],
-) => {
+export const setConfigs = async (keyValues: [key: string, value: string][]) => {
 	const config = await readConfigFile();
 
 	for (const [key, value] of keyValues) {
