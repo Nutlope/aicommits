@@ -47,7 +47,31 @@ cli(
 		commands: [configCommand, hookCommand],
 
 		help: {
-			description,
+			description: `${description}
+
+Examples:
+  $ aicommits
+  $ aicommits --all
+  $ aicommits --generate 3
+  $ aicommits --type conventional
+  $ aicommits --exclude package-lock.json --exclude yarn.lock
+
+Configuration:
+  $ aicommits config set OPENAI_KEY=<your token>
+  $ aicommits config set OPENROUTER_KEY=<your token>
+  $ aicommits config set provider=openrouter
+  $ aicommits config set openrouter_model=anthropic/claude-3-opus
+
+Providers:
+  - OpenAI (default)
+    - Set OPENAI_KEY for API key
+    - Use model config for model selection
+  - OpenRouter
+    - Set OPENROUTER_KEY for API key
+    - Set provider=openrouter
+    - Use openrouter_model config for model selection
+    - Available models: openai/chatgpt-4-latest, anthropic/claude-3-opus, etc.
+    - See https://openrouter.ai/docs#models for full list`,
 		},
 
 		ignoreArgv: (type) => type === 'unknown-flag' || type === 'argument',
