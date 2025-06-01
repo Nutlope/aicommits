@@ -32,6 +32,20 @@ const configParsers = {
 
 		return key;
 	},
+	OPENROUTER_KEY(key?: string) {
+		if (!key) {
+			return undefined;
+		}
+		parseAssert('OPENROUTER_KEY', key.startsWith('sk-or-'), 'Must start with "sk-or-"');
+		return key;
+	},
+	provider(provider?: string) {
+		if (!provider) {
+			return 'openai';
+		}
+		parseAssert('provider', ['openai', 'openrouter'].includes(provider), 'Must be either "openai" or "openrouter"');
+		return provider;
+	},
 	locale(locale?: string) {
 		if (!locale) {
 			return 'en';
@@ -86,6 +100,13 @@ const configParsers = {
 		}
 
 		return model as TiktokenModel;
+	},
+	openrouter_model(model?: string) {
+		if (!model || model.length === 0) {
+			return 'openai/chatgpt-4-latest';
+		}
+
+		return model;
 	},
 	timeout(timeout?: string) {
 		if (!timeout) {

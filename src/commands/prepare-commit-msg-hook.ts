@@ -3,7 +3,8 @@ import { intro, outro, spinner } from '@clack/prompts';
 import { black, green, red, bgCyan } from 'kolorist';
 import { getStagedDiff } from '../utils/git.js';
 import { getConfig } from '../utils/config.js';
-import { generateCommitMessage } from '../utils/openai.js';
+import { generateCommitMessage as generateOpenAICommitMessage } from '../utils/openai.js';
+import { generateCommitMessage as generateOpenRouterCommitMessage } from '../utils/openrouter.js';
 import { KnownError, handleCliError } from '../utils/error.js';
 
 const [messageFilePath, commitSource] = process.argv.slice(2);
@@ -31,6 +32,9 @@ export default () =>
 
 		const { env } = process;
 		const config = await getConfig({
+			OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
+			OPENROUTER_KEY: env.OPENROUTER_KEY,
+			provider: env.AICOMMITS_PROVIDER,
 			proxy:
 				env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		});
@@ -39,9 +43,27 @@ export default () =>
 		s.start('The AI is analyzing your changes');
 		let messages: string[];
 		try {
+			const generateCommitMessage = config.provider === 'openrouter' 
+				? generateOpenRouterCommitMessage 
+				: generateOpenAICommitMessage;
+
+			const apiKey = config.provider === 'openrouter'
+				? config.OPENROUTER_KEY
+				: config.OPENAI_KEY;
+
+			const model = config.provider === 'openrouter'
+				? config.openrouter_model
+				: config.model;
+
+			if (!apiKey) {
+				throw new KnownError(
+					`No API key found for ${config.provider}. Please set your API key via \`aicommits config set ${config.provider === 'openrouter' ? 'OPENROUTER_KEY' : 'OPENAI_KEY'}=<your token>\``
+				);
+			}
+
 			messages = await generateCommitMessage(
-				config.OPENAI_KEY,
-				config.model,
+				apiKey,
+				model,
 				config.locale,
 				staged!.diff,
 				config.generate,

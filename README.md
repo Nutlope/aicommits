@@ -23,10 +23,17 @@
 
    > Note: If you haven't already, you'll have to create an account and set up billing.
 
+   Alternatively, you can use [OpenRouter](https://openrouter.ai/) as your provider.
+
 3. Set the key so aicommits can use it:
 
    ```sh
+   # For OpenAI
    aicommits config set OPENAI_KEY=<your token>
+
+   # For OpenRouter
+   aicommits config set OPENROUTER_KEY=<your token>
+   aicommits config set provider=openrouter
    ```
 
    This will create a `.aicommits` file in your home directory.
@@ -64,7 +71,7 @@ For example, you can stage all changes in tracked files with as you commit:
 aicommits --all # or -a
 ```
 
-> 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
+> 👉 **Tip:** Use the `aic` alias if `aicommits` is too long for you.
 
 #### Generate multiple recommendations
 
@@ -167,9 +174,21 @@ aicommits config set OPENAI_KEY=<your-api-key> generate=3 locale=en
 
 #### OPENAI_KEY
 
-Required
+Required if provider is not set to 'openrouter'
 
 The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
+
+#### OPENROUTER_KEY
+
+Required if provider is set to 'openrouter'
+
+The OpenRouter API key. You can retrieve it from [OpenRouter API Keys page](https://openrouter.ai/keys).
+
+#### provider
+
+Default: `openai`
+
+The AI provider to use. Can be either `openai` or `openrouter`.
 
 #### locale
 
@@ -202,6 +221,19 @@ Default: `gpt-3.5-turbo`
 The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of models available in the [OpenAI Documentation](https://platform.openai.com/docs/models/model-endpoint-compatibility).
 
 > Tip: If you have access, try upgrading to [`gpt-4`](https://platform.openai.com/docs/models/gpt-4) for next-level code analysis. It can handle double the input size, but comes at a higher cost. Check out OpenAI's website to learn more.
+
+#### openrouter_model
+
+Default: `openai/chatgpt-4-latest`
+
+The model to use when provider is set to 'openrouter'. You can find the list of available models in the [OpenRouter Documentation](https://openrouter.ai/docs#models).
+
+Some popular models include:
+- `openai/chatgpt-4-latest`
+- `openai/chatgpt-3.5-turbo`
+- `anthropic/claude-3-opus`
+- `anthropic/claude-3-sonnet`
+- `google/gemini-pro`
 
 #### timeout
 
