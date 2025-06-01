@@ -34,6 +34,7 @@
    # For OpenRouter
    aicommits config set OPENROUTER_KEY=<your token>
    aicommits config set provider=openrouter
+   aicommits config set openrouter_model=anthropic/claude-3-opus
    ```
 
    This will create a `.aicommits` file in your home directory.
