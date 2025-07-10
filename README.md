@@ -20,15 +20,21 @@
    ```
 
 2. Retrieve your API key from [OpenAI](https://platform.openai.com/account/api-keys)
-
+ or [DeepSeek](https://platform.deepseek.com/api_keys)
    > Note: If you haven't already, you'll have to create an account and set up billing.
 
 3. Set the key so aicommits can use it:
-
+  - OpenAI
    ```sh
    aicommits config set OPENAI_KEY=<your token>
    ```
+  - DeepSeek
+   ```sh
+   aicommits config set API_PROVIDER=deepseek # use API_PROVIDER=openai switch to openai
+   aicommits config set DEEPSEEK_KEY=<your token>
+   aicommits config set model=<model name> # deepseek-chat / deepseek-reasoner
 
+   ```
    This will create a `.aicommits` file in your home directory.
 
 ### Upgrading
