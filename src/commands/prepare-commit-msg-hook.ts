@@ -1,10 +1,10 @@
-import fs from 'fs/promises';
-import { intro, outro, spinner } from '@clack/prompts';
-import { black, green, red, bgCyan } from 'kolorist';
-import { getStagedDiff } from '../utils/git.js';
-import { getConfig } from '../utils/config.js';
-import { generateCommitMessage } from '../utils/openai.js';
-import { KnownError, handleCliError } from '../utils/error.js';
+import fs from "fs/promises";
+import { intro, outro, spinner } from "@clack/prompts";
+import { black, green, red, bgCyan } from "kolorist";
+import { getStagedDiff } from "../utils/git.js";
+import { getConfig } from "../utils/config.js";
+import { generateCommitMessage } from "../utils/ai.js";
+import { KnownError, handleCliError } from "../utils/error.js";
 
 const [messageFilePath, commitSource] = process.argv.slice(2);
 
@@ -12,7 +12,7 @@ export default () =>
 	(async () => {
 		if (!messageFilePath) {
 			throw new KnownError(
-				'Commit message file path is missing. This file should be called from the "prepare-commit-msg" git hook'
+				'Commit message file path is missing. This file should be called from the "prepare-commit-msg" git hook',
 			);
 		}
 
@@ -27,31 +27,36 @@ export default () =>
 			return;
 		}
 
-		intro(bgCyan(black(' aicommits ')));
+		intro(bgCyan(black(" aicommits ")));
 
 		const { env } = process;
 		const config = await getConfig({
+			OPENAI_KEY: env.OPENAI_KEY || env.OPENAI_API_KEY,
+			DEEPSEEK_KEY: env.DEEPSEEK_KEY || env.DEEPSEEK_API_KEY,
 			proxy:
 				env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY,
 		});
 
 		const s = spinner();
-		s.start('The AI is analyzing your changes');
+		s.start("The AI is analyzing your changes");
 		let messages: string[];
 		try {
 			messages = await generateCommitMessage(
-				config.OPENAI_KEY,
+				config.API_PROVIDER === "openai"
+					? config.OPENAI_KEY
+					: config.DEEPSEEK_KEY,
 				config.model,
 				config.locale,
 				staged!.diff,
 				config.generate,
-				config['max-length'],
+				config["max-length"],
 				config.type,
 				config.timeout,
-				config.proxy
+				config.proxy,
+				config.API_PROVIDER,
 			);
 		} finally {
-			s.stop('Changes analyzed');
+			s.stop("Changes analyzed");
 		}
 
 		/**
@@ -60,37 +65,37 @@ export default () =>
 		 *
 		 * Note: `--no-edit` cannot be detected in argvs so this is the only way to check
 		 */
-		const baseMessage = await fs.readFile(messageFilePath, 'utf8');
-		const supportsComments = baseMessage !== '';
+		const baseMessage = await fs.readFile(messageFilePath, "utf8");
+		const supportsComments = baseMessage !== "";
 		const hasMultipleMessages = messages.length > 1;
 
-		let instructions = '';
+		let instructions = "";
 
 		if (supportsComments) {
 			instructions = `# 🤖 AI generated commit${
-				hasMultipleMessages ? 's' : ''
+				hasMultipleMessages ? "s" : ""
 			}\n`;
 		}
 
 		if (hasMultipleMessages) {
 			if (supportsComments) {
 				instructions +=
-					'# Select one of the following messages by uncommeting:\n';
+					"# Select one of the following messages by uncommeting:\n";
 			}
 			instructions += `\n${messages
 				.map((message) => `# ${message}`)
-				.join('\n')}`;
+				.join("\n")}`;
 		} else {
 			if (supportsComments) {
-				instructions += '# Edit the message below and commit:\n';
+				instructions += "# Edit the message below and commit:\n";
 			}
 			instructions += `\n${messages[0]}\n`;
 		}
 
 		await fs.appendFile(messageFilePath, instructions);
-		outro(`${green('✔')} Saved commit message!`);
+		outro(`${green("✔")} Saved commit message!`);
 	})().catch((error) => {
-		outro(`${red('✖')} ${error.message}`);
+		outro(`${red("✖")} ${error.message}`);
 		handleCliError(error);
 		process.exit(1);
 	});

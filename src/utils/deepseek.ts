@@ -1,18 +1,51 @@
 import https from "https";
-import type { Agent, ClientRequest, IncomingMessage } from "http";
-import type {
-	CreateChatCompletionRequest,
-	CreateChatCompletionResponse,
-} from "openai";
-import {
-	type TiktokenModel,
-	// encoding_for_model,
-} from "@dqbd/tiktoken";
+import type { ClientRequest, IncomingMessage } from "http";
 import HttpsProxyAgent from "https-proxy-agent";
+import { Agent } from "http";
 import { KnownError } from "./error.js";
 import type { CommitType } from "./config.js";
 import { generatePrompt } from "./prompt.js";
 
+interface DeepSeekChatMessage {
+	role: "system" | "user" | "assistant";
+	content: string;
+}
+
+interface DeepSeekChatCompletionRequest {
+	model: string;
+	messages: DeepSeekChatMessage[];
+	temperature?: number;
+	top_p?: number;
+	frequency_penalty?: number;
+	presence_penalty?: number;
+	max_tokens?: number;
+	stream?: boolean;
+	n?: number;
+}
+
+interface DeepSeekChatCompletionChoice {
+	index: number;
+	message: {
+		role: string;
+		content: string;
+	};
+	finish_reason: string;
+}
+
+interface DeepSeekChatCompletionResponse {
+	id: string;
+	object: string;
+	created: number;
+	model: string;
+	choices: DeepSeekChatCompletionChoice[];
+	usage: {
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+	};
+}
+
+// 在httpsPost函数中
 const httpsPost = async (
 	hostname: string,
 	path: string,
@@ -38,9 +71,7 @@ const httpsPost = async (
 				"Content-Length": Buffer.byteLength(postContent),
 			},
 			timeout,
-			agent: proxy
-				? (new HttpsProxyAgent(proxy) as unknown as Agent)
-				: undefined,
+			agent: proxy ? (new HttpsProxyAgent(proxy) as any) : undefined,
 		};
 
 		const request = https.request(options, (response) => {
@@ -59,7 +90,7 @@ const httpsPost = async (
 			request.destroy();
 			reject(
 				new KnownError(
-					`Time out error: request took over ${timeout}ms. Try increasing the \`timeout\` config, or checking the OpenAI API status https://status.openai.com`,
+					`Time out error: request took over ${timeout}ms. Try increasing the \`timeout\` config, or checking the DeepSeek API status.`,
 				),
 			);
 		});
@@ -68,14 +99,14 @@ const httpsPost = async (
 		request.end();
 	});
 
-const createChatCompletion = async (
+const createDeepSeekChatCompletion = async (
 	apiKey: string,
-	json: CreateChatCompletionRequest,
+	json: DeepSeekChatCompletionRequest,
 	timeout: number,
 	proxy?: string,
 ) => {
 	const { response, data } = await httpsPost(
-		"api.openai.com",
+		"api.deepseek.com",
 		"/v1/chat/completions",
 		{
 			Authorization: `Bearer ${apiKey}`,
@@ -90,20 +121,20 @@ const createChatCompletion = async (
 		response.statusCode < 200 ||
 		response.statusCode > 299
 	) {
-		let errorMessage = `OpenAI API Error: ${response.statusCode} - ${response.statusMessage}`;
+		let errorMessage = `DeepSeek API Error: ${response.statusCode} - ${response.statusMessage}`;
 
 		if (data) {
 			errorMessage += `\n\n${data}`;
 		}
 
 		if (response.statusCode === 500) {
-			errorMessage += "\n\nCheck the API status: https://status.openai.com";
+			errorMessage += "\n\nCheck the DeepSeek API status.";
 		}
 
 		throw new KnownError(errorMessage);
 	}
 
-	return JSON.parse(data) as CreateChatCompletionResponse;
+	return JSON.parse(data) as DeepSeekChatCompletionResponse;
 };
 
 const sanitizeMessage = (message: string) =>
@@ -114,26 +145,9 @@ const sanitizeMessage = (message: string) =>
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-// const generateStringFromLength = (length: number) => {
-// 	let result = '';
-// 	const highestTokenChar = 'z';
-// 	for (let i = 0; i < length; i += 1) {
-// 		result += highestTokenChar;
-// 	}
-// 	return result;
-// };
-
-// const getTokens = (prompt: string, model: TiktokenModel) => {
-// 	const encoder = encoding_for_model(model);
-// 	const tokens = encoder.encode(prompt).length;
-// 	// Free the encoder to avoid possible memory leaks.
-// 	encoder.free();
-// 	return tokens;
-// };
-
-export const generateOpenAICommitMessage = async (
+export const generateDeepSeekCommitMessage = async (
 	apiKey: string,
-	model: TiktokenModel,
+	model: string,
 	locale: string,
 	diff: string,
 	completions: number,
@@ -143,7 +157,7 @@ export const generateOpenAICommitMessage = async (
 	proxy?: string,
 ) => {
 	try {
-		const completion = await createChatCompletion(
+		const completion = await createDeepSeekChatCompletion(
 			apiKey,
 			{
 				model,
@@ -172,7 +186,7 @@ export const generateOpenAICommitMessage = async (
 		return deduplicateMessages(
 			completion.choices
 				.filter((choice) => choice.message?.content)
-				.map((choice) => sanitizeMessage(choice.message!.content as string)),
+				.map((choice) => sanitizeMessage(choice.message.content as string)),
 		);
 	} catch (error) {
 		const errorAsAny = error as any;
