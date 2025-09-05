@@ -49,7 +49,8 @@ export default () =>
 				config['max-length'],
 				config.type,
 				config.timeout,
-				config.proxy
+				config.proxy,
+				config['path-prefix']
 			);
 		} finally {
 			s.stop('Changes analyzed');

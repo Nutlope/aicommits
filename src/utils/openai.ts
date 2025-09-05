@@ -73,10 +73,11 @@ const createChatCompletion = async (
 	json: CreateChatCompletionRequest,
 	timeout: number,
 	proxy?: string,
+	pathPrefix?: string,
 ) => {
 	const { response, data } = await httpsPost(
 		host,
-		'/v1/chat/completions',
+		`${pathPrefix ?? ''}/v1/chat/completions`,
 		{
 			Authorization: `Bearer ${apiKey}`,
 		},
@@ -141,7 +142,8 @@ export const generateCommitMessage = async (
 	maxLength: number,
 	type: CommitType,
 	timeout: number,
-	proxy?: string
+	proxy?: string,
+	pathPrefix?: string,
 ) => {
 	try {
 		const completion = await createChatCompletion(
@@ -168,7 +170,8 @@ export const generateCommitMessage = async (
 				n: completions,
 			},
 			timeout,
-			proxy
+			proxy,
+			pathPrefix
 		);
 
 		return deduplicateMessages(

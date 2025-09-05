@@ -39,6 +39,15 @@ const configParsers = {
 
 		return key;
 	},
+	'path-prefix'(prefix?: string) {
+		if (!prefix) {
+			return '';
+		}
+		const normalized = prefix.trim()
+			.replace(/^\/*/, '')
+			.replace(/\/*$/, '');
+		return `/${normalized}`;
+	},
 	locale(locale?: string) {
 		if (!locale) {
 			return 'en';
@@ -160,7 +169,7 @@ export const getConfig = async (
 		if (suppressErrors) {
 			try {
 				parsedConfig[key] = parser(value);
-			} catch {}
+			} catch { }
 		} else {
 			parsedConfig[key] = parser(value);
 		}

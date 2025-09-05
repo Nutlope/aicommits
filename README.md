@@ -3,8 +3,8 @@
     <img src=".github/screenshot.png" alt="AI Commits"/>
     <h1 align="center">AI Commits</h1>
   </div>
-	<p>A CLI that writes your git commit messages for you with AI. Never write a commit message again.</p>
-	<a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/v/aicommits" alt="Current version"></a>
+ <p>A CLI that writes your git commit messages for you with AI. Never write a commit message again.</p>
+ <a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/v/aicommits" alt="Current version"></a>
 </div>
 
 ---
@@ -171,11 +171,26 @@ Required
 
 The OpenAI API key. You can retrieve it from [OpenAI API Keys page](https://platform.openai.com/account/api-keys).
 
+#### OPENAI_HOST
+
+Default: `api.openai.com`
+
+The OpenAI API host enables access to models offered by providers that are fully compatible with the OpenAI API.
+
+Note, you must update a proper [model](#model) supported by the provider.
+
+```sh
+
+aicommits config set OPENAI_HOST=api.deekseek.com model=deepseek-chat
+aicommits config set OPENAI_HOST=openrouter.ai path-prefix=/api model=openai/gpt-oss-120b:free
+
+```
+
 #### locale
 
 Default: `en`
 
-The locale to use for the generated commit messages. Consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes.
+The locale to use for the generated commit messages. Consult the list of codes in: <https://wikipedia.org/wiki/List_of_ISO_639-1_codes>.
 
 #### generate
 
