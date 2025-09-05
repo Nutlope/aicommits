@@ -180,10 +180,11 @@ The OpenAI API host enables access to models offered by providers that are fully
 Note, you must update a proper [model](#model) supported by the provider.
 
 ```sh
-
+# DeepSeek
 aicommits config set OPENAI_HOST=api.deekseek.com model=deepseek-chat
-aicommits config set OPENAI_HOST=openrouter.ai path-prefix=/api model=openai/gpt-oss-120b:free
 
+# OpenRouter
+aicommits config set OPENAI_HOST=openrouter.ai path-prefix=/api model=openai/gpt-oss-120b:free
 ```
 
 #### locale
@@ -214,7 +215,7 @@ aicommits config set proxy=
 
 Default: `gpt-3.5-turbo`
 
-The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of models available in the [OpenAI Documentation](https://platform.openai.com/docs/models/model-endpoint-compatibility).
+The Chat Completions (`/v1/chat/completions`) model to use. Consult the list of models available in the [OpenAI Documentation](https://platform.openai.com/docs/models/model-endpoint-compatibility). For other providers, please find model names in their documents.
 
 > Tip: If you have access, try upgrading to [`gpt-4`](https://platform.openai.com/docs/models/gpt-4) for next-level code analysis. It can handle double the input size, but comes at a higher cost. Check out OpenAI's website to learn more.
 
@@ -252,6 +253,25 @@ You can clear this option by setting it to an empty string:
 
 ```sh
 aicommits config set type=
+```
+
+#### path-prefix
+
+Default: `""` (Empty string)
+
+This setting allows you to specify the path prefix for OpenAI-compatible APIs
+For instance, OpenRouter has the prefix `/api` in the base URL: `https://openrouter.ai/api/v1/chat/completions`):
+
+```sh
+aicommits config path-prefix=/api
+```
+
+> Note: Regardless of how you format the slash `/`, the prefix is always normalized to `/<prefix>`. This means `<prefix>/`, `<prefix>`, or `/<prefix>/` will all work correctly.
+
+You can clear this option by setting it to an empty string:
+
+```sh
+aicommits config path-prefix=
 ```
 
 ## How it works
