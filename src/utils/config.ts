@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import ini from 'ini';
-import type { TiktokenModel } from '@dqbd/tiktoken';
+//import type { TiktokenModel } from '@dqbd/tiktoken';
 import { fileExists } from './fs.js';
 import { KnownError } from './error.js';
 
@@ -21,6 +21,13 @@ const parseAssert = (name: string, condition: any, message: string) => {
 };
 
 const configParsers = {
+	OPENAI_HOST(host?: string) {
+		const trimmed = host?.trim();
+		if (!trimmed || trimmed.length === 0) {
+			return 'api.openai.com';
+		}
+		return trimmed;
+	},
 	OPENAI_KEY(key?: string) {
 		if (!key) {
 			throw new KnownError(
@@ -85,7 +92,7 @@ const configParsers = {
 			return 'gpt-3.5-turbo';
 		}
 
-		return model as TiktokenModel;
+		return model;
 	},
 	timeout(timeout?: string) {
 		if (!timeout) {

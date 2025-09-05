@@ -40,6 +40,7 @@ export default () =>
 		let messages: string[];
 		try {
 			messages = await generateCommitMessage(
+				config.OPENAI_HOST,
 				config.OPENAI_KEY,
 				config.model,
 				config.locale,

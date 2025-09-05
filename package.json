@@ -25,9 +25,6 @@
 		"test": "tsx tests",
 		"prepack": "pnpm build && clean-pkg-json"
 	},
-	"dependencies": {
-		"@dqbd/tiktoken": "^1.0.2"
-	},
 	"devDependencies": {
 		"@clack/prompts": "^0.7.0",
 		"@types/ini": "^1.3.31",

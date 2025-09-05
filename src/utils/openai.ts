@@ -4,10 +4,10 @@ import type {
 	CreateChatCompletionRequest,
 	CreateChatCompletionResponse,
 } from 'openai';
-import {
-	type TiktokenModel,
-	// encoding_for_model,
-} from '@dqbd/tiktoken';
+// import {
+// 	type TiktokenModel,
+// 	// encoding_for_model,
+// } from '@dqbd/tiktoken';
 import createHttpsProxyAgent from 'https-proxy-agent';
 import { KnownError } from './error.js';
 import type { CommitType } from './config.js';
@@ -68,13 +68,14 @@ const httpsPost = async (
 	});
 
 const createChatCompletion = async (
+	host: string,
 	apiKey: string,
 	json: CreateChatCompletionRequest,
 	timeout: number,
-	proxy?: string
+	proxy?: string,
 ) => {
 	const { response, data } = await httpsPost(
-		'api.openai.com',
+		host,
 		'/v1/chat/completions',
 		{
 			Authorization: `Bearer ${apiKey}`,
@@ -131,8 +132,9 @@ const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 // };
 
 export const generateCommitMessage = async (
+	host: string,
 	apiKey: string,
-	model: TiktokenModel,
+	model: string, //TiktokenModel,
 	locale: string,
 	diff: string,
 	completions: number,
@@ -143,6 +145,7 @@ export const generateCommitMessage = async (
 ) => {
 	try {
 		const completion = await createChatCompletion(
+			host,
 			apiKey,
 			{
 				model,
