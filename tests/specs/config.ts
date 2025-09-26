@@ -106,6 +106,125 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
+		await describe('base-url', ({ test }) => {
+			test('returns default base URL', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				const localConfigPath = path.join(localFixture.path, '.aicommits');
+				
+				await localAicommits(['config', 'set', openAiToken]);
+				const defaultConfig = await localAicommits(['config', 'get', 'base-url']);
+				expect(defaultConfig.stdout).toBe('base-url=https://api.openai.com');
+				
+				await localFixture.rm();
+			});
+
+			test('rejects invalid URL format', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				
+				const { stderr } = await localAicommits(
+					['config', 'set', 'base-url=invalid-url'],
+					{
+						reject: false,
+					}
+				);
+
+				expect(stderr).toMatch('Must be a valid URL starting with http:// or https://');
+				await localFixture.rm();
+			});
+
+			test('rejects URL without protocol', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				
+				const { stderr } = await localAicommits(
+					['config', 'set', 'base-url=api.custom.com'],
+					{
+						reject: false,
+					}
+				);
+
+				expect(stderr).toMatch('Must be a valid URL starting with http:// or https://');
+				await localFixture.rm();
+			});
+
+			test('accepts valid HTTPS URL', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				const localConfigPath = path.join(localFixture.path, '.aicommits');
+				
+				await localAicommits(['config', 'set', openAiToken]);
+				const baseUrl = 'base-url=https://api.custom-openai.com';
+				await localAicommits(['config', 'set', baseUrl]);
+
+				const configFile = await fs.readFile(localConfigPath, 'utf8');
+				expect(configFile).toMatch(baseUrl);
+
+				const get = await localAicommits(['config', 'get', 'base-url']);
+				expect(get.stdout).toBe(baseUrl);
+				
+				await localFixture.rm();
+			});
+
+			test('accepts valid HTTP URL', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				const localConfigPath = path.join(localFixture.path, '.aicommits');
+				
+				await localAicommits(['config', 'set', openAiToken]);
+				const baseUrl = 'base-url=http://localhost:8000';
+				await localAicommits(['config', 'set', baseUrl]);
+
+				const configFile = await fs.readFile(localConfigPath, 'utf8');
+				expect(configFile).toMatch(baseUrl);
+
+				const get = await localAicommits(['config', 'get', 'base-url']);
+				expect(get.stdout).toBe(baseUrl);
+				
+				await localFixture.rm();
+			});
+
+			test('removes trailing slash from URL', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				
+				await localAicommits(['config', 'set', openAiToken]);
+				const inputUrl = 'base-url=https://api.custom-openai.com/';
+				const expectedUrl = 'base-url=https://api.custom-openai.com';
+				
+				await localAicommits(['config', 'set', inputUrl]);
+
+				const get = await localAicommits(['config', 'get', 'base-url']);
+				expect(get.stdout).toBe(expectedUrl);
+				
+				await localFixture.rm();
+			});
+
+			test('allows empty value to reset to default', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				
+				await localAicommits(['config', 'set', openAiToken]);
+				// First set a custom URL
+				await localAicommits(['config', 'set', 'base-url=https://custom.api.com']);
+				
+				// Then reset to default by setting to empty
+				await localAicommits(['config', 'set', 'base-url=']);
+
+				const get = await localAicommits(['config', 'get', 'base-url']);
+				expect(get.stdout).toBe('base-url=https://api.openai.com');
+				
+				await localFixture.rm();
+			});
+
+			test('supports Azure OpenAI format URL', async () => {
+				const { fixture: localFixture, aicommits: localAicommits } = await createFixture();
+				
+				await localAicommits(['config', 'set', openAiToken]);
+				const baseUrl = 'base-url=https://myresource.openai.azure.com';
+				await localAicommits(['config', 'set', baseUrl]);
+
+				const get = await localAicommits(['config', 'get', 'base-url']);
+				expect(get.stdout).toBe(baseUrl);
+				
+				await localFixture.rm();
+			});
+		});
+
 		await test('set config file', async () => {
 			await aicommits(['config', 'set', openAiToken]);
 

@@ -73,7 +73,8 @@ export default async (
 				config['max-length'],
 				config.type,
 				config.timeout,
-				config.proxy
+				config.proxy,
+				config['base-url']
 			);
 		} finally {
 			s.stop('Changes analyzed');

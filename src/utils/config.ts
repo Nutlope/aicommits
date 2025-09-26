@@ -115,6 +115,16 @@ const configParsers = {
 
 		return parsed;
 	},
+	'base-url'(baseUrl?: string) {
+		if (!baseUrl || baseUrl.length === 0) {
+			return 'https://api.openai.com';
+		}
+
+		parseAssert('base-url', /^https?:\/\//.test(baseUrl), 'Must be a valid URL starting with http:// or https://');
+
+		// Remove trailing slash if present
+		return baseUrl.replace(/\/$/, '');
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;

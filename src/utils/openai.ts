@@ -1,5 +1,6 @@
 import https from 'https';
 import type { ClientRequest, IncomingMessage } from 'http';
+import type { Agent } from 'https';
 import type {
 	CreateChatCompletionRequest,
 	CreateChatCompletionResponse,
@@ -39,7 +40,7 @@ const httpsPost = async (
 					'Content-Length': Buffer.byteLength(postContent),
 				},
 				timeout,
-				agent: proxy ? createHttpsProxyAgent(proxy) : undefined,
+				agent: proxy ? createHttpsProxyAgent(proxy) as unknown as Agent : undefined,
 			},
 			(response) => {
 				const body: Buffer[] = [];
@@ -71,10 +72,12 @@ const createChatCompletion = async (
 	apiKey: string,
 	json: CreateChatCompletionRequest,
 	timeout: number,
-	proxy?: string
+	proxy?: string,
+	baseUrl?: string
 ) => {
+	const url = new URL(baseUrl || 'https://api.openai.com');
 	const { response, data } = await httpsPost(
-		'api.openai.com',
+		url.hostname,
 		'/v1/chat/completions',
 		{
 			Authorization: `Bearer ${apiKey}`,
@@ -139,7 +142,8 @@ export const generateCommitMessage = async (
 	maxLength: number,
 	type: CommitType,
 	timeout: number,
-	proxy?: string
+	proxy?: string,
+	baseUrl?: string
 ) => {
 	try {
 		const completion = await createChatCompletion(
@@ -165,7 +169,8 @@ export const generateCommitMessage = async (
 				n: completions,
 			},
 			timeout,
-			proxy
+			proxy,
+			baseUrl
 		);
 
 		return deduplicateMessages(
