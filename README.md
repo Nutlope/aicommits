@@ -239,6 +239,29 @@ You can clear this option by setting it to an empty string:
 aicommits config set type=
 ```
 
+#### base-url
+
+Default: `https://api.openai.com`
+
+The base URL for OpenAI API requests. This allows you to use OpenAI-compatible APIs such as Azure OpenAI, local models, or other OpenAI-compatible endpoints:
+
+```sh
+# Azure OpenAI
+aicommits config set base-url=https://your-resource.openai.azure.com
+
+# Local OpenAI-compatible API
+aicommits config set base-url=http://localhost:8000
+
+# Custom OpenAI-compatible endpoint
+aicommits config set base-url=https://api.custom-openai.com
+```
+
+To reset to the default OpenAI API:
+
+```sh
+aicommits config set base-url=https://api.openai.com
+```
+
 ## How it works
 
 This CLI tool runs `git diff` to grab all your latest code changes, sends them to OpenAI's GPT-3, then returns the AI generated commit message.
