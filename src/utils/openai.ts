@@ -113,6 +113,11 @@ const sanitizeMessage = (message: string) =>
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
+const isGpt5Model = (model: string): boolean => model.startsWith('gpt-5');
+
+const isReasoningModel = (model: string): boolean =>
+	model.startsWith('o1') || model.startsWith('o3');
+
 // const generateStringFromLength = (length: number) => {
 // 	let result = '';
 // 	const highestTokenChar = 'z';
@@ -142,28 +147,60 @@ export const generateCommitMessage = async (
 	proxy?: string
 ) => {
 	try {
-		const completion = await createChatCompletion(
-			apiKey,
-			{
-				model,
-				messages: [
+		const isGpt5 = isGpt5Model(model);
+		const isReasoning = isReasoningModel(model);
+
+		const promptText = generatePrompt(locale, maxLength, type);
+
+		// Build messages based on model type
+		// o1/o3 models don't support system messages - merge into user message
+		const messages = isReasoning
+			? [
 					{
-						role: 'system',
-						content: generatePrompt(locale, maxLength, type),
+						role: 'user' as const,
+						content: `${promptText}\n\n${diff}`,
+					},
+			  ]
+			: [
+					{
+						role: 'system' as const,
+						content: promptText,
 					},
 					{
-						role: 'user',
+						role: 'user' as const,
 						content: diff,
 					},
-				],
-				temperature: 0.7,
-				top_p: 1,
-				frequency_penalty: 0,
-				presence_penalty: 0,
-				max_tokens: 200,
-				stream: false,
-				n: completions,
-			},
+			  ];
+
+		// Build request params based on model type
+		const requestParams: any = {
+			model,
+			messages,
+		};
+
+		if (isReasoning) {
+			// o1/o3 reasoning models: minimal parameters only
+			requestParams.max_completion_tokens = 1000;
+			requestParams.n = completions;
+		} else if (isGpt5) {
+			// GPT-5 models: adjusted parameters
+			requestParams.temperature = 1;
+			requestParams.max_completion_tokens = 3000;
+			requestParams.n = completions;
+		} else {
+			// Legacy models (GPT-3.5, GPT-4): current behavior
+			requestParams.temperature = 0.7;
+			requestParams.top_p = 1;
+			requestParams.frequency_penalty = 0;
+			requestParams.presence_penalty = 0;
+			requestParams.max_tokens = 200;
+			requestParams.stream = false;
+			requestParams.n = completions;
+		}
+
+		const completion = await createChatCompletion(
+			apiKey,
+			requestParams,
 			timeout,
 			proxy
 		);
