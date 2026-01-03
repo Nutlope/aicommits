@@ -15,6 +15,44 @@ export const assertGitRepo = async () => {
 	return stdout;
 };
 
+export const getGitHooksPath = async () => {
+	const { stdout, failed } = await execa(
+		'git',
+		['rev-parse', '--git-path', 'hooks'],
+		{ reject: false }
+	);
+
+	if (failed) {
+		throw new KnownError('Failed to determine Git hooks directory');
+	}
+
+	return stdout;
+};
+
+export const getGitDir = async () => {
+	const { stdout, failed } = await execa(
+		'git',
+		['rev-parse', '--show-toplevel'],
+		{ reject: false }
+	);
+
+	if (!failed) {
+		return stdout;
+	}
+
+	const { stdout: gitDir, failed: gitDirFailed } = await execa(
+		'git',
+		['rev-parse', '--git-dir'],
+		{ reject: false }
+	);
+
+	if (gitDirFailed) {
+		throw new KnownError('The current directory must be a Git repository!');
+	}
+
+	return gitDir;
+};
+
 const excludeFromDiff = (path: string) => `:(exclude)${path}`;
 
 const filesToExclude = [
