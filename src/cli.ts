@@ -90,19 +90,19 @@ cli(
 			process.exit(0);
 		}
 
-	if (isCalledFromGitHook()) {
-		prepareCommitMessageHook();
-	} else {
-		aicommits(
-			argv.flags.generate,
-			argv.flags.exclude,
-			argv.flags.all,
-			argv.flags.type,
-			argv.flags.confirm,
-			argv.flags.clipboard,
-			rawArgv
-		);
-	}
+		if (isCalledFromGitHook()) {
+			prepareCommitMessageHook();
+		} else {
+			aicommits(
+				argv.flags.generate,
+				argv.flags.exclude,
+				argv.flags.all,
+				argv.flags.type,
+				argv.flags.confirm,
+				argv.flags.clipboard,
+				rawArgv,
+			);
+		}
 	},
 	rawArgv
 );
