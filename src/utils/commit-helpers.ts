@@ -1,5 +1,10 @@
 import { KnownError } from './error.js';
 
+export type CommitMessageResult =
+	| { action: 'confirm'; message: string }
+	| { action: 'cancel' }
+	| { action: 'regenerate'; context?: string };
+
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const retry = async <T>(fn: () => Promise<T>, attempts: number = 3, delay: number = 1000): Promise<T> => {
@@ -17,8 +22,8 @@ export const retry = async <T>(fn: () => Promise<T>, attempts: number = 3, delay
 export const getCommitMessage = async (
 	messages: string[],
 	skipConfirm: boolean
-): Promise<string | null> => {
-	const { select, confirm, isCancel } = await import('@clack/prompts');
+): Promise<CommitMessageResult> => {
+	const { select, text, isCancel } = await import('@clack/prompts');
 	const { dim } = await import('kolorist');
 
 	// Check if interactive prompts are available
@@ -29,7 +34,7 @@ export const getCommitMessage = async (
 		const [message] = messages;
 
 		if (skipConfirm) {
-			return message;
+			return { action: 'confirm', message };
 		}
 
 		if (!isInteractive) {
@@ -37,16 +42,41 @@ export const getCommitMessage = async (
 		}
 
 		console.log(`\n\x1b[1m${message}\x1b[0m\n`);
-		const confirmed = await confirm({
-			message: 'Use this commit message?',
+		const selected = await select({
+			message: 'What would you like to do?',
+			options: [
+				{ label: 'Use this commit message', value: 'confirm' },
+				{ label: `Regenerate ${dim('(r)')}`, value: 'regenerate' },
+				{ label: 'Cancel', value: 'cancel' },
+			],
 		});
 
-		return confirmed && !isCancel(confirmed) ? message : null;
+		if (isCancel(selected) || selected === 'cancel') {
+			return { action: 'cancel' };
+		}
+
+		if (selected === 'regenerate') {
+			const context = await text({
+				message: `Add context for regeneration ${dim('(optional, press Enter to skip)')}:`,
+				placeholder: 'e.g., "focus on the bug fix" or "be more specific"',
+			});
+
+			if (isCancel(context)) {
+				return { action: 'cancel' };
+			}
+
+			return {
+				action: 'regenerate',
+				context: context && typeof context === 'string' ? context.trim() || undefined : undefined,
+			};
+		}
+
+		return { action: 'confirm', message };
 	}
 
 	// Multiple messages case
 	if (skipConfirm) {
-		return messages[0];
+		return { action: 'confirm', message: messages[0] };
 	}
 
 	if (!isInteractive) {
@@ -55,8 +85,33 @@ export const getCommitMessage = async (
 
 	const selected = await select({
 		message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
-		options: messages.map((value) => ({ label: value, value })),
+		options: [
+			...messages.map((value) => ({ label: value, value })),
+			{ label: dim('─────────────────────'), value: 'separator', disabled: true } as any,
+			{ label: `Regenerate all ${dim('(r)')}`, value: 'regenerate' },
+			{ label: 'Cancel', value: 'cancel' },
+		],
 	});
 
-	return isCancel(selected) ? null : (selected as string);
+	if (isCancel(selected) || selected === 'cancel') {
+		return { action: 'cancel' };
+	}
+
+	if (selected === 'regenerate') {
+		const context = await text({
+			message: `Add context for regeneration ${dim('(optional, press Enter to skip)')}:`,
+			placeholder: 'e.g., "focus on the bug fix" or "be more specific"',
+		});
+
+		if (isCancel(context)) {
+			return { action: 'cancel' };
+		}
+
+		return {
+			action: 'regenerate',
+			context: context && typeof context === 'string' ? context.trim() || undefined : undefined,
+		};
+	}
+
+	return { action: 'confirm', message: selected as string };
 };

@@ -126,9 +126,13 @@ const commitTypes: Record<CommitType, string> = {
 export const generatePrompt = (
 	locale: string,
 	maxLength: number,
-	type: CommitType
-) =>
-	[
+	type: CommitType,
+	regenerateOptions?: {
+		previousMessage: string;
+		userContext?: string;
+	}
+) => {
+	const basePrompt = [
 		'Generate a concise git commit message title in present tense that precisely describes the key changes in the following code diff. Focus on what was changed, not just file names. Provide only the title, no description or body.',
 		`Message language: ${locale}`,
 		`Commit message must be a maximum of ${maxLength} characters.`,
@@ -137,6 +141,19 @@ export const generatePrompt = (
 		'Be specific: include concrete details (package names, versions, functionality) rather than generic statements.',
 		commitTypes[type],
 		specifyCommitFormat(type),
-	]
-		.filter(Boolean)
-		.join('\n');
+	];
+
+	if (regenerateOptions) {
+		basePrompt.push(
+			'',
+			'REGENERATION REQUEST:',
+			`The previous commit message was: "${regenerateOptions.previousMessage}"`,
+			'Generate a meaningfully DIFFERENT commit message. Use different wording, emphasis, or focus while still accurately describing the changes.',
+			regenerateOptions.userContext
+				? `User guidance: ${regenerateOptions.userContext}`
+				: ''
+		);
+	}
+
+	return basePrompt.filter(Boolean).join('\n');
+};
