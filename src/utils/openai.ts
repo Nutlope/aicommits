@@ -77,7 +77,11 @@ export const generateCommitMessage = async (
 	completions: number,
 	maxLength: number,
 	type: CommitType,
-	timeout: number
+	timeout: number,
+	regenerateOptions?: {
+		previousMessage: string;
+		userContext?: string;
+	}
 ) => {
 	if (process.env.DEBUG) {
 		console.log('Diff being sent to AI:');
@@ -100,9 +104,9 @@ export const generateCommitMessage = async (
 		const promises = Array.from({ length: completions }, () =>
 			generateText({
 				model: provider(model),
-				system: generatePrompt(locale, maxLength, type),
+				system: generatePrompt(locale, maxLength, type, regenerateOptions),
 				prompt: diff,
-				temperature: 0.4,
+				temperature: regenerateOptions ? 0.7 : 0.4, // Higher temperature for more variation when regenerating
 				maxRetries: 2,
 				maxOutputTokens: 2000,
 			}).finally(() => clearTimeout(timeoutId))

@@ -23,7 +23,7 @@ import {
 } from '../utils/openai.js';
 import { KnownError, handleCommandError } from '../utils/error.js';
 
-import { getCommitMessage } from '../utils/commit-helpers.js';
+import { getCommitMessage, type CommitMessageResult } from '../utils/commit-helpers.js';
 
 export default async (
 	generate: number | undefined,
@@ -108,140 +108,174 @@ export default async (
 		// Check if diff is large and needs chunking
 		const MAX_FILES = 50;
 		const CHUNK_SIZE = 10;
-		let isChunking = false;
-		if (staged.files.length > MAX_FILES) {
-			isChunking = true;
+		const isChunking = staged.files.length > MAX_FILES;
+
+		const baseUrl = providerInstance.getBaseUrl();
+		const apiKey = providerInstance.getApiKey() || '';
+
+		// Truncate diff if too large to avoid context limits
+		const maxDiffLength = 30000; // Approximate 7.5k tokens
+		let diffToUse = staged.diff;
+		if (diffToUse.length > maxDiffLength) {
+			diffToUse =
+				diffToUse.substring(diffToUse.length - maxDiffLength) +
+				'\n\n[Diff truncated due to size]';
 		}
 
-		const s = spinner();
-		s.start(
-			`🔍 Analyzing changes in ${staged.files.length} file${
-				staged.files.length === 1 ? '' : 's'
-			}`
-		);
-		const startTime = Date.now();
-		let messages: string[];
-		let usage: any;
-		try {
-			const baseUrl = providerInstance.getBaseUrl();
-			const apiKey = providerInstance.getApiKey() || '';
+		// Helper function to generate messages (supports regeneration)
+		const generateMessages = async (regenerateOptions?: {
+			previousMessage: string;
+			userContext?: string;
+		}) => {
+			const s = spinner();
+			const actionText = regenerateOptions ? '🔄 Regenerating' : '🔍 Analyzing';
+			s.start(
+				`${actionText} changes in ${staged.files.length} file${
+					staged.files.length === 1 ? '' : 's'
+				}`
+			);
+			const startTime = Date.now();
+			let messages: string[];
+			let usage: any;
 
-			if (isChunking) {
-				// Split files into chunks
-				const chunks: string[][] = [];
-				for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
-					chunks.push(staged.files.slice(i, i + CHUNK_SIZE));
-				}
+			try {
+				if (isChunking) {
+					// Split files into chunks
+					const chunks: string[][] = [];
+					for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
+						chunks.push(staged.files.slice(i, i + CHUNK_SIZE));
+					}
 
-				const chunkMessages: string[] = [];
-				let totalUsage = {
-					promptTokens: 0,
-					completionTokens: 0,
-					totalTokens: 0,
-				};
+					const chunkMessages: string[] = [];
+					let totalUsage = {
+						promptTokens: 0,
+						completionTokens: 0,
+						totalTokens: 0,
+					};
 
-				for (const chunk of chunks) {
-					const chunkDiff = await getStagedDiffForFiles(chunk, excludeFiles);
-					if (chunkDiff && chunkDiff.diff) {
-						// Truncate diff if too large to avoid context limits
-						const maxDiffLength = 30000; // Approximate 7.5k tokens
-						let diffToUse = chunkDiff.diff;
-						if (diffToUse.length > maxDiffLength) {
-							diffToUse =
-								diffToUse.substring(diffToUse.length - maxDiffLength) +
-								'\n\n[Diff truncated due to size]';
-						}
-						const result = await generateCommitMessage(
-							baseUrl,
-							apiKey,
-							config.model!,
-							config.locale,
-							diffToUse,
-							config.generate,
-							config['max-length'],
-							config.type,
-							timeout
-						);
-						chunkMessages.push(...result.messages);
-						if (result.usage) {
-							totalUsage.promptTokens +=
-								(result.usage as any).promptTokens || 0;
-							totalUsage.completionTokens +=
-								(result.usage as any).completionTokens || 0;
-							totalUsage.totalTokens += (result.usage as any).totalTokens || 0;
+					for (const chunk of chunks) {
+						const chunkDiff = await getStagedDiffForFiles(chunk, excludeFiles);
+						if (chunkDiff && chunkDiff.diff) {
+							let chunkDiffToUse = chunkDiff.diff;
+							if (chunkDiffToUse.length > maxDiffLength) {
+								chunkDiffToUse =
+									chunkDiffToUse.substring(chunkDiffToUse.length - maxDiffLength) +
+									'\n\n[Diff truncated due to size]';
+							}
+							const result = await generateCommitMessage(
+								baseUrl,
+								apiKey,
+								config.model!,
+								config.locale,
+								chunkDiffToUse,
+								config.generate,
+								config['max-length'],
+								config.type,
+								timeout,
+								regenerateOptions
+							);
+							chunkMessages.push(...result.messages);
+							if (result.usage) {
+								totalUsage.promptTokens +=
+									(result.usage as any).promptTokens || 0;
+								totalUsage.completionTokens +=
+									(result.usage as any).completionTokens || 0;
+								totalUsage.totalTokens += (result.usage as any).totalTokens || 0;
+							}
 						}
 					}
+
+					// Combine the chunk messages
+					const combineResult = await combineCommitMessages(
+						chunkMessages,
+						baseUrl,
+						apiKey,
+						config.model!,
+						config.locale,
+						config['max-length'],
+						config.type,
+						timeout
+					);
+					messages = combineResult.messages;
+					if (combineResult.usage) {
+						totalUsage.promptTokens +=
+							(combineResult.usage as any).promptTokens || 0;
+						totalUsage.completionTokens +=
+							(combineResult.usage as any).completionTokens || 0;
+						totalUsage.totalTokens +=
+							(combineResult.usage as any).totalTokens || 0;
+					}
+					usage = totalUsage;
+				} else {
+					const result = await generateCommitMessage(
+						baseUrl,
+						apiKey,
+						config.model!,
+						config.locale,
+						diffToUse,
+						config.generate,
+						config['max-length'],
+						config.type,
+						timeout,
+						regenerateOptions
+					);
+					messages = result.messages;
+					usage = result.usage;
 				}
 
-				// Combine the chunk messages
-				const combineResult = await combineCommitMessages(
-					chunkMessages,
-					baseUrl,
-					apiKey,
-					config.model!,
-					config.locale,
-					config['max-length'],
-					config.type,
-					timeout
-				);
-				messages = combineResult.messages;
-				if (combineResult.usage) {
-					totalUsage.promptTokens +=
-						(combineResult.usage as any).promptTokens || 0;
-					totalUsage.completionTokens +=
-						(combineResult.usage as any).completionTokens || 0;
-					totalUsage.totalTokens +=
-						(combineResult.usage as any).totalTokens || 0;
+				return { messages, usage };
+			} finally {
+				const duration = Date.now() - startTime;
+				let tokensStr = '';
+				if (usage?.total_tokens) {
+					const tokens = usage.total_tokens;
+					const formattedTokens =
+						tokens >= 1000 ? `${(tokens / 1000).toFixed(0)}k` : tokens.toString();
+					const speed = Math.round(tokens / (duration / 1000));
+					tokensStr = `, ${formattedTokens} tokens (${speed} tokens/s)`;
 				}
-				usage = totalUsage;
-			} else {
-				// Truncate diff if too large to avoid context limits
-				const maxDiffLength = 30000; // Approximate 7.5k tokens
-				let diffToUse = staged.diff;
-				if (diffToUse.length > maxDiffLength) {
-					diffToUse =
-						diffToUse.substring(diffToUse.length - maxDiffLength) +
-						'\n\n[Diff truncated due to size]';
-				}
-				const result = await generateCommitMessage(
-					baseUrl,
-					apiKey,
-					config.model!,
-					config.locale,
-					diffToUse,
-					config.generate,
-					config['max-length'],
-					config.type,
-					timeout
+				const doneText = regenerateOptions ? '✅ Regenerated' : '✅ Changes analyzed';
+				s.stop(
+					`${doneText} in ${(duration / 1000).toFixed(1)}s${tokensStr}`
 				);
-				messages = result.messages;
-				usage = result.usage;
 			}
-		} finally {
-			const duration = Date.now() - startTime;
-			let tokensStr = '';
-			if (usage?.total_tokens) {
-				const tokens = usage.total_tokens;
-				const formattedTokens =
-					tokens >= 1000 ? `${(tokens / 1000).toFixed(0)}k` : tokens.toString();
-				const speed = Math.round(tokens / (duration / 1000));
-				tokensStr = `, ${formattedTokens} tokens (${speed} tokens/s)`;
-			}
-			s.stop(
-				`✅ Changes analyzed in ${(duration / 1000).toFixed(1)}s${tokensStr}`
-			);
-		}
+		};
+
+		// Initial generation
+		let { messages } = await generateMessages();
 
 		if (messages.length === 0) {
 			throw new KnownError('No commit messages were generated. Try again.');
 		}
 
-		// Get the commit message
-		const message = await getCommitMessage(messages, skipConfirm);
-		if (!message) {
-			outro('Commit cancelled');
-			return;
+		// Message selection loop (supports regeneration)
+		let result: CommitMessageResult;
+		while (true) {
+			result = await getCommitMessage(messages, skipConfirm);
+
+			if (result.action === 'cancel') {
+				outro('Commit cancelled');
+				return;
+			}
+
+			if (result.action === 'confirm') {
+				break;
+			}
+
+			// Regenerate
+			const previousMessage = messages[0]; // Use first message as reference
+			const regenerated = await generateMessages({
+				previousMessage,
+				userContext: result.context,
+			});
+			messages = regenerated.messages;
+
+			if (messages.length === 0) {
+				throw new KnownError('No commit messages were generated. Try again.');
+			}
 		}
+
+		const message = result.message;
 
 		// Handle clipboard mode (early return)
 		if (copyToClipboard) {
