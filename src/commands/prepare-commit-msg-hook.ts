@@ -68,19 +68,18 @@ export default () =>
 		s?.start('The AI is analyzing your changes');
 		let messages: string[];
 		try {
-			const result = await generateCommitMessage(
+			const result = await generateCommitMessage({
 				baseUrl,
 				apiKey,
 				model,
-				config.locale,
-				staged!.diff,
-				config.generate,
-				config['max-length'],
-				config.type,
+				locale: config.locale,
+				diff: staged!.diff,
+				completions: config.generate,
+				maxLength: config['max-length'],
+				type: config.type,
 				timeout,
-				undefined,
-				providerHeaders
-			);
+				headers: providerHeaders,
+			});
 			messages = result.messages;
 		} finally {
 			s?.stop('Changes analyzed');

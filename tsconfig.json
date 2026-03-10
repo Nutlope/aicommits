@@ -9,4 +9,5 @@
 		"esModuleInterop": true,
 		"skipLibCheck": true
 	},
+	"exclude": ["vscode-extension"]
 }

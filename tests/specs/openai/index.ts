@@ -138,17 +138,17 @@ export default testSuite(({ describe }) => {
 				'max-length': 50,
 				...configOverrides,
 			} as ValidConfig;
-			const { messages: commitMessages } = await generateCommitMessage(
-				'api.openai.com',
-				OPENAI_API_KEY!,
-				'gpt-3.5-turbo',
-				config.locale,
-				gitDiff,
-				config.generate,
-				config['max-length'],
-				config.type,
-				7000
-			);
+			const { messages: commitMessages } = await generateCommitMessage({
+				baseUrl: 'https://api.openai.com/v1',
+				apiKey: OPENAI_API_KEY!,
+				model: 'gpt-3.5-turbo',
+				locale: config.locale,
+				diff: gitDiff,
+				completions: config.generate,
+				maxLength: config['max-length'],
+				type: config.type,
+				timeout: 7000,
+			});
 
 			return commitMessages[0];
 		}

@@ -159,19 +159,19 @@ export default async (
 								diffToUse.substring(0, maxDiffLength) +
 								'\n\n[Diff truncated due to size]';
 						}
-						const result = await generateCommitMessage(
+						const result = await generateCommitMessage({
 							baseUrl,
 							apiKey,
-							config.model!,
-							config.locale,
-							diffToUse,
-							config.generate,
-							config['max-length'],
-							config.type,
+							model: config.model!,
+							locale: config.locale,
+							diff: diffToUse,
+							completions: config.generate,
+							maxLength: config['max-length'],
+							type: config.type,
 							timeout,
 							customPrompt,
-							providerHeaders
-						);
+							headers: providerHeaders,
+						});
 						chunkMessages.push(...result.messages);
 						if (result.usage) {
 							totalUsage.prompt_tokens +=
@@ -191,18 +191,18 @@ export default async (
 				}
 
 				// Combine the chunk messages
-				const combineResult = await combineCommitMessages(
-					chunkMessages,
+				const combineResult = await combineCommitMessages({
+					messages: chunkMessages,
 					baseUrl,
 					apiKey,
-					config.model!,
-					config.locale,
-					config['max-length'],
-					config.type,
+					model: config.model!,
+					locale: config.locale,
+					maxLength: config['max-length'],
+					type: config.type,
 					timeout,
 					customPrompt,
-					providerHeaders
-				);
+					headers: providerHeaders,
+				});
 				messages = combineResult.messages;
 				if (combineResult.usage) {
 					totalUsage.prompt_tokens +=
@@ -228,19 +228,19 @@ export default async (
 						diffToUse.substring(0, maxDiffLength) +
 						'\n\n[Diff truncated due to size]';
 				}
-				const result = await generateCommitMessage(
+				const result = await generateCommitMessage({
 					baseUrl,
 					apiKey,
-					config.model!,
-					config.locale,
-					diffToUse,
-					config.generate,
-					config['max-length'],
-					config.type,
+					model: config.model!,
+					locale: config.locale,
+					diff: diffToUse,
+					completions: config.generate,
+					maxLength: config['max-length'],
+					type: config.type,
 					timeout,
 					customPrompt,
-					providerHeaders
-				);
+					headers: providerHeaders,
+				});
 				messages = result.messages;
 				usage = result.usage;
 			}

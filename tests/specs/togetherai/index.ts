@@ -63,17 +63,17 @@ export default testSuite(({ describe }) => {
 				'max-length': 72,
 				...configOverrides,
 			} as ValidConfig;
-			const { messages: commitMessages } = await generateCommitMessage(
-				'https://api.together.xyz',
-				TOGETHER_API_KEY!,
-				'Qwen/Qwen3-Next-80B-A3B-Instruct',
-				config.locale,
-				gitDiff,
-				config.generate,
-				config['max-length'],
-				config.type,
-				7000,
-			);
+			const { messages: commitMessages } = await generateCommitMessage({
+				baseUrl: 'https://api.together.xyz',
+				apiKey: TOGETHER_API_KEY!,
+				model: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
+				locale: config.locale,
+				diff: gitDiff,
+				completions: config.generate,
+				maxLength: config['max-length'],
+				type: config.type,
+				timeout: 7000,
+			});
 
 			return commitMessages[0];
 		}

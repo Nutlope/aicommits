@@ -73,19 +73,33 @@ const shortenCommitMessage = async (
 	}
 };
 
-export const generateCommitMessage = async (
-	baseUrl: string,
-	apiKey: string,
-	model: string,
-	locale: string,
-	diff: string,
-	completions: number,
-	maxLength: number,
-	type: CommitType,
-	timeout: number,
-	customPrompt?: string,
-	headers?: Record<string, string>
-) => {
+export type GenerateCommitMessageOptions = {
+	baseUrl: string;
+	apiKey: string;
+	model: string;
+	locale: string;
+	diff: string;
+	completions: number;
+	maxLength: number;
+	type: CommitType;
+	timeout: number;
+	customPrompt?: string;
+	headers?: Record<string, string>;
+};
+
+export const generateCommitMessage = async ({
+	baseUrl,
+	apiKey,
+	model,
+	locale,
+	diff,
+	completions,
+	maxLength,
+	type,
+	timeout,
+	customPrompt,
+	headers,
+}: GenerateCommitMessageOptions) => {
 	if (shouldLogDebug()) {
 		console.log('Diff being sent to AI:');
 		console.log(diff);
@@ -203,18 +217,31 @@ export const generateCommitMessage = async (
 	}
 };
 
-export const combineCommitMessages = async (
-	messages: string[],
-	baseUrl: string,
-	apiKey: string,
-	model: string,
-	locale: string,
-	maxLength: number,
-	type: CommitType,
-	timeout: number,
-	customPrompt?: string,
-	headers?: Record<string, string>
-) => {
+export type CombineCommitMessagesOptions = {
+	messages: string[];
+	baseUrl: string;
+	apiKey: string;
+	model: string;
+	locale: string;
+	maxLength: number;
+	type: CommitType;
+	timeout: number;
+	customPrompt?: string;
+	headers?: Record<string, string>;
+};
+
+export const combineCommitMessages = async ({
+	messages,
+	baseUrl,
+	apiKey,
+	model,
+	locale,
+	maxLength,
+	type,
+	timeout,
+	customPrompt,
+	headers,
+}: CombineCommitMessagesOptions) => {
 	try {
 		const provider =
 			baseUrl === 'https://api.openai.com/v1'
