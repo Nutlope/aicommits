@@ -1,5 +1,8 @@
 import { expect, testSuite } from 'manten';
-import { generateCommitMessage } from '../../../src/utils/openai.js';
+import {
+	generateCommitMessage,
+	generateCommitDescription,
+} from '../../../src/utils/openai.js';
 import type { ValidConfig } from '../../../src/utils/config-types.js';
 import { getDiff } from '../../utils.js';
 
@@ -152,5 +155,26 @@ export default testSuite(({ describe }) => {
 
 			return commitMessages[0];
 		}
+	});
+
+	describe('subject+body / generateCommitDescription', async ({ test }) => {
+		await test('generates a non-empty body from title and diff', async () => {
+			const gitDiff = await getDiff('new-feature.diff');
+			const title = 'feat: add new feature';
+
+			const { description } = await generateCommitDescription({
+				baseUrl: 'https://api.openai.com/v1',
+				apiKey: OPENAI_API_KEY!,
+				model: 'gpt-3.5-turbo',
+				locale: 'en',
+				title,
+				diff: gitDiff,
+				timeout: 7000,
+				maxLength: 72,
+			});
+
+			expect(typeof description).toBe('string');
+			expect(description.length).toBeGreaterThan(0);
+		});
 	});
 });

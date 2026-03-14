@@ -313,49 +313,42 @@ export default async (
 			return;
 		}
 
-		// Commit the message with timeout
-			try {
-				const commitArgs = ['-m', message];
-				if (noVerify) {
-					commitArgs.push('--no-verify');
-				}
-				await execa('git', ['commit', ...commitArgs, ...rawArgv], {
-					stdio: 'inherit',
-					cleanup: true,
-					timeout: 10000
-				});
+		// Commit the message with timeout (use multiple -m for multi-line messages)
+		try {
+			const commitArgs =
+				message.includes('\n\n')
+					? ['-m', message.split(/\n\n/)[0], '-m', message.slice(message.indexOf('\n\n') + 2)]
+					: ['-m', message];
+			if (noVerify) {
+				commitArgs.push('--no-verify');
+			}
+			await execa('git', ['commit', ...commitArgs, ...rawArgv], {
+				stdio: 'inherit',
+				cleanup: true,
+				timeout: 10000,
+			});
 			outro(`${green('✔')} Successfully committed!`);
 		} catch (error: any) {
 			if (error.timedOut) {
-				// Copy to clipboard if commit times out
 				const success = await copyMessage(message);
 				if (success) {
 					outro(
-						`${yellow(
-							'⚠'
-						)} Commit timed out after 10 seconds. Message copied to clipboard.`
+						`${yellow('⚠')} Commit timed out after 10 seconds. Message copied to clipboard.`
 					);
 				} else {
 					outro(
-						`${yellow(
-							'⚠'
-						)} Commit timed out after 10 seconds. Could not copy to clipboard.`
+						`${yellow('⚠')} Commit timed out after 10 seconds. Could not copy to clipboard.`
 					);
 				}
 				return;
 			}
-
-			// Handle pre-commit hook failures or other git commit errors
 			if (error.exitCode !== undefined) {
-				outro(
-					`${red('✘')} Commit failed. This may be due to pre-commit hooks.`
-				);
+				outro(`${red('✘')} Commit failed. This may be due to pre-commit hooks.`);
 				console.error(
 					`  ${dim('Use')} --no-verify ${dim('to bypass pre-commit hooks')}`
 				);
 				process.exit(1);
 			}
-
 			throw error;
 		}
 	})().catch(handleCommandError);
