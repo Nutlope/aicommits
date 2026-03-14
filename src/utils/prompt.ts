@@ -4,6 +4,7 @@ export const commitTypeFormats: Record<CommitType, string> = {
 	plain: '<commit message>',
 	conventional: '<type>[optional (<scope>)]: <commit message>\nThe commit message subject must start with a lowercase letter',
 	gitmoji: ':emoji: <commit message>',
+	'subject+body': '<commit message subject>',
 };
 const specifyCommitFormat = (type: CommitType) =>
 	`The output response must be in format:\n${commitTypeFormats[type]}`;
@@ -121,6 +122,7 @@ const commitTypes: Record<CommitType, string> = {
 		null,
 		2
 	)}`,
+	'subject+body': 'Output only the subject line; the body is generated separately.',
 };
 
 export const generatePrompt = (
@@ -139,6 +141,26 @@ export const generatePrompt = (
 		customPrompt,
 		commitTypes[type],
 		specifyCommitFormat(type),
+	]
+		.filter(Boolean)
+		.join('\n');
+
+/**
+ * Prompt for generating a commit message body/description given a title and diff.
+ * Used when the user has (or generated) a title and wants a detailed description.
+ */
+export const generateDescriptionPrompt = (
+	locale: string,
+	maxLength: number,
+	customPrompt?: string
+) =>
+	[
+		'You are generating the short body (description) of a git commit message. You are given the commit title and the code diff.',
+		'Output must be brief: use 3–6 bullet points (one short line each), or 2–4 short sentences. No long paragraphs. Focus on what changed and why, in present tense.',
+		`Git convention: each line at most ${maxLength} characters. When a bullet line wraps, indent the continuation with 2 spaces so it aligns under the bullet text.`,
+		'Do not repeat the title. No meta-commentary (e.g. "This commit..."). Respond with ONLY the commit body.',
+		`Message language: ${locale}`,
+		customPrompt,
 	]
 		.filter(Boolean)
 		.join('\n');

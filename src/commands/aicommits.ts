@@ -19,6 +19,7 @@ import { getConfig, setConfigs } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
 import {
 	generateCommitMessage,
+	generateCommitDescription,
 	combineCommitMessages,
 } from '../utils/openai.js';
 import { KnownError, handleCommandError } from '../utils/error.js';
@@ -133,8 +134,48 @@ export default async (
 			const baseUrl = providerInstance.getBaseUrl();
 			const apiKey = providerInstance.getApiKey() || '';
 			const providerHeaders = providerInstance.getHeaders();
+			const maxDiffLength = 30000;
+			let diffToUse = staged.diff;
+			if (diffToUse.length > maxDiffLength) {
+				diffToUse =
+					diffToUse.substring(0, maxDiffLength) +
+					'\n\n[Diff truncated due to size]';
+			}
 
-			if (isChunking) {
+			if (config.type === 'subject+body') {
+				const result = await generateCommitMessage({
+					baseUrl,
+					apiKey,
+					model: config.model!,
+					locale: config.locale,
+					diff: diffToUse,
+					completions: 1,
+					maxLength: config['max-length'],
+					type: 'subject+body',
+					timeout,
+					customPrompt,
+					headers: providerHeaders,
+				});
+				const title = result.messages[0];
+				const { description } = await generateCommitDescription({
+					baseUrl,
+					apiKey,
+					model: config.model!,
+					locale: config.locale,
+					title,
+					diff: diffToUse,
+					timeout,
+					maxLength: config['max-length'],
+					customPrompt,
+					headers: providerHeaders,
+				});
+				messages = [
+					description.trim()
+						? `${title}\n\n${description.trim()}`
+						: title,
+				];
+				usage = result.usage;
+			} else if (isChunking) {
 				// Split files into chunks
 				const chunks: string[][] = [];
 				for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
@@ -220,14 +261,6 @@ export default async (
 				}
 				usage = totalUsage;
 			} else {
-				// Truncate diff if too large to avoid context limits
-				const maxDiffLength = 30000; // Approximate 7.5k tokens
-				let diffToUse = staged.diff;
-				if (diffToUse.length > maxDiffLength) {
-					diffToUse =
-						diffToUse.substring(0, maxDiffLength) +
-						'\n\n[Diff truncated due to size]';
-				}
 				const result = await generateCommitMessage({
 					baseUrl,
 					apiKey,

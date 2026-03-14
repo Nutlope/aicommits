@@ -123,11 +123,12 @@ aicommits --generate <i> # or -g <i>
 
 #### Commit Message Formats
 
-You can choose from three different commit message formats:
+You can choose from four different commit message formats:
 
 - **plain** (default): Simple, unstructured commit messages
 - **conventional**: [Conventional Commits](https://conventionalcommits.org/) format with type and scope
 - **gitmoji**: Emoji-based commit messages
+- **subject+body**: Git-style subject line plus a body (description) generated from the diff
 
 Use the `--type` flag to specify the format:
 
@@ -135,6 +136,7 @@ Use the `--type` flag to specify the format:
 aicommits --type conventional # or -t conventional
 aicommits --type gitmoji       # or -t gitmoji
 aicommits --type plain         # or -t plain (default)
+aicommits --type subject+body  # or -t subject+body (subject + body)
 ```
 
 This feature is useful if your project follows a specific commit message standard or if you're using tools that rely on these commit formats.

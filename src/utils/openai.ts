@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { KnownError } from './error.js';
 import type { CommitType } from './config-types.js';
-import { generatePrompt, commitTypeFormats } from './prompt.js';
+import { generatePrompt, generateDescriptionPrompt } from './prompt.js';
 import { isHeadless } from './headless.js';
 
 const shouldLogDebug = () =>
@@ -41,6 +41,15 @@ const sanitizeMessage = (message: string) => {
  		.replace(/^<[^>]*>\s*/, ''); // Remove leading tags
 
  	return sanitized;
+};
+
+/** Sanitize description/body (multi-line): strip reasoning blocks, trim, remove surrounding quotes. */
+const sanitizeDescription = (message: string) => {
+	let processed = extractResponseFromReasoning(message);
+	return processed
+		.trim()
+		.replace(/^["'`]|["'`]$/g, '')
+		.replace(/^<[^>]*>\s*/, '');
 };
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
@@ -201,7 +210,7 @@ export const generateCommitMessage = async ({
 
 		if (errorAsAny.status === 429) {
 			const resetHeader = errorAsAny.headers?.get('x-ratelimit-reset');
-			let message = 'Rate limit exceeded';
+			let rateLimitMessage = 'Rate limit exceeded';
 			if (resetHeader) {
 				const resetTime = parseInt(resetHeader);
 				const now = Date.now();
@@ -218,12 +227,125 @@ export const generateCommitMessage = async ({
 						const hours = Math.ceil(waitSec / 3600);
 						timeStr = `${hours} hour${hours === 1 ? '' : 's'}`;
 					}
-					message += `. Retry in ${timeStr}.`;
+					rateLimitMessage += `. Retry in ${timeStr}.`;
 				}
 			}
-			throw new KnownError(message);
+			throw new KnownError(rateLimitMessage);
 		}
 
+		throw errorAsAny;
+	}
+};
+
+export type GenerateCommitDescriptionOptions = {
+	baseUrl: string;
+	apiKey: string;
+	model: string;
+	locale: string;
+	title: string;
+	diff: string;
+	timeout: number;
+	maxLength: number;
+	customPrompt?: string;
+	headers?: Record<string, string>;
+};
+
+/**
+ * Wrap a single line at maxLength by breaking on spaces.
+ * Lines that start with "- " or "* " get continuation lines indented with 2 spaces for alignment.
+ */
+const wrapLine = (line: string, maxLength: number): string => {
+	const bulletMatch = /^([-*]\s)/.exec(line);
+	const indent = bulletMatch ? '  ' : '';
+	const continuationMax = maxLength - indent.length;
+
+	if (line.length <= maxLength) return line;
+
+	const parts: string[] = [];
+	let rest = line;
+	let isFirst = true;
+
+	while (rest.length > (isFirst ? maxLength : continuationMax)) {
+		const maxThisLine = isFirst ? maxLength : continuationMax;
+		const chunk = rest.slice(0, maxThisLine);
+		const lastSpace = chunk.lastIndexOf(' ');
+		const splitAt = lastSpace > 0 ? lastSpace + 1 : maxThisLine;
+		const segment = rest.slice(0, splitAt).trim();
+		parts.push(isFirst ? segment : indent + segment);
+		rest = rest.slice(splitAt).trim();
+		isFirst = false;
+	}
+	if (rest.length > 0) {
+		parts.push(isFirst ? rest : indent + rest);
+	}
+	return parts.join('\n');
+};
+
+export const generateCommitDescription = async ({
+	baseUrl,
+	apiKey,
+	model,
+	locale,
+	title,
+	diff,
+	timeout,
+	maxLength,
+	customPrompt,
+	headers,
+}: GenerateCommitDescriptionOptions) => {
+	if (shouldLogDebug()) {
+		console.log('Title and diff for description:');
+		console.log({ title, diffLength: diff.length });
+	}
+
+	const provider =
+		baseUrl === 'https://api.openai.com/v1'
+			? createOpenAI({ apiKey })
+			: createOpenAICompatible({
+					name: 'custom',
+					apiKey,
+					baseURL: baseUrl,
+					headers,
+			  });
+
+	const abortController = new AbortController();
+	const timeoutId = setTimeout(() => abortController.abort(), timeout);
+
+	try {
+		const result = await generateText({
+			model: provider(model),
+			system: generateDescriptionPrompt(locale, maxLength, customPrompt),
+			prompt: `Commit message title:\n${title}\n\nCode diff:\n${diff}`,
+			temperature: 0.4,
+			maxRetries: 2,
+			maxOutputTokens: 2000,
+			abortSignal: abortController.signal,
+		});
+		clearTimeout(timeoutId);
+		let description = sanitizeDescription(result.text);
+		// Enforce line length: wrap any line exceeding maxLength
+		description = description
+			.split('\n')
+			.map((line) => wrapLine(line, maxLength))
+			.join('\n');
+		return { description, usage: result.usage };
+	} catch (error) {
+		clearTimeout(timeoutId);
+		const errorAsAny = error as any;
+		if (
+			errorAsAny.name === 'AbortError' ||
+			errorAsAny.message?.includes('aborted') ||
+			errorAsAny.message?.includes('This operation was aborted')
+		) {
+			throw new KnownError(
+				`Request timed out after ${timeout / 1000} seconds. The API took too long to respond. Try again or use a different model.`
+			);
+		}
+		if (errorAsAny.code === 'ENOTFOUND') {
+			throw new KnownError(
+				`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`
+			);
+		}
 		throw errorAsAny;
 	}
 };
