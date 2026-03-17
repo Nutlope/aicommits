@@ -94,9 +94,9 @@ export default async (
 			}
 		}
 
-		// Use config timeout, or default per provider
+		// Use config timeout, or default per provider (1 min for local, 10s for cloud)
 		const timeout =
-			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 10_000);
+			config.timeout || (providerInstance.getDefinition().isLocal ? 60_000 : 10_000);
 
 		// Validate provider config
 		const validation = providerInstance.validateConfig();
@@ -134,6 +134,8 @@ export default async (
 			const baseUrl = providerInstance.getBaseUrl();
 			const apiKey = providerInstance.getApiKey() || '';
 			const providerHeaders = providerInstance.getHeaders();
+			const providerExtraBody = providerInstance.getExtraBody();
+			const providerName = providerInstance.name;
 			const maxDiffLength = 30000;
 			let diffToUse = staged.diff;
 			if (diffToUse.length > maxDiffLength) {
@@ -155,6 +157,8 @@ export default async (
 					timeout,
 					customPrompt,
 					headers: providerHeaders,
+					providerName,
+					extraBody: providerExtraBody,
 				});
 				const title = result.messages[0];
 				const { description } = await generateCommitDescription({
@@ -168,6 +172,8 @@ export default async (
 					maxLength: config['max-length'],
 					customPrompt,
 					headers: providerHeaders,
+					providerName,
+					extraBody: providerExtraBody,
 				});
 				messages = [
 					description.trim()
@@ -212,6 +218,8 @@ export default async (
 							timeout,
 							customPrompt,
 							headers: providerHeaders,
+							providerName,
+							extraBody: providerExtraBody,
 						});
 						chunkMessages.push(...result.messages);
 						if (result.usage) {
@@ -243,6 +251,8 @@ export default async (
 					timeout,
 					customPrompt,
 					headers: providerHeaders,
+					providerName,
+					extraBody: providerExtraBody,
 				});
 				messages = combineResult.messages;
 				if (combineResult.usage) {
@@ -273,6 +283,8 @@ export default async (
 					timeout,
 					customPrompt,
 					headers: providerHeaders,
+					providerName,
+					extraBody: providerExtraBody,
 				});
 				messages = result.messages;
 				usage = result.usage;

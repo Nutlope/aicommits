@@ -12,6 +12,7 @@ export type ProviderDef = {
 	headers?: Record<string, string>;
 	cacheModels?: boolean;
 	isLocal?: boolean;
+	extraBody?: Record<string, unknown>;
 };
 
 export class Provider {
@@ -121,6 +122,10 @@ export class Provider {
 
 	getHeaders(): Record<string, string> | undefined {
 		return this.def.headers;
+	}
+
+	getExtraBody(): Record<string, unknown> | undefined {
+		return this.def.extraBody;
 	}
 
 	validateConfig(): { valid: boolean; errors: string[] } {

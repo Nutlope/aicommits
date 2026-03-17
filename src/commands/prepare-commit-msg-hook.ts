@@ -56,10 +56,12 @@ export default () =>
 		const baseUrl = providerInstance.getBaseUrl();
 		const apiKey = providerInstance.getApiKey() || '';
 		const providerHeaders = providerInstance.getHeaders();
+		const providerExtraBody = providerInstance.getExtraBody();
+		const providerName = providerInstance.name;
 
-		// Use config timeout, or default per provider
+		// Use config timeout, or default per provider (1 min for local, 10s for cloud)
 		const timeout =
-			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 10_000);
+			config.timeout || (providerInstance.getDefinition().isLocal ? 60_000 : 10_000);
 
 		// Use the unified model or provider default
 		let model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
@@ -79,6 +81,8 @@ export default () =>
 				type: config.type,
 				timeout,
 				headers: providerHeaders,
+				providerName,
+				extraBody: providerExtraBody,
 			});
 			messages = result.messages;
 		} finally {

@@ -54,13 +54,17 @@ const sanitizeDescription = (message: string) => {
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
-const shortenCommitMessage = async (
-	provider: any,
-	model: string,
-	message: string,
-	maxLength: number,
-	timeout: number
-) => {
+type ShortenCommitMessageOptions = {
+	provider: any;
+	model: string;
+	message: string;
+	maxLength: number;
+	timeout: number;
+	providerOpts?: Record<string, any>;
+};
+
+const shortenCommitMessage = async (options: ShortenCommitMessageOptions) => {
+	const { provider, model, message, maxLength, timeout, providerOpts } = options;
 	const abortController = new AbortController();
 	const timeoutId = setTimeout(() => abortController.abort(), timeout);
 
@@ -73,6 +77,7 @@ const shortenCommitMessage = async (
 			maxRetries: 2,
 			maxOutputTokens: 500,
 			abortSignal: abortController.signal,
+			...(providerOpts && { providerOptions: providerOpts as any }),
 		});
 		clearTimeout(timeoutId);
 		return sanitizeMessage(result.text);
@@ -94,6 +99,8 @@ export type GenerateCommitMessageOptions = {
 	timeout: number;
 	customPrompt?: string;
 	headers?: Record<string, string>;
+	providerName?: string;
+	extraBody?: Record<string, unknown>;
 };
 
 export const generateCommitMessage = async ({
@@ -108,6 +115,8 @@ export const generateCommitMessage = async ({
 	timeout,
 	customPrompt,
 	headers,
+	providerName = 'custom',
+	extraBody,
 }: GenerateCommitMessageOptions) => {
 	if (shouldLogDebug()) {
 		console.log('Diff being sent to AI:');
@@ -119,7 +128,7 @@ export const generateCommitMessage = async ({
 			baseUrl === 'https://api.openai.com/v1'
 				? createOpenAI({ apiKey })
 				: createOpenAICompatible({
-						name: 'custom',
+						name: providerName,
 						apiKey,
 						baseURL: baseUrl,
 						headers,
@@ -127,6 +136,10 @@ export const generateCommitMessage = async ({
 
 		const abortController = new AbortController();
 		const timeoutId = setTimeout(() => abortController.abort(), timeout);
+
+		const providerOpts = extraBody
+			? { [providerName]: extraBody }
+			: undefined;
 
 		const promises = Array.from({ length: completions }, () =>
 			generateText({
@@ -137,6 +150,7 @@ export const generateCommitMessage = async ({
 				maxRetries: 2,
 				maxOutputTokens: 2000,
 				abortSignal: abortController.signal,
+				...(providerOpts && { providerOptions: providerOpts as any }),
 			})
 		);
 		const results = await (async () => {
@@ -162,7 +176,14 @@ export const generateCommitMessage = async ({
 					}
 					needsShortening = true;
 					try {
-						return await shortenCommitMessage(provider, model, msg, maxLength, timeout);
+						return await shortenCommitMessage({
+							provider,
+							model,
+							message: msg,
+							maxLength,
+							timeout,
+							providerOpts,
+						});
 					} catch (error) {
 						// If shortening fails, keep the original and continue
 						return msg;
@@ -248,6 +269,8 @@ export type GenerateCommitDescriptionOptions = {
 	maxLength: number;
 	customPrompt?: string;
 	headers?: Record<string, string>;
+	providerName?: string;
+	extraBody?: Record<string, unknown>;
 };
 
 /**
@@ -292,6 +315,8 @@ export const generateCommitDescription = async ({
 	maxLength,
 	customPrompt,
 	headers,
+	providerName = 'custom',
+	extraBody,
 }: GenerateCommitDescriptionOptions) => {
 	if (shouldLogDebug()) {
 		console.log('Title and diff for description:');
@@ -302,7 +327,7 @@ export const generateCommitDescription = async ({
 		baseUrl === 'https://api.openai.com/v1'
 			? createOpenAI({ apiKey })
 			: createOpenAICompatible({
-					name: 'custom',
+					name: providerName,
 					apiKey,
 					baseURL: baseUrl,
 					headers,
@@ -310,6 +335,10 @@ export const generateCommitDescription = async ({
 
 	const abortController = new AbortController();
 	const timeoutId = setTimeout(() => abortController.abort(), timeout);
+
+	const providerOpts = extraBody
+		? { [providerName]: extraBody }
+		: undefined;
 
 	try {
 		const result = await generateText({
@@ -320,6 +349,7 @@ export const generateCommitDescription = async ({
 			maxRetries: 2,
 			maxOutputTokens: 2000,
 			abortSignal: abortController.signal,
+			...(providerOpts && { providerOptions: providerOpts as any }),
 		});
 		clearTimeout(timeoutId);
 		let description = sanitizeDescription(result.text);
@@ -361,6 +391,8 @@ export type CombineCommitMessagesOptions = {
 	timeout: number;
 	customPrompt?: string;
 	headers?: Record<string, string>;
+	providerName?: string;
+	extraBody?: Record<string, unknown>;
 };
 
 export const combineCommitMessages = async ({
@@ -374,13 +406,15 @@ export const combineCommitMessages = async ({
 	timeout,
 	customPrompt,
 	headers,
+	providerName = 'custom',
+	extraBody,
 }: CombineCommitMessagesOptions) => {
 	try {
 		const provider =
 			baseUrl === 'https://api.openai.com/v1'
 				? createOpenAI({ apiKey })
 				: createOpenAICompatible({
-						name: 'custom',
+						name: providerName,
 						apiKey,
 						baseURL: baseUrl,
 						headers,
@@ -388,6 +422,10 @@ export const combineCommitMessages = async ({
 
 		const abortController = new AbortController();
 		const timeoutId = setTimeout(() => abortController.abort(), timeout);
+
+		const providerOpts = extraBody
+			? { [providerName]: extraBody }
+			: undefined;
 
 		const system = `You are a tool that generates git commit messages. Your task is to combine multiple commit messages into one.
 
@@ -404,6 +442,7 @@ Do not add thanks, explanations, or any text outside the commit message.`;
 			maxRetries: 2,
 			maxOutputTokens: 2000,
 			abortSignal: abortController.signal,
+			...(providerOpts && { providerOptions: providerOpts as any }),
 		});
 
 		clearTimeout(timeoutId);
@@ -413,7 +452,14 @@ Do not add thanks, explanations, or any text outside the commit message.`;
 		// Shorten if too long
 		if (combinedMessage.length > maxLength) {
 			try {
-				combinedMessage = await shortenCommitMessage(provider, model, combinedMessage, maxLength, timeout);
+				combinedMessage = await shortenCommitMessage({
+					provider,
+					model,
+					message: combinedMessage,
+					maxLength,
+					timeout,
+					providerOpts,
+				});
 			} catch (error) {
 				// If shortening fails, keep the original
 			}

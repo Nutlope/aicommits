@@ -10,4 +10,5 @@ export const OllamaProvider: ProviderDef = {
 	requiresApiKey: false,
 	cacheModels: false,
 	isLocal: true,
+	extraBody: { think: false },
 };
