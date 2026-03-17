@@ -72,7 +72,7 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
-		test('accepts type=subject+body', async () => {
+		await test('accepts type=subject+body', async () => {
 			await aicommits(['config', 'set', 'OPENAI_API_KEY=abc']);
 			await aicommits(['config', 'set', 'type=subject+body']);
 			const { stdout } = await aicommits(['config', 'get', 'type']);
