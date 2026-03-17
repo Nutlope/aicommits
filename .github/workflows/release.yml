@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-      branches: [main, develop]
+    branches: [develop]
 
 jobs:
   release:
@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout
@@ -20,6 +21,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.2.0
@@ -27,8 +29,26 @@ jobs:
           version: 9
           run_install: true
 
-      - name: Release
+      - name: Check version changed
+        id: version-check
+        run: |
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          LATEST_VERSION=$(npm view aicommits version 2>/dev/null || echo "0.0.0")
+          echo "local=$LOCAL_VERSION" >> $GITHUB_OUTPUT
+          echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          if [ "$LOCAL_VERSION" != "$LATEST_VERSION" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Version changed: $LATEST_VERSION -> $LOCAL_VERSION"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Version unchanged: $LOCAL_VERSION"
+          fi
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm publish --provenance
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm dlx semantic-release
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
