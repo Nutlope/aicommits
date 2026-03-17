@@ -18,10 +18,9 @@ export function activate(context: vscode.ExtensionContext) {
 		'aicommits.generate',
 		() => {
 			const config = vscode.workspace.getConfiguration('aicommits');
-			const defaultType = config.get<'plain' | 'conventional' | 'gitmoji'>(
-				'defaultType',
-				'plain',
-			);
+			const defaultType = config.get<
+				'plain' | 'conventional' | 'gitmoji' | 'subject+body'
+			>('defaultType', 'plain');
 			return generateCommitMessage(defaultType);
 		},
 	);
@@ -34,6 +33,11 @@ export function activate(context: vscode.ExtensionContext) {
 	const generateGitmojiCommand = vscode.commands.registerCommand(
 		'aicommits.generateGitmoji',
 		() => generateCommitMessage('gitmoji'),
+	);
+
+	const generateSubjectBodyCommand = vscode.commands.registerCommand(
+		'aicommits.generateSubjectBody',
+		() => generateCommitMessage('subject+body'),
 	);
 
 	const setupCommand = vscode.commands.registerCommand('aicommits.setup', () =>
@@ -49,6 +53,7 @@ export function activate(context: vscode.ExtensionContext) {
 		generateCommand,
 		generateConventionalCommand,
 		generateGitmojiCommand,
+		generateSubjectBodyCommand,
 		setupCommand,
 		selectModelCommand,
 		outputChannel,
@@ -252,7 +257,7 @@ async function ensureCliInstalled(): Promise<boolean> {
 }
 
 async function generateCommitMessage(
-	type: 'plain' | 'conventional' | 'gitmoji',
+	type: 'plain' | 'conventional' | 'gitmoji' | 'subject+body',
 ) {
 	if (!(await ensureCliInstalled())) {
 		return;

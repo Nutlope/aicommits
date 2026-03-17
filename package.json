@@ -1,6 +1,6 @@
 {
 	"name": "aicommits",
-	"version": "0.0.0-semantic-release",
+	"version": "3.0.0",
 	"description": "Writes your git commit messages for you with AI",
 	"keywords": [
 		"ai",
@@ -46,14 +46,5 @@
 		"pkgroll": "^2.20.1",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3"
-	},
-	"release": {
-		"branches": [
-			"main",
-			{
-				"name": "develop",
-				"prerelease": true
-			}
-		]
 	}
 }

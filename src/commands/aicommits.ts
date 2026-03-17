@@ -19,6 +19,7 @@ import { getConfig, setConfigs } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
 import {
 	generateCommitMessage,
+	generateCommitDescription,
 	combineCommitMessages,
 } from '../utils/openai.js';
 import { KnownError, handleCommandError } from '../utils/error.js';
@@ -133,8 +134,48 @@ export default async (
 			const baseUrl = providerInstance.getBaseUrl();
 			const apiKey = providerInstance.getApiKey() || '';
 			const providerHeaders = providerInstance.getHeaders();
+			const maxDiffLength = 30000;
+			let diffToUse = staged.diff;
+			if (diffToUse.length > maxDiffLength) {
+				diffToUse =
+					diffToUse.substring(0, maxDiffLength) +
+					'\n\n[Diff truncated due to size]';
+			}
 
-			if (isChunking) {
+			if (config.type === 'subject+body') {
+				const result = await generateCommitMessage({
+					baseUrl,
+					apiKey,
+					model: config.model!,
+					locale: config.locale,
+					diff: diffToUse,
+					completions: 1,
+					maxLength: config['max-length'],
+					type: 'subject+body',
+					timeout,
+					customPrompt,
+					headers: providerHeaders,
+				});
+				const title = result.messages[0];
+				const { description } = await generateCommitDescription({
+					baseUrl,
+					apiKey,
+					model: config.model!,
+					locale: config.locale,
+					title,
+					diff: diffToUse,
+					timeout,
+					maxLength: config['max-length'],
+					customPrompt,
+					headers: providerHeaders,
+				});
+				messages = [
+					description.trim()
+						? `${title}\n\n${description.trim()}`
+						: title,
+				];
+				usage = result.usage;
+			} else if (isChunking) {
 				// Split files into chunks
 				const chunks: string[][] = [];
 				for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
@@ -220,14 +261,6 @@ export default async (
 				}
 				usage = totalUsage;
 			} else {
-				// Truncate diff if too large to avoid context limits
-				const maxDiffLength = 30000; // Approximate 7.5k tokens
-				let diffToUse = staged.diff;
-				if (diffToUse.length > maxDiffLength) {
-					diffToUse =
-						diffToUse.substring(0, maxDiffLength) +
-						'\n\n[Diff truncated due to size]';
-				}
 				const result = await generateCommitMessage({
 					baseUrl,
 					apiKey,
@@ -280,49 +313,42 @@ export default async (
 			return;
 		}
 
-		// Commit the message with timeout
-			try {
-				const commitArgs = ['-m', message];
-				if (noVerify) {
-					commitArgs.push('--no-verify');
-				}
-				await execa('git', ['commit', ...commitArgs, ...rawArgv], {
-					stdio: 'inherit',
-					cleanup: true,
-					timeout: 10000
-				});
+		// Commit the message with timeout (use multiple -m for multi-line messages)
+		try {
+			const commitArgs =
+				message.includes('\n\n')
+					? ['-m', message.split(/\n\n/)[0], '-m', message.slice(message.indexOf('\n\n') + 2)]
+					: ['-m', message];
+			if (noVerify) {
+				commitArgs.push('--no-verify');
+			}
+			await execa('git', ['commit', ...commitArgs, ...rawArgv], {
+				stdio: 'inherit',
+				cleanup: true,
+				timeout: 10000,
+			});
 			outro(`${green('✔')} Successfully committed!`);
 		} catch (error: any) {
 			if (error.timedOut) {
-				// Copy to clipboard if commit times out
 				const success = await copyMessage(message);
 				if (success) {
 					outro(
-						`${yellow(
-							'⚠'
-						)} Commit timed out after 10 seconds. Message copied to clipboard.`
+						`${yellow('⚠')} Commit timed out after 10 seconds. Message copied to clipboard.`
 					);
 				} else {
 					outro(
-						`${yellow(
-							'⚠'
-						)} Commit timed out after 10 seconds. Could not copy to clipboard.`
+						`${yellow('⚠')} Commit timed out after 10 seconds. Could not copy to clipboard.`
 					);
 				}
 				return;
 			}
-
-			// Handle pre-commit hook failures or other git commit errors
 			if (error.exitCode !== undefined) {
-				outro(
-					`${red('✘')} Commit failed. This may be due to pre-commit hooks.`
-				);
+				outro(`${red('✘')} Commit failed. This may be due to pre-commit hooks.`);
 				console.error(
 					`  ${dim('Use')} --no-verify ${dim('to bypass pre-commit hooks')}`
 				);
 				process.exit(1);
 			}
-
 			throw error;
 		}
 	})().catch(handleCommandError);
