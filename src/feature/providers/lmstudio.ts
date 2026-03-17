@@ -10,4 +10,6 @@ export const LMStudioProvider: ProviderDef = {
 			.map((m: any) => m.id),
 	defaultModels: ['qwen/qwen3-4b-2507', 'qwen/qwen3-8b'],
 	requiresApiKey: false,
+	cacheModels: false,
+	isLocal: true,
 };

@@ -8,4 +8,6 @@ export const OllamaProvider: ProviderDef = {
 		models.filter((m: any) => m.id || m.name).map((m: any) => m.id || m.name),
 	defaultModels: ['gpt-oss:latest', 'llama3.2:latest'],
 	requiresApiKey: false,
+	cacheModels: false,
+	isLocal: true,
 };

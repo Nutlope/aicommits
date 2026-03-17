@@ -10,6 +10,8 @@ export type ProviderDef = {
 	defaultModels: string[];
 	requiresApiKey: boolean;
 	headers?: Record<string, string>;
+	cacheModels?: boolean;
+	isLocal?: boolean;
 };
 
 export class Provider {
@@ -79,15 +81,20 @@ export class Provider {
 	async getModels(): Promise<{ models: string[]; error?: string }> {
 		const baseUrl = this.getBaseUrl();
 		const apiKey = this.getApiKey() || '';
-		const result = await fetchModels(baseUrl, apiKey);
+		const result = await fetchModels({
+			baseUrl,
+			apiKey,
+			cacheModels: this.def.cacheModels,
+		});
 		if (result.error) return { models: [], error: result.error };
 
+		const modelsArray = Array.isArray(result.models) ? result.models : [];
 		let models: string[];
 		if (this.def.modelsFilter) {
-			models = this.def.modelsFilter(result.models);
+			models = this.def.modelsFilter(modelsArray);
 		} else {
 			// Fallback: just use model ids/names
-			models = result.models.map((model) => model.id || model.name).filter(Boolean) as string[];
+			models = modelsArray.map((model) => model.id || model.name).filter(Boolean) as string[];
 		}
 
 		return { models };
