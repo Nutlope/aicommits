@@ -51,6 +51,11 @@
 				"icon": "$(symbol-enum)"
 			},
 			{
+				"command": "aicommits.generateSubjectBody",
+				"title": "AI Commits: Generate Subject+Body Commit",
+				"icon": "$(list-unordered)"
+			},
+			{
 				"command": "aicommits.setup",
 				"title": "AI Commits: Setup Provider"
 			},
@@ -89,7 +94,8 @@
 					"enum": [
 						"plain",
 						"conventional",
-						"gitmoji"
+						"gitmoji",
+						"subject+body"
 					],
 					"description": "Default commit message format"
 				},
