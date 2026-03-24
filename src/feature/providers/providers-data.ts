@@ -6,12 +6,14 @@ import { OpenRouterProvider } from './openrouter.js';
 import { LMStudioProvider } from './lmstudio.js';
 import { GroqProvider } from './groq.js';
 import { XAiProvider } from './xai.js';
+import { NovitaProvider } from './novita.js';
 
 export const providers = [
 	TogetherProvider,
 	OpenAiProvider,
 	GroqProvider,
 	XAiProvider,
+	NovitaProvider,
 	OllamaProvider,
 	LMStudioProvider,
 	OpenRouterProvider,
