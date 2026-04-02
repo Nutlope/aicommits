@@ -71,6 +71,7 @@ const writeCache = async (key: string, entry: CacheEntry): Promise<void> => {
 interface FetchModelsOptions {
 	baseUrl: string;
 	apiKey?: string;
+	headers?: Record<string, string>;
 	cacheModels?: boolean;
 }
 
@@ -78,7 +79,7 @@ interface FetchModelsOptions {
 export const fetchModels = async (
 	options: FetchModelsOptions,
 ): Promise<{ models: ModelObject[]; error?: string }> => {
-	const { baseUrl, apiKey = '', cacheModels = true } = options;
+	const { baseUrl, apiKey = '', headers, cacheModels = true } = options;
 	const cacheKey = getCacheKey(baseUrl);
 	const now = Date.now();
 
@@ -91,7 +92,7 @@ export const fetchModels = async (
 
 	try {
 		const response = await fetch(`${baseUrl}/models`, {
-			headers: {
+			headers: headers || {
 				Authorization: `Bearer ${apiKey}`,
 			},
 		});
@@ -124,10 +125,12 @@ const fetchAndFilterModels = async (
 	apiKey: string,
 	providerDef?: ProviderDef,
 ): Promise<string[]> => {
-	// Fetch models
+	// Fetch models, passing provider-specific headers when available (e.g. Anthropic requires x-api-key instead of Bearer)
+	const headers = providerDef?.modelHeaders?.(apiKey);
 	const result = await fetchModels({
 		baseUrl,
 		apiKey,
+		headers,
 		cacheModels: providerDef?.cacheModels,
 	});
 

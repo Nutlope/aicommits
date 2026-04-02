@@ -6,10 +6,12 @@ import { OpenRouterProvider } from './openrouter.js';
 import { LMStudioProvider } from './lmstudio.js';
 import { GroqProvider } from './groq.js';
 import { XAiProvider } from './xai.js';
+import { AnthropicProvider } from './anthropic.js';
 
 export const providers = [
 	TogetherProvider,
 	OpenAiProvider,
+	AnthropicProvider,
 	GroqProvider,
 	XAiProvider,
 	OllamaProvider,

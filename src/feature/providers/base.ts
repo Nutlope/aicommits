@@ -10,6 +10,7 @@ export type ProviderDef = {
 	defaultModels: string[];
 	requiresApiKey: boolean;
 	headers?: Record<string, string>;
+	modelHeaders?: (apiKey: string) => Record<string, string>;
 	cacheModels?: boolean;
 	isLocal?: boolean;
 };
@@ -81,9 +82,11 @@ export class Provider {
 	async getModels(): Promise<{ models: string[]; error?: string }> {
 		const baseUrl = this.getBaseUrl();
 		const apiKey = this.getApiKey() || '';
+		const headers = this.def.modelHeaders?.(apiKey);
 		const result = await fetchModels({
 			baseUrl,
 			apiKey,
+			headers,
 			cacheModels: this.def.cacheModels,
 		});
 		if (result.error) return { models: [], error: result.error };
