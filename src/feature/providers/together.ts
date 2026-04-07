@@ -14,9 +14,9 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'Qwen/Qwen3-Next-80B-A3B-Instruct',
-		'zai-org/GLM-4.5-Air-FP8',
-		'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+		'deepseek-ai/DeepSeek-V3.1',
+		'Qwen/Qwen3.5-9B',
+		'Qwen/Qwen3.5-397B-A17B',
 	],
 	requiresApiKey: true,
 };

@@ -59,7 +59,7 @@ export default () =>
 
 		// Use config timeout, or default per provider
 		const timeout =
-			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 10_000);
+			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 15_000);
 
 		// Use the unified model or provider default
 		let model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
