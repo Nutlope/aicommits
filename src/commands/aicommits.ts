@@ -96,7 +96,7 @@ export default async (
 
 		// Use config timeout, or default per provider
 		const timeout =
-			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 10_000);
+			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 15_000);
 
 		// Validate provider config
 		const validation = providerInstance.validateConfig();

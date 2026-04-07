@@ -66,7 +66,7 @@ export default testSuite(({ describe }) => {
 			const { messages: commitMessages } = await generateCommitMessage({
 				baseUrl: 'https://api.together.xyz',
 				apiKey: TOGETHER_API_KEY!,
-				model: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
+				model: 'deepseek-ai/DeepSeek-V3.1',
 				locale: config.locale,
 				diff: gitDiff,
 				completions: config.generate,
