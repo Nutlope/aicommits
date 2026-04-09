@@ -3,6 +3,21 @@ import { isInteractive } from './headless.js';
 
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+export type UsageData = {
+	prompt_tokens: number;
+	completion_tokens: number;
+	total_tokens: number;
+};
+
+export const normalizeUsage = (usage: unknown): UsageData => {
+	const u = usage as Record<string, unknown> | undefined;
+	return {
+		prompt_tokens: (u?.prompt_tokens ?? u?.promptTokens ?? 0) as number,
+		completion_tokens: (u?.completion_tokens ?? u?.completionTokens ?? 0) as number,
+		total_tokens: (u?.total_tokens ?? u?.totalTokens ?? 0) as number,
+	};
+};
+
 export const retry = async <T>(fn: () => Promise<T>, attempts: number = 3, delay: number = 1000): Promise<T> => {
 	for (let i = 0; i < attempts; i++) {
 		try {

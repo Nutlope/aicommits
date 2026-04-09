@@ -24,7 +24,7 @@ import {
 } from '../utils/openai.js';
 import { KnownError, handleCommandError } from '../utils/error.js';
 
-import { getCommitMessage } from '../utils/commit-helpers.js';
+import { getCommitMessage, normalizeUsage } from '../utils/commit-helpers.js';
 import { isHeadless } from '../utils/headless.js';
 
 export default async (
@@ -215,18 +215,10 @@ export default async (
 						});
 						chunkMessages.push(...result.messages);
 						if (result.usage) {
-							totalUsage.prompt_tokens +=
-								(result.usage as any).prompt_tokens ||
-								(result.usage as any).promptTokens ||
-								0;
-							totalUsage.completion_tokens +=
-								(result.usage as any).completion_tokens ||
-								(result.usage as any).completionTokens ||
-								0;
-							totalUsage.total_tokens +=
-								(result.usage as any).total_tokens ||
-								(result.usage as any).totalTokens ||
-								0;
+							const usage = normalizeUsage(result.usage);
+							totalUsage.prompt_tokens += usage.prompt_tokens;
+							totalUsage.completion_tokens += usage.completion_tokens;
+							totalUsage.total_tokens += usage.total_tokens;
 						}
 					}
 				}
@@ -246,18 +238,10 @@ export default async (
 				});
 				messages = combineResult.messages;
 				if (combineResult.usage) {
-					totalUsage.prompt_tokens +=
-						(combineResult.usage as any).prompt_tokens ||
-						(combineResult.usage as any).promptTokens ||
-						0;
-					totalUsage.completion_tokens +=
-						(combineResult.usage as any).completion_tokens ||
-						(combineResult.usage as any).completionTokens ||
-						0;
-					totalUsage.total_tokens +=
-						(combineResult.usage as any).total_tokens ||
-						(combineResult.usage as any).totalTokens ||
-						0;
+					const usage = normalizeUsage(combineResult.usage);
+					totalUsage.prompt_tokens += usage.prompt_tokens;
+					totalUsage.completion_tokens += usage.completion_tokens;
+					totalUsage.total_tokens += usage.total_tokens;
 				}
 				usage = totalUsage;
 			} else {
