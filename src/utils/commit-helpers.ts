@@ -19,7 +19,7 @@ export const getCommitMessage = async (
 	messages: string[],
 	skipConfirm: boolean
 ): Promise<string | null> => {
-	const { select, confirm, isCancel } = await import('@clack/prompts');
+	const { select, text, isCancel } = await import('@clack/prompts');
 	const { dim } = await import('kolorist');
 
 	// Single message case
@@ -35,11 +35,29 @@ export const getCommitMessage = async (
 		}
 
 		console.log(`\n\x1b[1m${message}\x1b[0m\n`);
-		const confirmed = await confirm({
+		const action = await select({
 			message: 'Use this commit message?',
+			options: [
+				{ value: 'use', label: 'Yes' },
+				{ value: 'edit', label: 'Edit' },
+				{ value: 'cancel', label: 'No' },
+			],
 		});
 
-		return confirmed && !isCancel(confirmed) ? message : null;
+		if (isCancel(action) || action === 'cancel') {
+			return null;
+		}
+
+		if (action === 'edit') {
+			const edited = await text({
+				message: 'Edit commit message:',
+				initialValue: message,
+				placeholder: message,
+			});
+			return isCancel(edited) ? null : (edited as string);
+		}
+
+		return message;
 	}
 
 	// Multiple messages case
@@ -53,8 +71,23 @@ export const getCommitMessage = async (
 
 	const selected = await select({
 		message: `Pick a commit message to use: ${dim('(Ctrl+c to exit)')}`,
-		options: messages.map((value) => ({ label: value, value })),
+		options: [
+			...messages.map((value) => ({ label: value, value })),
+			{ value: '__edit__', label: 'Edit / write my own' },
+		],
 	});
 
-	return isCancel(selected) ? null : (selected as string);
+	if (isCancel(selected)) {
+		return null;
+	}
+
+	if (selected === '__edit__') {
+		const custom = await text({
+			message: 'Write your commit message:',
+			placeholder: 'feat: my commit message',
+		});
+		return isCancel(custom) ? null : (custom as string);
+	}
+
+	return selected as string;
 };
