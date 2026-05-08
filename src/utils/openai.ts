@@ -233,6 +233,12 @@ export const generateCommitMessage = async ({
 			throw new KnownError(rateLimitMessage);
 		}
 
+		if (errorAsAny.message?.includes('Provider returned error')) {
+			throw new KnownError(
+				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
+			);
+		}
+
 		throw errorAsAny;
 	}
 };
@@ -346,6 +352,11 @@ export const generateCommitDescription = async ({
 				`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`
 			);
 		}
+		if (errorAsAny.message?.includes('Provider returned error')) {
+			throw new KnownError(
+				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
+			);
+		}
 		throw errorAsAny;
 	}
 };
@@ -431,6 +442,12 @@ Do not add thanks, explanations, or any text outside the commit message.`;
 		) {
 			throw new KnownError(
 				`Request timed out after ${timeout / 1000} seconds. The API took too long to respond. Try again or use a different model.`
+			);
+		}
+
+		if (errorAsAny.message?.includes('Provider returned error')) {
+			throw new KnownError(
+				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
 			);
 		}
 
