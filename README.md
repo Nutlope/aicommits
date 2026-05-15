@@ -32,7 +32,7 @@ This will guide you through:
 - Selecting your AI provider (sets the `provider` config)
 - Configuring your API key
 - **Automatically fetching and selecting from available models** (when supported)
-- **Choosing your preferred commit message format** (plain, conventional, or gitmoji)
+- **Choosing your preferred commit message format** (plain, conventional, conventional+body, gitmoji, or subject+body)
 
   Supported providers include:
 
@@ -106,7 +106,7 @@ aicommits --all # or -a
 - `--clipboard` or `-c`: Copy the selected message to the clipboard instead of committing (default: **false**)
 - `--generate` or `-g`: Number of messages to generate (default: **1**)
 - `--exclude` or `-x`: Files to exclude from AI analysis
-- `--type` or `-t`: Git commit message format (default: **plain**). Supports `plain`, `conventional`, and `gitmoji`
+- `--type` or `-t`: Git commit message format (default: **plain**). Supports `plain`, `conventional`, `conventional+body`, `gitmoji`, and `subject+body`
 - `--prompt` or `-p`: Custom prompt to guide the LLM behavior (e.g., specific language, style instructions)
 - `--no-verify` or `-n`: Bypass pre-commit hooks while committing (default: **false**)
 - `--yes` or `-y`: Skip confirmation when committing after message generation (default: **false**)
@@ -123,20 +123,22 @@ aicommits --generate <i> # or -g <i>
 
 #### Commit Message Formats
 
-You can choose from four different commit message formats:
+You can choose from five different commit message formats:
 
 - **plain** (default): Simple, unstructured commit messages
 - **conventional**: [Conventional Commits](https://conventionalcommits.org/) format with type and scope
+- **conventional+body**: Conventional commit subject plus a body generated from the diff
 - **gitmoji**: Emoji-based commit messages
 - **subject+body**: Git-style subject line plus a body (description) generated from the diff
 
 Use the `--type` flag to specify the format:
 
 ```sh
-aicommits --type conventional # or -t conventional
-aicommits --type gitmoji       # or -t gitmoji
-aicommits --type plain         # or -t plain (default)
-aicommits --type subject+body  # or -t subject+body (subject + body)
+aicommits --type conventional      # or -t conventional
+aicommits --type conventional+body # or -t conventional+body (conventional subject + body)
+aicommits --type gitmoji           # or -t gitmoji
+aicommits --type plain             # or -t plain (default)
+aicommits --type subject+body      # or -t subject+body (subject + body)
 ```
 
 This feature is useful if your project follows a specific commit message standard or if you're using tools that rely on these commit formats.

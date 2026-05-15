@@ -142,7 +142,7 @@ export default async (
 					'\n\n[Diff truncated due to size]';
 			}
 
-			if (config.type === 'subject+body') {
+			if (config.type === 'conventional+body' || config.type === 'subject+body') {
 				const result = await generateCommitMessage({
 					baseUrl,
 					apiKey,
@@ -151,7 +151,7 @@ export default async (
 					diff: diffToUse,
 					completions: 1,
 					maxLength: config['max-length'],
-					type: 'subject+body',
+					type: config.type,
 					timeout,
 					customPrompt,
 					headers: providerHeaders,

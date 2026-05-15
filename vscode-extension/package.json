@@ -46,6 +46,11 @@
 				"icon": "$(checklist)"
 			},
 			{
+				"command": "aicommits.generateConventionalBody",
+				"title": "AI Commits: Generate Conventional+Body Commit",
+				"icon": "$(checklist)"
+			},
+			{
 				"command": "aicommits.generateGitmoji",
 				"title": "AI Commits: Generate Gitmoji Commit",
 				"icon": "$(symbol-enum)"
@@ -94,6 +99,7 @@
 					"enum": [
 						"plain",
 						"conventional",
+						"conventional+body",
 						"gitmoji",
 						"subject+body"
 					],
