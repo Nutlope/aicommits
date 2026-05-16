@@ -3,11 +3,33 @@ import type { CommitType } from './config-types.js';
 export const commitTypeFormats: Record<CommitType, string> = {
 	plain: '<commit message>',
 	conventional: '<type>[optional (<scope>)]: <commit message>\nThe commit message subject must start with a lowercase letter',
+	'conventional+body': '<type>[optional (<scope>)]: <commit message subject>\nThe commit message subject must start with a lowercase letter',
 	gitmoji: ':emoji: <commit message>',
 	'subject+body': '<commit message subject>',
 };
 const specifyCommitFormat = (type: CommitType) =>
 	`The output response must be in format:\n${commitTypeFormats[type]}`;
+
+const conventionalTypeDescriptions = {
+	docs: 'Documentation only changes',
+	style:
+		'Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)',
+	refactor: 'A code change that improves code structure without changing functionality (renaming, restructuring classes/methods, extracting functions, etc)',
+	perf: 'A code change that improves performance',
+	test: 'Adding missing tests or correcting existing tests',
+	build: 'Changes that affect the build system or external dependencies',
+	ci: 'Changes to our CI configuration files and scripts',
+	chore: "Other changes that don't modify src or test files",
+	revert: 'Reverts a previous commit',
+	feat: 'A new feature',
+	fix: 'A bug fix',
+};
+
+const conventionalTypePrompt = `Choose a type from the type-to-description JSON below that best describes the git diff. IMPORTANT: The type MUST be lowercase (e.g., "feat", not "Feat" or "FEAT"):\n${JSON.stringify(
+	conventionalTypeDescriptions,
+	null,
+	2
+)}`;
 
 const commitTypes: Record<CommitType, string> = {
 	plain: '',
@@ -20,24 +42,8 @@ const commitTypes: Record<CommitType, string> = {
 	 * Conventional Changelog:
 	 * https://github.com/conventional-changelog/conventional-changelog/blob/d0e5d5926c8addba74bc962553dd8bcfba90e228/packages/conventional-changelog-conventionalcommits/writer-opts.js#L182-L193
 	 */
-	conventional: `Choose a type from the type-to-description JSON below that best describes the git diff. IMPORTANT: The type MUST be lowercase (e.g., "feat", not "Feat" or "FEAT"):\n${JSON.stringify(
-		{
-			docs: 'Documentation only changes',
-			style:
-				'Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)',
-			refactor: 'A code change that improves code structure without changing functionality (renaming, restructuring classes/methods, extracting functions, etc)',
-			perf: 'A code change that improves performance',
-			test: 'Adding missing tests or correcting existing tests',
-			build: 'Changes that affect the build system or external dependencies',
-			ci: 'Changes to our CI configuration files and scripts',
-			chore: "Other changes that don't modify src or test files",
-			revert: 'Reverts a previous commit',
-			feat: 'A new feature',
-			fix: 'A bug fix',
-		},
-		null,
-		2
-	)}`,
+	conventional: conventionalTypePrompt,
+	'conventional+body': `${conventionalTypePrompt}\nOutput only the conventional commit subject line; the body is generated separately.`,
 
 	/**
 	 * References:
