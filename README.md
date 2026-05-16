@@ -358,14 +358,18 @@ The type of commit message to generate. Available options:
 
 - `plain`: Simple, unstructured commit messages
 - `conventional`: Conventional Commits format with type and scope
+- `conventional+body`: Conventional commit subject plus a body generated from the diff
 - `gitmoji`: Emoji-based commit messages
+- `subject+body`: Git-style subject line plus a body generated from the diff
 
 Examples:
 
 ```sh
 aicommits config set type=conventional
+aicommits config set type=conventional+body
 aicommits config set type=gitmoji
 aicommits config set type=plain
+aicommits config set type=subject+body
 ```
 
 ## How it works

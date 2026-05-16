@@ -4,7 +4,7 @@ import { black, green, red, bgCyan } from 'kolorist';
 import { getStagedDiff } from '../utils/git.js';
 import { getConfig } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
-import { generateCommitMessage } from '../utils/openai.js';
+import { generateCommitMessage, generateCommitDescription } from '../utils/openai.js';
 import { KnownError, handleCommandError } from '../utils/error.js';
 import { isHeadless } from '../utils/headless.js';
 
@@ -67,20 +67,53 @@ export default () =>
 		const s = headless ? null : spinner();
 		s?.start('The AI is analyzing your changes');
 		let messages: string[];
+		const maxDiffLength = 30000;
+		const diffToUse =
+			staged!.diff.length > maxDiffLength
+				? staged!.diff.substring(0, maxDiffLength) + '\n\n[Diff truncated due to size]'
+				: staged!.diff;
 		try {
-			const result = await generateCommitMessage({
-				baseUrl,
-				apiKey,
-				model,
-				locale: config.locale,
-				diff: staged!.diff,
-				completions: config.generate,
-				maxLength: config['max-length'],
-				type: config.type,
-				timeout,
-				headers: providerHeaders,
-			});
-			messages = result.messages;
+			if (config.type === 'conventional+body' || config.type === 'subject+body') {
+				const result = await generateCommitMessage({
+					baseUrl,
+					apiKey,
+					model,
+					locale: config.locale,
+					diff: diffToUse,
+					completions: 1,
+					maxLength: config['max-length'],
+					type: config.type,
+					timeout,
+					headers: providerHeaders,
+				});
+				const title = result.messages[0];
+				const { description } = await generateCommitDescription({
+					baseUrl,
+					apiKey,
+					model,
+					locale: config.locale,
+					title,
+					diff: diffToUse,
+					timeout,
+					maxLength: config['max-length'],
+					headers: providerHeaders,
+				});
+				messages = [description.trim() ? `${title}\n\n${description.trim()}` : title];
+			} else {
+				const result = await generateCommitMessage({
+					baseUrl,
+					apiKey,
+					model,
+					locale: config.locale,
+					diff: diffToUse,
+					completions: config.generate,
+					maxLength: config['max-length'],
+					type: config.type,
+					timeout,
+					headers: providerHeaders,
+				});
+				messages = result.messages;
+			}
 		} finally {
 			s?.stop('Changes analyzed');
 		}
