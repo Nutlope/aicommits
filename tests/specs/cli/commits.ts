@@ -313,6 +313,47 @@ export default testSuite(({ describe }) => {
 				await fixture.rm();
 			});
 
+			test('conventional+body generates commit with conventional subject and body', async () => {
+				const conventionalCommitPattern =
+					/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;
+				const { fixture, aicommits } = await createFixture({
+					...files,
+					'.aicommits': `${files['.aicommits']}\ntype=conventional+body`,
+				});
+				const git = await createGit(fixture.path);
+
+				await git('add', ['data.json']);
+
+				const committing = aicommits();
+
+				committing.stdout!.on('data', (buffer: Buffer) => {
+					const stdout = buffer.toString();
+					if (stdout.match('└')) {
+						committing.stdin!.write('y');
+						committing.stdin!.end();
+					}
+				});
+
+				await committing;
+
+				const statusAfter = await git('status', [
+					'--porcelain',
+					'--untracked-files=no',
+				]);
+				expect(statusAfter.stdout).toBe('');
+
+				const { stdout: fullMessage } = await git('log', [
+					'-n1',
+					'--pretty=format:%B',
+				]);
+				const [subjectLine] = fullMessage.trim().split('\n');
+				expect(subjectLine).toMatch(conventionalCommitPattern);
+				expect(fullMessage).toContain('\n');
+				expect(fullMessage.trim().split('\n').length).toBeGreaterThanOrEqual(2);
+
+				await fixture.rm();
+			});
+
 			test('Accepts --type flag, overriding config', async () => {
 				const conventionalCommitPattern =
 					/(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test):\s/;

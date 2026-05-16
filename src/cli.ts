@@ -61,7 +61,7 @@ cli(
 			type: {
 				type: String,
 				description:
-					'Git commit message format (default: plain). Supports plain, conventional, gitmoji, and subject+body',
+					'Git commit message format (default: plain). Supports plain, conventional, conventional+body, gitmoji, and subject+body',
 				alias: 't',
 			},
 			yes: {
