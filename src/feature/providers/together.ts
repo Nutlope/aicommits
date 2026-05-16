@@ -14,7 +14,6 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'Qwen/Qwen3-Coder-Next-FP8',
 		'deepseek-ai/DeepSeek-V3.1',
 		'Qwen/Qwen3.5-9B',
 		'Qwen/Qwen3.5-397B-A17B',
