@@ -14,9 +14,9 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'deepseek-ai/DeepSeek-V3.1',
-		'Qwen/Qwen3.5-9B',
-		'Qwen/Qwen3.5-397B-A17B',
+		'Qwen/Qwen2.5-7B-Instruct-Turbo',
+		'openai/gpt-oss-120b',
+		'openai/gpt-oss-20b',
 	],
 	requiresApiKey: true,
 };
