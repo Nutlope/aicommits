@@ -224,6 +224,21 @@ export const generateCommitMessage = async ({
 			throw new KnownError(message);
 		}
 
+		const msg = typeof errorAsAny.message === 'string' ? errorAsAny.message.toLowerCase() : '';
+		if (
+			errorAsAny.status === 404 ||
+			msg.includes('unable to access') ||
+			(msg.includes('model') &&
+				(msg.includes('not found') ||
+					msg.includes('does not exist') ||
+					msg.includes('deprecated') ||
+					msg.includes('unavailable')))
+		) {
+			const err = new KnownError(`Model "${model}" is not available or has been deprecated.`);
+			(err as any).isModelDeprecated = true;
+			throw err;
+		}
+
 		throw errorAsAny;
 	}
 };

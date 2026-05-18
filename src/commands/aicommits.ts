@@ -118,138 +118,166 @@ export default async (
 			isChunking = true;
 		}
 
-		const s = headless ? null : spinner();
-		if (s) {
-			s.start(
-				`🔍 Analyzing changes in ${staged.files.length} file${
-					staged.files.length === 1 ? '' : 's'
-				}`
-			);
-		}
-		const startTime = Date.now();
-		let messages: string[];
-		let usage: any;
-		try {
-			const baseUrl = providerInstance.getBaseUrl();
-			const apiKey = providerInstance.getApiKey() || '';
-			const providerHeaders = providerInstance.getHeaders();
+		const baseUrl = providerInstance.getBaseUrl();
+		const apiKey = providerInstance.getApiKey() || '';
+		const providerHeaders = providerInstance.getHeaders();
 
-			if (isChunking) {
-				// Split files into chunks
-				const chunks: string[][] = [];
-				for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
-					chunks.push(staged.files.slice(i, i + CHUNK_SIZE));
-				}
+		const attemptGeneration = async (): Promise<{ messages: string[]; usage: any }> => {
+			const s = headless ? null : spinner();
+			if (s) {
+				s.start(
+					`🔍 Analyzing changes in ${staged.files.length} file${
+						staged.files.length === 1 ? '' : 's'
+					}`
+				);
+			}
+			const startTime = Date.now();
+			try {
+				let messages: string[];
+				let usage: any;
 
-				const chunkMessages: string[] = [];
-				let totalUsage = {
-					prompt_tokens: 0,
-					completion_tokens: 0,
-					total_tokens: 0,
-				};
+				if (isChunking) {
+					// Split files into chunks
+					const chunks: string[][] = [];
+					for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
+						chunks.push(staged.files.slice(i, i + CHUNK_SIZE));
+					}
 
-				for (const chunk of chunks) {
-					const chunkDiff = await getStagedDiffForFiles(chunk, excludeFiles);
-					if (chunkDiff && chunkDiff.diff) {
-						// Truncate diff if too large to avoid context limits
-						const maxDiffLength = 30000; // Approximate 7.5k tokens
-						let diffToUse = chunkDiff.diff;
-						if (diffToUse.length > maxDiffLength) {
-							diffToUse =
-								diffToUse.substring(0, maxDiffLength) +
-								'\n\n[Diff truncated due to size]';
-						}
-						const result = await generateCommitMessage({
-							baseUrl,
-							apiKey,
-							model: config.model!,
-							locale: config.locale,
-							diff: diffToUse,
-							completions: config.generate,
-							maxLength: config['max-length'],
-							type: config.type,
-							timeout,
-							customPrompt,
-							headers: providerHeaders,
-						});
-						chunkMessages.push(...result.messages);
-						if (result.usage) {
-							totalUsage.prompt_tokens +=
-								(result.usage as any).prompt_tokens ||
-								(result.usage as any).promptTokens ||
-								0;
-							totalUsage.completion_tokens +=
-								(result.usage as any).completion_tokens ||
-								(result.usage as any).completionTokens ||
-								0;
-							totalUsage.total_tokens +=
-								(result.usage as any).total_tokens ||
-								(result.usage as any).totalTokens ||
-								0;
+					const chunkMessages: string[] = [];
+					let totalUsage = {
+						prompt_tokens: 0,
+						completion_tokens: 0,
+						total_tokens: 0,
+					};
+
+					for (const chunk of chunks) {
+						const chunkDiff = await getStagedDiffForFiles(chunk, excludeFiles);
+						if (chunkDiff && chunkDiff.diff) {
+							// Truncate diff if too large to avoid context limits
+							const maxDiffLength = 30000; // Approximate 7.5k tokens
+							let diffToUse = chunkDiff.diff;
+							if (diffToUse.length > maxDiffLength) {
+								diffToUse =
+									diffToUse.substring(0, maxDiffLength) +
+									'\n\n[Diff truncated due to size]';
+							}
+							const result = await generateCommitMessage({
+								baseUrl,
+								apiKey,
+								model: config.model!,
+								locale: config.locale,
+								diff: diffToUse,
+								completions: config.generate,
+								maxLength: config['max-length'],
+								type: config.type,
+								timeout,
+								customPrompt,
+								headers: providerHeaders,
+							});
+							chunkMessages.push(...result.messages);
+							if (result.usage) {
+								totalUsage.prompt_tokens +=
+									(result.usage as any).prompt_tokens ||
+									(result.usage as any).promptTokens ||
+									0;
+								totalUsage.completion_tokens +=
+									(result.usage as any).completion_tokens ||
+									(result.usage as any).completionTokens ||
+									0;
+								totalUsage.total_tokens +=
+									(result.usage as any).total_tokens ||
+									(result.usage as any).totalTokens ||
+									0;
+							}
 						}
 					}
+
+					// Combine the chunk messages
+					const combineResult = await combineCommitMessages({
+						messages: chunkMessages,
+						baseUrl,
+						apiKey,
+						model: config.model!,
+						locale: config.locale,
+						maxLength: config['max-length'],
+						type: config.type,
+						timeout,
+						customPrompt,
+						headers: providerHeaders,
+					});
+					messages = combineResult.messages;
+					if (combineResult.usage) {
+						totalUsage.prompt_tokens +=
+							(combineResult.usage as any).prompt_tokens ||
+							(combineResult.usage as any).promptTokens ||
+							0;
+						totalUsage.completion_tokens +=
+							(combineResult.usage as any).completion_tokens ||
+							(combineResult.usage as any).completionTokens ||
+							0;
+						totalUsage.total_tokens +=
+							(combineResult.usage as any).total_tokens ||
+							(combineResult.usage as any).totalTokens ||
+							0;
+					}
+					usage = totalUsage;
+				} else {
+					// Truncate diff if too large to avoid context limits
+					const maxDiffLength = 30000; // Approximate 7.5k tokens
+					let diffToUse = staged.diff;
+					if (diffToUse.length > maxDiffLength) {
+						diffToUse =
+							diffToUse.substring(0, maxDiffLength) +
+							'\n\n[Diff truncated due to size]';
+					}
+					const result = await generateCommitMessage({
+						baseUrl,
+						apiKey,
+						model: config.model!,
+						locale: config.locale,
+						diff: diffToUse,
+						completions: config.generate,
+						maxLength: config['max-length'],
+						type: config.type,
+						timeout,
+						customPrompt,
+						headers: providerHeaders,
+					});
+					messages = result.messages;
+					usage = result.usage;
 				}
 
-				// Combine the chunk messages
-				const combineResult = await combineCommitMessages({
-					messages: chunkMessages,
-					baseUrl,
-					apiKey,
-					model: config.model!,
-					locale: config.locale,
-					maxLength: config['max-length'],
-					type: config.type,
-					timeout,
-					customPrompt,
-					headers: providerHeaders,
-				});
-				messages = combineResult.messages;
-				if (combineResult.usage) {
-					totalUsage.prompt_tokens +=
-						(combineResult.usage as any).prompt_tokens ||
-						(combineResult.usage as any).promptTokens ||
-						0;
-					totalUsage.completion_tokens +=
-						(combineResult.usage as any).completion_tokens ||
-						(combineResult.usage as any).completionTokens ||
-						0;
-					totalUsage.total_tokens +=
-						(combineResult.usage as any).total_tokens ||
-						(combineResult.usage as any).totalTokens ||
-						0;
+				return { messages, usage };
+			} finally {
+				if (s) {
+					const duration = Date.now() - startTime;
+					s.stop(
+						`✅ Changes analyzed in ${(duration / 1000).toFixed(1)}s`
+					);
 				}
-				usage = totalUsage;
-			} else {
-				// Truncate diff if too large to avoid context limits
-				const maxDiffLength = 30000; // Approximate 7.5k tokens
-				let diffToUse = staged.diff;
-				if (diffToUse.length > maxDiffLength) {
-					diffToUse =
-						diffToUse.substring(0, maxDiffLength) +
-						'\n\n[Diff truncated due to size]';
-				}
-				const result = await generateCommitMessage({
-					baseUrl,
-					apiKey,
-					model: config.model!,
-					locale: config.locale,
-					diff: diffToUse,
-					completions: config.generate,
-					maxLength: config['max-length'],
-					type: config.type,
-					timeout,
-					customPrompt,
-					headers: providerHeaders,
-				});
-				messages = result.messages;
-				usage = result.usage;
 			}
-		} finally {
-			if (s) {
-				const duration = Date.now() - startTime;
-				s.stop(
-					`✅ Changes analyzed in ${(duration / 1000).toFixed(1)}s`
-				);
+		};
+
+		let messages!: string[];
+		let usage!: any;
+		try {
+			({ messages, usage } = await attemptGeneration());
+		} catch (error: any) {
+			if ((error as any).isModelDeprecated) {
+				const fallbackModel = providerInstance.getDefaultModel();
+				if (fallbackModel && fallbackModel !== config.model) {
+					const deprecatedModel = config.model;
+					if (!headless) {
+						console.log(yellow(`⚠ Model "${deprecatedModel}" is deprecated. Switching to "${fallbackModel}".`));
+					}
+					config.model = fallbackModel;
+					await setConfigs([['OPENAI_MODEL', fallbackModel]]);
+					({ messages, usage } = await attemptGeneration());
+				} else {
+					throw error;
+				}
+			} else {
+				throw error;
 			}
 		}
 
