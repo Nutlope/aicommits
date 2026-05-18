@@ -14,6 +14,7 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
+		'openai/gpt-oss-120b',
 		'Qwen/Qwen3-Next-80B-A3B-Instruct',
 		'zai-org/GLM-4.5-Air-FP8',
 		'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
