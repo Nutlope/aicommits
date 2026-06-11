@@ -1,14 +1,75 @@
+import http from 'node:http';
 import { expect, testSuite } from 'manten';
 import {
 	generateCommitMessage,
 	generateCommitDescription,
 } from '../../../src/utils/openai.js';
+import { KnownError } from '../../../src/utils/error.js';
 import type { ValidConfig } from '../../../src/utils/config-types.js';
 import { getDiff } from '../../utils.js';
 
 const { OPENAI_API_KEY } = process.env;
 
+const withOpenAICompatibleErrorServer = async (
+	callback: (baseUrl: string) => Promise<void>
+) => {
+	const server = http.createServer((req, res) => {
+		req.resume();
+		res.writeHead(400, { 'content-type': 'application/json' });
+		res.end(
+			JSON.stringify({
+				error: {
+					message: 'model failed to process request',
+					type: 'invalid_request_error',
+				},
+			})
+		);
+	});
+
+	await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+	const address = server.address();
+	if (!address || typeof address === 'string') {
+		server.close();
+		throw new Error('Unable to start test server');
+	}
+
+	try {
+		await callback(`http://127.0.0.1:${address.port}/v1`);
+	} finally {
+		server.close();
+	}
+};
+
 export default testSuite(({ describe }) => {
+	describe('provider error handling', async ({ test }) => {
+		await test('wraps OpenAI-compatible 400 responses as KnownError', async () => {
+			let thrown: unknown;
+
+			await withOpenAICompatibleErrorServer(async (baseUrl) => {
+				try {
+					await generateCommitMessage({
+						baseUrl,
+						apiKey: 'test-api-key',
+						model: 'qwen2.5-coder-7b-instruct',
+						locale: 'en',
+						diff: 'diff --git a/a.txt b/a.txt\n+hello',
+						completions: 1,
+						maxLength: 72,
+						type: 'conventional',
+						timeout: 5000,
+					});
+				} catch (error) {
+					thrown = error;
+				}
+			});
+
+			expect(thrown instanceof KnownError).toBe(true);
+			expect((thrown as Error).message).toMatch(
+				'Provider failed to process your request'
+			);
+		});
+	});
+
 	if (!OPENAI_API_KEY) {
 		console.warn(
 			'⚠️  process.env.OPENAI_API_KEY is necessary to run these tests. Skipping...'

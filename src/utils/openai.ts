@@ -9,6 +9,19 @@ import { isHeadless } from './headless.js';
 const shouldLogDebug = () =>
 	Boolean(process.env.DEBUG || process.env.AICOMMITS_DEBUG) && !isHeadless();
 
+const getErrorStatusCode = (error: any) => error.status ?? error.statusCode;
+
+const isProviderRequestError = (error: any) => {
+	const statusCode = getErrorStatusCode(error);
+	return (
+		error.message?.includes('Provider returned error') ||
+		(error.name === 'AI_APICallError' &&
+			typeof statusCode === 'number' &&
+			statusCode >= 400 &&
+			statusCode < 500)
+	);
+};
+
 /**
  * Extracts the actual response from reasoning model outputs.
  * Reasoning models (like DeepSeek R1, QwQ, etc.) include their thought process
@@ -208,7 +221,9 @@ export const generateCommitMessage = async ({
 			);
 		}
 
-		if (errorAsAny.status === 429) {
+		const statusCode = getErrorStatusCode(errorAsAny);
+
+		if (statusCode === 429) {
 			const resetHeader = errorAsAny.headers?.get('x-ratelimit-reset');
 			let rateLimitMessage = 'Rate limit exceeded';
 			if (resetHeader) {
@@ -233,15 +248,9 @@ export const generateCommitMessage = async ({
 			throw new KnownError(rateLimitMessage);
 		}
 
-		if (errorAsAny.message?.includes('Provider returned error')) {
-			throw new KnownError(
-				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
-			);
-		}
-
 		const msg = typeof errorAsAny.message === 'string' ? errorAsAny.message.toLowerCase() : '';
 		if (
-			errorAsAny.status === 404 ||
+			statusCode === 404 ||
 			msg.includes('unable to access') ||
 			(msg.includes('model') &&
 				(msg.includes('not found') ||
@@ -252,6 +261,12 @@ export const generateCommitMessage = async ({
 			const err = new KnownError(`Model "${model}" is not available or has been deprecated.`);
 			(err as any).isModelDeprecated = true;
 			throw err;
+		}
+
+		if (isProviderRequestError(errorAsAny)) {
+			throw new KnownError(
+				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
+			);
 		}
 
 		throw errorAsAny;
@@ -367,7 +382,7 @@ export const generateCommitDescription = async ({
 				`Error connecting to ${errorAsAny.hostname} (${errorAsAny.syscall}). Are you connected to the internet?`
 			);
 		}
-		if (errorAsAny.message?.includes('Provider returned error')) {
+		if (isProviderRequestError(errorAsAny)) {
 			throw new KnownError(
 				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
 			);
@@ -460,7 +475,7 @@ Do not add thanks, explanations, or any text outside the commit message.`;
 			);
 		}
 
-		if (errorAsAny.message?.includes('Provider returned error')) {
+		if (isProviderRequestError(errorAsAny)) {
 			throw new KnownError(
 				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
 			);
