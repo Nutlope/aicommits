@@ -6,9 +6,8 @@ import { assertGitRepo } from '../utils/git.js';
 import { getConfig } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { KnownError, handleCommandError } from '../utils/error.js';
+import { createChatProvider, formatProviderError } from '../utils/openai.js';
 import { isInteractive } from '../utils/headless.js';
 
 type GitProvider = 'github' | 'gitlab' | 'bitbucket' | 'azure';
@@ -176,14 +175,7 @@ export default command(
 					'API key not configured. Please run `aicommits setup` to configure your provider.'
 				);
 			}
-			const aiProvider =
-				baseUrl === 'https://api.openai.com/v1'
-					? createOpenAI({ apiKey })
-					: createOpenAICompatible({
-							name: 'custom',
-							apiKey,
-							baseURL: baseUrl,
-					  });
+			const aiProvider = createChatProvider(baseUrl, apiKey);
 
 			const generating = spinner();
 			generating.start(
@@ -193,24 +185,34 @@ export default command(
 			const startTime = Date.now();
 
 			// Generate PR title
-			const titleResult = await generateText({
-				model: aiProvider(config.model) as any,
-				system:
-					'Generate a concise PR title based on the following git diff. The title should be under 72 characters.',
-				prompt: diff,
-				maxRetries: 2,
-			});
+			let titleResult;
+			try {
+				titleResult = await generateText({
+					model: aiProvider(config.model) as any,
+					system:
+						'Generate a concise PR title based on the following git diff. The title should be under 72 characters.',
+					prompt: diff,
+					maxRetries: 2,
+				});
+			} catch (error) {
+				throw formatProviderError(error, baseUrl);
+			}
 
 			const title = titleResult.text;
 
 			// Generate PR body
-			const bodyResult = await generateText({
-				model: aiProvider(config.model) as any,
-				system:
-					'Generate a concise PR description based on the following git diff. Format using Markdown with headings like ### Summary, ### Changes, ### Review Notes. Provide a high-level summary of the changes, what was implemented or fixed, and any specific details reviewers should consider. Avoid listing individual files.',
-				prompt: diff,
-				maxRetries: 2,
-			});
+			let bodyResult;
+			try {
+				bodyResult = await generateText({
+					model: aiProvider(config.model) as any,
+					system:
+						'Generate a concise PR description based on the following git diff. Format using Markdown with headings like ### Summary, ### Changes, ### Review Notes. Provide a high-level summary of the changes, what was implemented or fixed, and any specific details reviewers should consider. Avoid listing individual files.',
+					prompt: diff,
+					maxRetries: 2,
+				});
+			} catch (error) {
+				throw formatProviderError(error, baseUrl);
+			}
 
 			const body = bodyResult.text;
 

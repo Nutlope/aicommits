@@ -54,6 +54,217 @@ const sanitizeDescription = (message: string) => {
 
 const deduplicateMessages = (array: string[]) => Array.from(new Set(array));
 
+/**
+ * Some local OpenAI-compatible servers (LM Studio, Ollama) return responses that
+ * the AI SDK v6 strict response validation rejects, surfacing as
+ * "Invalid JSON response". We normalise the common quirks here before the SDK
+ * parses them: reasoning models (e.g. Qwen) may emit an empty `content` with
+ * the answer in `reasoning_content`, and `finish_reason` / `usage` may be null.
+ */
+const sanitizeChatChunk = (chunk: any): any => {
+	if (!chunk || typeof chunk !== 'object') return chunk;
+	if (Array.isArray(chunk.choices)) {
+		for (const choice of chunk.choices) {
+			const messageOrDelta = choice?.message ?? choice?.delta;
+			if (
+				messageOrDelta &&
+				(messageOrDelta.content === null || messageOrDelta.content === undefined)
+			) {
+				const fallback = messageOrDelta.reasoning_content ?? messageOrDelta.reasoning;
+				if (typeof fallback === 'string' && fallback.length > 0) {
+					messageOrDelta.content = fallback;
+				}
+			}
+			if (choice?.finish_reason === null || choice?.finish_reason === undefined) {
+				choice.finish_reason = 'stop';
+			}
+		}
+	}
+	if (chunk.usage === null || chunk.usage === undefined) {
+		chunk.usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+	}
+	return chunk;
+};
+
+/**
+ * Re-emit a single SSE event with its `data:` payload normalised. Returns null
+ * to drop a malformed chunk (so one bad chunk doesn't abort the whole request).
+ */
+const sanitizeSseEvent = (event: string): string | null => {
+	if (event.trim() === '') return null;
+	const lines = event.split('\n');
+	const dataLines: string[] = [];
+	const otherLines: string[] = [];
+	for (const line of lines) {
+		if (line.startsWith('data:')) {
+			dataLines.push(line.slice(5).replace(/^ /, ''));
+		} else {
+			otherLines.push(line);
+		}
+	}
+	const dataValue = dataLines.join('');
+	if (dataValue === '[DONE]') {
+		return 'data: [DONE]';
+	}
+	if (dataValue.length === 0) {
+		// keep-alive / comment event: pass through unchanged
+		return event;
+	}
+	let parsed: any;
+	try {
+		parsed = JSON.parse(dataValue);
+	} catch {
+		// Drop chunks that are not valid JSON (e.g. truncated stream output from
+		// a local model). This keeps the request alive instead of throwing
+		// "Invalid JSON response" for a single bad chunk.
+		return null;
+	}
+	const sanitized = sanitizeChatChunk(parsed);
+	return [...otherLines, `data: ${JSON.stringify(sanitized)}`].join('\n');
+};
+
+/**
+ * Wrap a streaming (text/event-stream) response so that each SSE event's JSON
+ * payload is normalised for local-model quirks, and malformed chunks are dropped.
+ */
+const sanitizeEventStream = (response: Response): Response => {
+	const contentType = response.headers.get('content-type') ?? '';
+	if (!contentType.includes('text/event-stream') || !response.body) {
+		return response;
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	const encoder = new TextEncoder();
+	let buffer = '';
+
+	const processBuffer = (isFinal: boolean): string => {
+		const events = buffer.split('\n\n');
+		let remaining = '';
+		if (!isFinal) {
+			remaining = events.pop() ?? '';
+		}
+		let out = '';
+		for (const event of events) {
+			const sanitized = sanitizeSseEvent(event);
+			if (sanitized !== null) {
+				out += sanitized + '\n\n';
+			}
+		}
+		buffer = remaining;
+		return out;
+	};
+
+	const stream = new ReadableStream<Uint8Array>({
+		async pull(controller) {
+			try {
+				const { done, value } = await reader.read();
+				if (done) {
+					const out = processBuffer(true);
+					if (out) controller.enqueue(encoder.encode(out));
+					controller.close();
+					return;
+				}
+				buffer += decoder.decode(value, { stream: true });
+				const out = processBuffer(false);
+				if (out) controller.enqueue(encoder.encode(out));
+			} catch (err) {
+				controller.error(err);
+			}
+		},
+	});
+
+	return new Response(stream, {
+		status: response.status,
+		statusText: response.statusText,
+		headers: new Headers({ 'content-type': 'text/event-stream' }),
+	});
+};
+
+/**
+ * Custom fetch that repairs/normalises OpenAI-compatible streaming responses
+ * from local servers before handing them to the AI SDK.
+ */
+const createSanitizingFetch = (originalFetch: typeof fetch): typeof fetch => {
+	const wrapped = async (input: RequestInfo | URL, init?: RequestInit) => {
+		const response = await originalFetch(input, init);
+		return sanitizeEventStream(response);
+	};
+	return wrapped as typeof fetch;
+};
+
+const isLocalProvider = (baseUrl: string) =>
+	baseUrl.startsWith('http://localhost') ||
+	baseUrl.startsWith('http://127.0.0.1') ||
+	baseUrl.includes('127.0.0.1') ||
+	baseUrl.includes('localhost');
+
+/**
+ * Transform AI SDK response/parse errors into a helpful, actionable message.
+ * Local OpenAI-compatible servers (LM Studio, Ollama) with reasoning models
+ * (e.g. Qwen) frequently return non-conformant responses.
+ */
+export const formatProviderError = (error: any, baseUrl: string): unknown => {
+	const message = typeof error?.message === 'string' ? error.message : '';
+	const name = error?.name ?? '';
+	const isJsonError =
+		message.includes('Invalid JSON response') ||
+		message.includes('Invalid response data') ||
+		message.toLowerCase().includes('json parse error') ||
+		name === 'AI_InvalidResponseDataError' ||
+		name === 'AI_JSONParseError' ||
+		name === 'AI_TypeValidationError';
+
+	if (!isJsonError) return error;
+
+	const responseBody =
+		typeof error?.responseBody === 'string' ? error.responseBody : '';
+	const isLocal = isLocalProvider(baseUrl);
+
+	const parts: string[] = [];
+	parts.push(
+		'The AI provider returned a response that could not be parsed as JSON.'
+	);
+	if (responseBody) {
+		parts.push(`\nServer response:\n${responseBody.slice(0, 1000)}`);
+	}
+	if (isLocal) {
+		parts.push(
+			'\nThis usually happens with local OpenAI-compatible servers (LM Studio, Ollama) and reasoning models such as Qwen. Try the following:'
+		);
+		parts.push(
+			'- Use a non-reasoning model, or disable "thinking"/reasoning in your local server.'
+		);
+		parts.push('- Make sure the model is fully loaded and LM Studio is up to date.');
+		parts.push('- Increase the timeout: aicommits config set timeout 120000');
+		parts.push(
+			'- Reduce the amount of context sent, or pick a model with a larger context window.'
+		);
+	}
+	return new KnownError(parts.join('\n'));
+};
+
+/**
+ * Build the chat provider, attaching a fetch wrapper that tolerates the quirks
+ * of local OpenAI-compatible servers.
+ */
+export const createChatProvider = (
+	baseUrl: string,
+	apiKey: string,
+	headers?: Record<string, string>
+) => {
+	const fetchWrapper = createSanitizingFetch(globalThis.fetch);
+	return baseUrl === 'https://api.openai.com/v1'
+		? createOpenAI({ apiKey, fetch: fetchWrapper })
+		: createOpenAICompatible({
+				name: 'custom',
+				apiKey,
+				baseURL: baseUrl,
+				headers,
+				fetch: fetchWrapper,
+		  });
+};
+
 const shortenCommitMessage = async (
 	provider: any,
 	model: string,
@@ -115,15 +326,7 @@ export const generateCommitMessage = async ({
 	}
 
 	try {
-		const provider =
-			baseUrl === 'https://api.openai.com/v1'
-				? createOpenAI({ apiKey })
-				: createOpenAICompatible({
-						name: 'custom',
-						apiKey,
-						baseURL: baseUrl,
-						headers,
-				  });
+		const provider = createChatProvider(baseUrl, apiKey, headers);
 
 		const abortController = new AbortController();
 		const timeoutId = setTimeout(() => abortController.abort(), timeout);
@@ -249,12 +452,12 @@ export const generateCommitMessage = async ({
 					msg.includes('deprecated') ||
 					msg.includes('unavailable')))
 		) {
-			const err = new KnownError(`Model "${model}" is not available or has been deprecated.`);
-			(err as any).isModelDeprecated = true;
-			throw err;
-		}
+		const err = new KnownError(`Model "${model}" is not available or has been deprecated.`);
+		(err as any).isModelDeprecated = true;
+		throw err;
+	}
 
-		throw errorAsAny;
+	throw formatProviderError(errorAsAny, baseUrl);
 	}
 };
 
@@ -319,15 +522,7 @@ export const generateCommitDescription = async ({
 		console.log({ title, diffLength: diff.length });
 	}
 
-	const provider =
-		baseUrl === 'https://api.openai.com/v1'
-			? createOpenAI({ apiKey })
-			: createOpenAICompatible({
-					name: 'custom',
-					apiKey,
-					baseURL: baseUrl,
-					headers,
-			  });
+	const provider = createChatProvider(baseUrl, apiKey, headers);
 
 	const abortController = new AbortController();
 	const timeoutId = setTimeout(() => abortController.abort(), timeout);
@@ -372,7 +567,7 @@ export const generateCommitDescription = async ({
 				`Provider failed to process your request. Try running the command again, or switch to a different model with \`aicommits model\`.`
 			);
 		}
-		throw errorAsAny;
+		throw formatProviderError(errorAsAny, baseUrl);
 	}
 };
 
@@ -402,15 +597,7 @@ export const combineCommitMessages = async ({
 	headers,
 }: CombineCommitMessagesOptions) => {
 	try {
-		const provider =
-			baseUrl === 'https://api.openai.com/v1'
-				? createOpenAI({ apiKey })
-				: createOpenAICompatible({
-						name: 'custom',
-						apiKey,
-						baseURL: baseUrl,
-						headers,
-				  });
+		const provider = createChatProvider(baseUrl, apiKey, headers);
 
 		const abortController = new AbortController();
 		const timeoutId = setTimeout(() => abortController.abort(), timeout);
@@ -466,6 +653,6 @@ Do not add thanks, explanations, or any text outside the commit message.`;
 			);
 		}
 
-		throw errorAsAny;
+		throw formatProviderError(errorAsAny, baseUrl);
 	}
 };
