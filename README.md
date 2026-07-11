@@ -41,6 +41,7 @@ This will guide you through:
   - **Groq** - Get your API key from [Groq Console](https://console.groq.com/keys)
   - **xAI** - Get your API key from [xAI Console](https://console.x.ai/)
   - **OpenRouter** - Get your API key from [OpenRouter](https://openrouter.ai/keys)
+  - **Requesty** - Get your API key from [Requesty](https://app.requesty.ai/api-keys)
   - **Ollama** (local) - Run AI models locally with [Ollama](https://ollama.ai)
   - **LM Studio** (local) - No API key required. Runs on your computer via [LM Studio](https://lmstudio.ai/)
   - **Custom OpenAI-compatible endpoint** - Use any service that implements the OpenAI API
@@ -314,7 +315,7 @@ Model to use for OpenAI-compatible providers.
 
 #### provider
 
-The selected AI provider. Set automatically during `aicommits setup`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `ollama`, `lmstudio`, `custom`.
+The selected AI provider. Set automatically during `aicommits setup`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `requesty`, `ollama`, `lmstudio`, `custom`.
 
 #### locale
 
