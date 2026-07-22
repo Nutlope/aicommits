@@ -9,7 +9,7 @@ export const OpenRouterProvider: ProviderDef = {
 		models
 			.filter((m: any) => m.id && (!m.type || m.type === 'chat'))
 			.map((m: any) => m.id),
-	defaultModels: ['openai/gpt-oss-20b:free', 'z-ai/glm-4.5-air:free'],
+	defaultModels: ['openrouter/free', 'openrouter/auto'],
 	requiresApiKey: true,
 	headers: {
 		'HTTP-Referer': 'https://github.com/nutlope/aicommits',

@@ -12,6 +12,6 @@ export const XAiProvider: ProviderDef = {
 					m.id && (!m.type || m.type === 'chat' || m.type === 'language'),
 			)
 			.map((m: any) => m.id),
-	defaultModels: ['grok-4.1-fast', 'grok-4-fast', 'grok-code-fast-1'],
+	defaultModels: ['grok-4.5'],
 	requiresApiKey: true,
 };

@@ -1,3 +1,7 @@
+import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createTogetherAI } from '@ai-sdk/togetherai';
+import type { LanguageModel } from 'ai';
 import { fetchModels } from '../models.js';
 import type { ValidConfig } from '../../utils/config-types.js';
 
@@ -114,6 +118,28 @@ export class Provider {
 
 	getHeaders(): Record<string, string> | undefined {
 		return this.def.headers;
+	}
+
+	getLanguageModel(model: string): LanguageModel {
+		const baseUrl = this.getBaseUrl();
+		const apiKey = this.getApiKey() || '';
+		const provider = (() => {
+			if (this.name === 'openai') {
+				return createOpenAI({ apiKey });
+			}
+
+			if (this.name === 'togetherai') {
+				return createTogetherAI({ apiKey, baseURL: baseUrl });
+			}
+
+			return createOpenAICompatible({
+				name: this.name,
+				apiKey,
+				baseURL: baseUrl,
+				headers: this.getHeaders(),
+			});
+		})();
+		return provider(model);
 	}
 
 	validateConfig(): { valid: boolean; errors: string[] } {

@@ -45,6 +45,9 @@ This will guide you through:
   - **LM Studio** (local) - No API key required. Runs on your computer via [LM Studio](https://lmstudio.ai/)
   - **Custom OpenAI-compatible endpoint** - Use any service that implements the OpenAI API
 
+  The selected model must support tool calls. The default Together AI models
+  are tested with aicommits' two-step generation flow.
+
   **For CI/CD environments**, you can also set up configuration via the config file:
 
   ```bash
@@ -106,6 +109,7 @@ aicommits --all # or -a
 - `--clipboard` or `-c`: Copy the selected message to the clipboard instead of committing (default: **false**)
 - `--generate` or `-g`: Number of messages to generate (default: **1**)
 - `--exclude` or `-x`: Files to exclude from AI analysis
+- `--description`: Include a commit message description
 - `--type` or `-t`: Git commit message format (default: **plain**). Supports `plain`, `conventional`, and `gitmoji`
 - `--prompt` or `-p`: Custom prompt to guide the LLM behavior (e.g., specific language, style instructions)
 - `--no-verify` or `-n`: Bypass pre-commit hooks while committing (default: **false**)
@@ -120,6 +124,14 @@ aicommits --generate <i> # or -g <i>
 ```
 
 > Warning: this uses more tokens, meaning it costs more.
+
+#### Include a description
+
+Add `--description` when the commit needs context beyond its subject:
+
+```sh
+aicommits --description
+```
 
 #### Commit Message Formats
 
@@ -366,7 +378,9 @@ aicommits config set type=plain
 
 ## How it works
 
-This CLI tool runs `git diff` to grab all your latest code changes, sends them to the configured AI provider (TogetherAI by default), then returns the AI generated commit message.
+The model receives the staged file list, requests the staged diffs it needs, and
+submits a validated commit subject with an optional description. The tool can
+only read Git's staged snapshot, so unstaged edits are never sent to the model.
 
 Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
 

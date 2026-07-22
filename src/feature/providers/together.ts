@@ -1,5 +1,20 @@
 import { ProviderDef } from './base.js';
 
+// Failed the aicommits two-step tool protocol twice on 2026-07-22.
+// Unknown and future Together models remain agentic by default.
+export const TOGETHER_NON_AGENTIC_MODELS = new Set([
+	'arize-ai/qwen-2-1.5b-instruct',
+	'deepcogito/cogito-v2-1-671b',
+	'google/gemma-3n-E4B-it',
+	'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+	'openai/gpt-oss-120b',
+	'openai/gpt-oss-20b',
+	'pearl-ai/gemma-4-31b-it',
+]);
+
+export const supportsTogetherAgenticGeneration = (model: string) =>
+	!TOGETHER_NON_AGENTIC_MODELS.has(model);
+
 export const TogetherProvider: ProviderDef = {
 	name: 'togetherai',
 	displayName: 'Together AI (recommended)',
@@ -14,10 +29,8 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'openai/gpt-oss-120b',
-		'Qwen/Qwen3-Next-80B-A3B-Instruct',
-		'zai-org/GLM-4.5-Air-FP8',
-		'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+		'moonshotai/Kimi-K2.7-Code',
+		'MiniMaxAI/MiniMax-M3',
 	],
 	requiresApiKey: true,
 };
