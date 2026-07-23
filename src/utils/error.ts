@@ -4,6 +4,28 @@ const { version } = pkg;
 
 export class KnownError extends Error {}
 
+export const isModelUnavailableError = (error: unknown) => {
+	let current: unknown = error;
+	const messages: string[] = [];
+	for (let depth = 0; depth < 5 && current; depth += 1) {
+		if (current instanceof Error) messages.push(current.message.toLowerCase());
+		if (typeof current !== 'object') break;
+		const errorRecord = current as Record<string, unknown>;
+		if (errorRecord.status === 404 || errorRecord.statusCode === 404) return true;
+		current = errorRecord.cause;
+	}
+
+	const message = messages.join(' ');
+	return (
+		message.includes('unable to access') ||
+		(message.includes('model') &&
+			(message.includes('not found') ||
+				message.includes('does not exist') ||
+				message.includes('deprecated') ||
+				message.includes('unavailable')))
+	);
+};
+
 const indent = '    ';
 
 export const handleCliError = (error: unknown) => {

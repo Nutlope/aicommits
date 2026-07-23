@@ -5,17 +5,20 @@ import {
 	stepCountIs,
 	tool,
 	type LanguageModel,
+	type LanguageModelUsage,
 } from 'ai';
 import { execa } from 'execa';
 import { z } from 'zod';
-import { supportsTogetherAgenticGeneration } from '../feature/providers/together.js';
+import {
+	getTogetherReasoningOptions,
+	supportsTogetherAgenticGeneration,
+} from '../feature/providers/together.js';
 import type { CommitType } from './config-types.js';
 
 const MAX_DIFF_LENGTH = 30_000;
 const MAX_AGENT_STEPS = 4;
-const TOGETHER_REASONING_ONLY_MODELS = new Set([
-	'MiniMaxAI/MiniMax-M2.7',
-]);
+const MAX_NON_AGENTIC_FILES = 50;
+const NON_AGENTIC_CHUNK_SIZE = 10;
 
 export type CommitMessage = {
 	subject: string;
@@ -40,6 +43,74 @@ const formats: Record<CommitType, string> = {
 	gitmoji: 'Gitmoji: <emoji> <subject>',
 };
 
+type CommitInstructionOptions = Pick<
+	GenerateCommitMessageOptions,
+	'type' | 'locale' | 'maxLength' | 'includeBody' | 'customPrompt'
+>;
+
+const buildCommitInstructions = (
+	{
+		type,
+		locale,
+		maxLength,
+		includeBody,
+		customPrompt,
+	}: CommitInstructionOptions,
+	pathInstructions: Array<string | undefined>
+) =>
+	[
+		'Write an accurate Git commit message for the staged changes.',
+		...pathInstructions,
+		'Mention the important behavior change, not file names.',
+		`Write in ${locale}. Format: ${formats[type]}.`,
+		type === 'conventional'
+			? 'Use fix for corrected behavior; use feat only for a new capability.'
+			: undefined,
+		`The subject must be at most ${maxLength} characters.`,
+		includeBody
+			? 'Return a concise, non-empty body after a blank line.'
+			: 'Return no body.',
+		'Complete the subject; never end it with an ellipsis.',
+		customPrompt,
+	]
+		.filter(Boolean)
+		.join('\n');
+
+const truncateDiff = (diff: string) =>
+	diff.length > MAX_DIFF_LENGTH
+		? `${diff.slice(0, MAX_DIFF_LENGTH)}\n\n[Diff truncated]`
+		: diff;
+
+const sumTokenCounts = (counts: Array<number | undefined>) =>
+	counts.every((count) => count === undefined)
+		? undefined
+		: counts.reduce<number>((total, count) => total + (count ?? 0), 0);
+
+const combineUsage = (usages: LanguageModelUsage[]): LanguageModelUsage => ({
+	inputTokens: sumTokenCounts(usages.map((usage) => usage.inputTokens)),
+	inputTokenDetails: {
+		noCacheTokens: sumTokenCounts(
+			usages.map((usage) => usage.inputTokenDetails.noCacheTokens)
+		),
+		cacheReadTokens: sumTokenCounts(
+			usages.map((usage) => usage.inputTokenDetails.cacheReadTokens)
+		),
+		cacheWriteTokens: sumTokenCounts(
+			usages.map((usage) => usage.inputTokenDetails.cacheWriteTokens)
+		),
+	},
+	outputTokens: sumTokenCounts(usages.map((usage) => usage.outputTokens)),
+	outputTokenDetails: {
+		textTokens: sumTokenCounts(
+			usages.map((usage) => usage.outputTokenDetails.textTokens)
+		),
+		reasoningTokens: sumTokenCounts(
+			usages.map((usage) => usage.outputTokenDetails.reasoningTokens)
+		),
+	},
+	totalTokens: sumTokenCounts(usages.map((usage) => usage.totalTokens)),
+});
+
 const getModelDetails = (model: LanguageModel) =>
 	typeof model === 'string'
 		? { provider: '', modelId: model }
@@ -59,6 +130,9 @@ const parseOneShotMessage = (
 		throw new Error('The model did not generate a commit message.');
 	}
 	const body = includeBody ? lines.join('\n').trim() : '';
+	if (includeBody && !body) {
+		throw new Error('The model did not generate a commit message description.');
+	}
 	return { subject, ...(body ? { body } : {}) };
 };
 
@@ -97,45 +171,80 @@ export const generateCommitMessage = async ({
 	const isTogetherModel = provider.startsWith('togetherai.');
 	const useAgent =
 		isTogetherModel && supportsTogetherAgenticGeneration(modelId);
-	const disableTogetherReasoning =
-		isTogetherModel && !TOGETHER_REASONING_ONLY_MODELS.has(modelId);
-
-	if (!useAgent) {
-		const fallbackDiff =
-			stagedDiff.length > MAX_DIFF_LENGTH
-				? `${stagedDiff.slice(0, MAX_DIFF_LENGTH)}\n\n[Diff truncated]`
-				: stagedDiff;
+	const reasoningOptions = isTogetherModel
+		? getTogetherReasoningOptions(modelId)
+		: {};
+	const runOneShot = async (
+		prompt: string,
+		oneShotIncludeBody = includeBody,
+		taskInstruction?: string
+	) => {
 		const result = await generateText({
 			model,
-			system: [
-				'Write an accurate Git commit message for the provided staged diff.',
-				'Return only the commit message. Put the subject on the first line.',
-				'Mention the important behavior change, not file names.',
-				`Write in ${locale}. Format: ${formats[type]}.`,
-				type === 'conventional'
-					? 'Use fix for corrected behavior; use feat only for a new capability.'
-					: undefined,
-				`The subject must be at most ${maxLength} characters.`,
-				includeBody
-					? 'You may add a concise body after a blank line.'
-					: 'Return only one subject line with no body.',
-				'Complete the subject; never end it with an ellipsis.',
-				customPrompt,
-			]
-				.filter(Boolean)
-				.join('\n'),
-			prompt: fallbackDiff,
+			system: buildCommitInstructions(
+				{
+					type,
+					locale,
+					maxLength,
+					includeBody: oneShotIncludeBody,
+					customPrompt,
+				},
+				[
+					'Return only the commit message. Put the subject on the first line.',
+					taskInstruction,
+				]
+			),
+			prompt,
 			maxOutputTokens: 512,
 			timeout,
-			reasoning: disableTogetherReasoning ? 'none' : undefined,
-			providerOptions: disableTogetherReasoning
-				? { togetherai: { reasoning: { enabled: false } } }
-				: undefined,
+			...reasoningOptions,
 		});
 		return {
-			message: parseOneShotMessage(result.text, maxLength, includeBody),
+			message: parseOneShotMessage(
+				result.text,
+				maxLength,
+				oneShotIncludeBody
+			),
 			usage: result.usage,
 			steps: result.steps.length,
+		};
+	};
+
+	if (!useAgent) {
+		if (files.length <= MAX_NON_AGENTIC_FILES) {
+			return runOneShot(truncateDiff(stagedDiff));
+		}
+
+		const chunkResults = [];
+		for (let index = 0; index < files.length; index += NON_AGENTIC_CHUNK_SIZE) {
+			const chunkFiles = files.slice(index, index + NON_AGENTIC_CHUNK_SIZE);
+			const chunkDiff = await getStagedDiff(chunkFiles);
+			chunkResults.push(
+				await runOneShot(
+					truncateDiff(chunkDiff),
+					false,
+					'Summarize only this subset of the staged changes.'
+				)
+			);
+		}
+
+		const combined = await runOneShot(
+			chunkResults
+				.map(({ message }) => message.subject)
+				.map((subject) => `- ${subject}`)
+				.join('\n'),
+			includeBody,
+			'Combine these partial commit messages into one message covering the full change.'
+		);
+		return {
+			...combined,
+			usage: combineUsage([
+				...chunkResults.map(({ usage }) => usage),
+				combined.usage,
+			]),
+			steps:
+				chunkResults.reduce((total, result) => total + result.steps, 0) +
+				combined.steps,
 		};
 	}
 
@@ -154,29 +263,18 @@ export const generateCommitMessage = async ({
 		description: 'Submit the final commit message.',
 		inputSchema: z.object({
 			subject: z.string().min(1).max(maxLength),
-			body: z.string().nullable(),
+			body: includeBody ? z.string().trim().min(1) : z.null(),
 		}),
 	});
 	const agent = new ToolLoopAgent({
 		model,
-		instructions: [
-			'Write an accurate Git commit message for the staged changes.',
-			'Use the available context and tools, then call submitCommitMessage. Never answer with prose.',
-			'Call readStagedDiff only when the provided context is insufficient.',
-			'Mention the important behavior change, not file names.',
-			`Write in ${locale}. Format: ${formats[type]}.`,
-			type === 'conventional'
-				? 'Use fix for corrected behavior; use feat only for a new capability.'
-				: undefined,
-			`The subject must be at most ${maxLength} characters.`,
-			includeBody
-				? 'Add a concise body only when it explains important context.'
-				: 'Return no body.',
-			'Complete the subject; never end it with an ellipsis.',
-			customPrompt,
-		]
-			.filter(Boolean)
-			.join('\n'),
+		instructions: buildCommitInstructions(
+			{ type, locale, maxLength, includeBody, customPrompt },
+			[
+				'Use the available context and tools, then call submitCommitMessage. Never answer with prose.',
+				'Call readStagedDiff only when the provided context is insufficient.',
+			]
+		),
 		tools: { readStagedDiff, submitCommitMessage },
 		toolChoice: 'required',
 		stopWhen: [
@@ -184,10 +282,7 @@ export const generateCommitMessage = async ({
 			stepCountIs(MAX_AGENT_STEPS),
 		],
 		maxOutputTokens: 512,
-		reasoning: disableTogetherReasoning ? 'none' : undefined,
-		providerOptions: disableTogetherReasoning
-			? { togetherai: { reasoning: { enabled: false } } }
-			: undefined,
+		...reasoningOptions,
 		prepareStep: ({ stepNumber }) => ({
 			toolChoice:
 				stepNumber === MAX_AGENT_STEPS - 1

@@ -4,8 +4,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execa } from 'execa';
 import { getProvider } from '../src/feature/providers/index.js';
+import { supportsTogetherAgenticGeneration } from '../src/feature/providers/together.js';
 import { getConfig } from '../src/utils/config-runtime.js';
-import { generateCommitMessage as generateAgentMessage } from '../src/utils/generate-commit-message.js';
+import { generateCommitMessage as generateCandidateMessage } from '../src/utils/generate-commit-message.js';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const LEGACY_REF = '8a4d2316e5ce52e2cafcdde19d03b1f0ff98df49';
@@ -211,6 +212,9 @@ const main = async () => {
 	const results = [];
 	try {
 		for (const model of models) {
+			const candidateMode = supportsTogetherAgenticGeneration(model)
+				? 'agentic'
+				: 'fallback';
 			const modelResults = [];
 			for (let index = 0; index < fixtures.length; index += 1) {
 				for (let attempt = 1; attempt <= REPEATS; attempt += 1) {
@@ -229,8 +233,8 @@ const main = async () => {
 							timeout: TIMEOUT,
 						})
 					);
-					const agentResult = await measure(() =>
-						generateAgentMessage({
+					const candidateResult = await measure(() =>
+						generateCandidateMessage({
 							model: provider.getLanguageModel(model),
 							cwd: staged.cwd,
 							files: staged.files,
@@ -246,6 +250,10 @@ const main = async () => {
 						fixture: `${fixture.repo}#${fixture.pr}`,
 						title: fixture.title,
 						attempt,
+						quality: {
+							verdict: null,
+							note: 'Compare both messages with the reference title.',
+						},
 						legacy:
 							legacyResult.status === 'ok'
 								? {
@@ -255,22 +263,23 @@ const main = async () => {
 										tokens: legacyResult.value.usage.total_tokens,
 								  }
 								: legacyResult,
-						agent:
-							agentResult.status === 'ok'
+						candidate:
+							candidateResult.status === 'ok'
 								? {
 										status: 'ok',
-										message: agentResult.value.message.subject,
-										latencyMs: agentResult.latencyMs,
-										tokens: agentResult.value.usage.totalTokens,
-										steps: agentResult.value.steps,
+										mode: candidateMode,
+										message: candidateResult.value.message.subject,
+										latencyMs: candidateResult.latencyMs,
+										tokens: candidateResult.value.usage.totalTokens,
+										steps: candidateResult.value.steps,
 								  }
-								: agentResult,
+								: { ...candidateResult, mode: candidateMode },
 					});
 
-					if (index === 0 && agentResult.status === 'error') break;
+					if (index === 0 && candidateResult.status === 'error') break;
 				}
 			}
-			results.push({ model, results: modelResults });
+			results.push({ model, candidateMode, results: modelResults });
 			console.error(`Completed ${model}`);
 		}
 	} finally {

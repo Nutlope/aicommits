@@ -44,6 +44,13 @@ const toolCallStream = (
 	}),
 });
 
+const textGeneration = (text: string) => ({
+	content: [{ type: 'text' as const, text }],
+	finishReason: { unified: 'stop' as const, raw: undefined },
+	usage,
+	warnings: [],
+});
+
 export default testSuite(({ describe }) => {
 	describe('generateCommitMessage', ({ test }) => {
 		test('keeps unknown Together models agentic by default', () => {
@@ -56,7 +63,7 @@ export default testSuite(({ describe }) => {
 
 		test('submits a small staged diff in one model call', async () => {
 			const { fixture } = await createFixture({
-				'src/greeting.ts': "export const greeting = 'hello';\n",
+				'src/greeting.ts': `export const greeting = 'hello';\n`,
 			});
 			const git = await createGit(fixture.path);
 			await git('add', ['.']);
@@ -64,12 +71,12 @@ export default testSuite(({ describe }) => {
 
 			await fixture.writeFile(
 				'src/greeting.ts',
-				"export const greeting = 'staged greeting';\n"
+				`export const greeting = 'staged greeting';\n`
 			);
 			await git('add', ['src/greeting.ts']);
 			await fixture.writeFile(
 				'src/greeting.ts',
-				"export const greeting = 'unstaged secret';\n"
+				`export const greeting = 'unstaged secret';\n`
 			);
 
 			const model = new MockLanguageModelV4({
@@ -178,14 +185,7 @@ export default testSuite(({ describe }) => {
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
 				modelId: 'openai/gpt-oss-20b',
-				doGenerate: {
-					content: [
-						{ type: 'text', text: 'fix: update fixture value' },
-					],
-					finishReason: { unified: 'stop', raw: undefined },
-					usage,
-					warnings: [],
-				},
+				doGenerate: textGeneration('fix: update fixture value'),
 			});
 
 			const result = await generateCommitMessage({
@@ -203,6 +203,90 @@ export default testSuite(({ describe }) => {
 			expect(model.doGenerateCalls.length).toBe(1);
 			expect(model.doStreamCalls.length).toBe(0);
 			expect(model.doGenerateCalls[0].tools).toBeUndefined();
+			await fixture.rm();
+		});
+
+		test('requires a description when one is requested', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				doGenerate: textGeneration('fix: update fixture value'),
+			});
+
+			let error: unknown;
+			try {
+				await generateCommitMessage({
+					model,
+					cwd: fixture.path,
+					files: ['file.txt'],
+					type: 'conventional',
+					locale: 'en',
+					maxLength: 72,
+					includeBody: true,
+					timeout: 5000,
+				});
+			} catch (caughtError) {
+				error = caughtError;
+			}
+
+			expect((error as Error).message).toMatch(
+				'did not generate a commit message description'
+			);
+			await fixture.rm();
+		});
+
+		test('covers every file in large one-shot fallback commits', async () => {
+			const fileCount = 51;
+			const initialFiles = Object.fromEntries(
+				Array.from({ length: fileCount }, (_, index) => [
+					`files/${index}.txt`,
+					`before-${index}\n`,
+				])
+			);
+			const { fixture } = await createFixture(initialFiles);
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			for (let index = 0; index < fileCount; index += 1) {
+				await fixture.writeFile(`files/${index}.txt`, `updated-${index}\n`);
+			}
+			await git('add', ['.']);
+			const chunkCount = Math.ceil(fileCount / 10);
+			const model = new MockLanguageModelV4({
+				doGenerate: [
+					...Array.from({ length: chunkCount }, (_, index) =>
+						textGeneration(`chore: summarize chunk ${index + 1}`)
+					),
+					textGeneration('chore: update all fixtures'),
+				],
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: Object.keys(initialFiles),
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('chore: update all fixtures');
+			expect(model.doGenerateCalls.length).toBe(chunkCount + 1);
+			const chunkPrompts = JSON.stringify(
+				model.doGenerateCalls.slice(0, chunkCount).map(({ prompt }) => prompt)
+			);
+			for (let index = 0; index < fileCount; index += 1) {
+				expect(chunkPrompts).toMatch(`updated-${index}`);
+			}
+			expect(
+				JSON.stringify(model.doGenerateCalls[chunkCount].prompt)
+			).toMatch('summarize chunk 6');
 			await fixture.rm();
 		});
 	});

@@ -102,7 +102,9 @@ export default testSuite(({ describe }) => {
 				expect(stdout).toBe(
 					'feat: add test data\n\nExplain the important implementation context.'
 				);
-				expect(agentServer.requests[0]).toMatch('add a concise body');
+				expect(agentServer.requests[0]).toMatch(
+					'Return a concise, non-empty body'
+				);
 			} finally {
 				await agentServer.close();
 				await fixture.rm();

@@ -9,21 +9,19 @@ import {
 } from 'ai';
 import { z } from 'zod';
 import { getProvider } from '../src/feature/providers/index.js';
+import { getTogetherReasoningOptions } from '../src/feature/providers/together.js';
 import { getConfig } from '../src/utils/config-runtime.js';
 
 const DEFAULT_TIMEOUT = 45_000;
 const MAX_OUTPUT_TOKENS = 128;
-const TOGETHER_REASONING_ONLY_MODELS = new Set([
-	'MiniMaxAI/MiniMax-M2.7',
-]);
 const TEST_DIFF = [
 	'diff --git a/src/greeting.ts b/src/greeting.ts',
 	'index 1a2b3c4..5d6e7f8 100644',
 	'--- a/src/greeting.ts',
 	'+++ b/src/greeting.ts',
 	'@@ -1 +1 @@',
-	"-export const greeting = 'hello';",
-	"+export const greeting = 'hello world';",
+	`-export const greeting = 'hello';`,
+	`+export const greeting = 'hello world';`,
 ].join('\n');
 
 type TogetherModel = {
@@ -130,8 +128,6 @@ const testModel = async (
 			body: z.string().nullable(),
 		}),
 	});
-	const disableReasoning = !TOGETHER_REASONING_ONLY_MODELS.has(modelId);
-
 	try {
 		const agent = new ToolLoopAgent({
 			model,
@@ -145,10 +141,7 @@ const testModel = async (
 			stopWhen: [hasToolCall('submitCommitMessage'), stepCountIs(2)],
 			maxOutputTokens: MAX_OUTPUT_TOKENS,
 			maxRetries: 0,
-			reasoning: disableReasoning ? 'none' : undefined,
-			providerOptions: disableReasoning
-				? { togetherai: { reasoning: { enabled: false } } }
-				: undefined,
+			...getTogetherReasoningOptions(modelId),
 			prepareStep: ({ stepNumber }) => ({
 				toolChoice: {
 					type: 'tool',
@@ -264,7 +257,7 @@ const main = async () => {
 		process.env.AICOMMITS_COMPAT_TIMEOUT || DEFAULT_TIMEOUT
 	);
 	const transport =
-		process.env.AICOMMITS_COMPAT_STREAM === 'true' ? 'stream' : 'generate';
+		process.env.AICOMMITS_COMPAT_STREAM === 'false' ? 'generate' : 'stream';
 	const delay = Number(process.env.AICOMMITS_COMPAT_DELAY || 0);
 	const results: CompatibilityResult[] = [];
 	console.log(`Testing ${models.length} Together serverless chat models...`);

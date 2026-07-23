@@ -12,8 +12,22 @@ export const TOGETHER_NON_AGENTIC_MODELS = new Set([
 	'pearl-ai/gemma-4-31b-it',
 ]);
 
+const TOGETHER_REASONING_ONLY_MODELS = new Set([
+	'MiniMaxAI/MiniMax-M2.7',
+]);
+
 export const supportsTogetherAgenticGeneration = (model: string) =>
 	!TOGETHER_NON_AGENTIC_MODELS.has(model);
+
+export const getTogetherReasoningOptions = (model: string) =>
+	TOGETHER_REASONING_ONLY_MODELS.has(model)
+		? {}
+		: {
+				reasoning: 'none' as const,
+				providerOptions: {
+					togetherai: { reasoning: { enabled: false } },
+				},
+			};
 
 export const TogetherProvider: ProviderDef = {
 	name: 'togetherai',

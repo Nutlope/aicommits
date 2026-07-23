@@ -14,10 +14,14 @@ import {
 	getStagedFiles,
 	getDetectedMessage,
 } from '../utils/git.js';
-import { getConfig } from '../utils/config-runtime.js';
+import { getConfig, setConfigs } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
 import { generateCommitMessage } from '../utils/generate-commit-message.js';
-import { KnownError, handleCommandError } from '../utils/error.js';
+import {
+	KnownError,
+	handleCommandError,
+	isModelUnavailableError,
+} from '../utils/error.js';
 
 import { getCommitMessage } from '../utils/commit-helpers.js';
 import { isHeadless } from '../utils/headless.js';
@@ -78,7 +82,7 @@ export default async (
 		const providerInstance = getProvider(config);
 		if (!providerInstance) {
 			if (!headless) {
-				console.log("Welcome to aicommits! Let's set up your AI provider.");
+				console.log(`Welcome to aicommits! Let's set up your AI provider.`);
 				console.log('Run `aicommits setup` to configure your provider.');
 				outro('Setup required. Please run: aicommits setup');
 				return;
@@ -106,9 +110,8 @@ export default async (
 		// Use the unified model setting or provider default
 		config.model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
 
-		const model = providerInstance.getLanguageModel(config.model!);
-
 		const attemptGeneration = async () => {
+			const model = providerInstance.getLanguageModel(config.model!);
 			const s = headless ? null : spinner();
 			if (s) {
 				s.start(
@@ -153,7 +156,29 @@ export default async (
 			}
 		};
 
-		const messages = await attemptGeneration();
+		let messages: string[];
+		try {
+			messages = await attemptGeneration();
+		} catch (error) {
+			if (!isModelUnavailableError(error)) throw error;
+			const fallbackModel = providerInstance.getDefaultModel();
+			if (!fallbackModel || fallbackModel === config.model) {
+				throw new KnownError(
+					`Model "${config.model}" is not available or has been deprecated.`
+				);
+			}
+
+			if (!headless) {
+				console.log(
+					yellow(
+						`⚠ Model "${config.model}" is unavailable. Switching to "${fallbackModel}".`
+					)
+				);
+			}
+			config.model = fallbackModel;
+			await setConfigs([['OPENAI_MODEL', fallbackModel]]);
+			messages = await attemptGeneration();
+		}
 
 		if (messages.length === 0) {
 			throw new KnownError('No commit messages were generated. Try again.');
