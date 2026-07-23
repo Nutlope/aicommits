@@ -29,9 +29,6 @@ importers:
       ai:
         specifier: ^7.0.32
         version: 7.0.32(zod@4.4.3)
-      clean-pkg-json:
-        specifier: ^1.3.0
-        version: 1.3.0
       cleye:
         specifier: ^2.0.0
         version: 2.0.0
@@ -711,10 +708,6 @@ packages:
 
   cjs-module-lexer@2.1.1:
     resolution: {integrity: sha512-+CmxIZ/L2vNcEfvNtLdU0ZQ6mbq3FZnwAP2PPTiKP+1QOoKwlKlPgb8UKV0Dds7QVaMnHm+FwSft2VB0s/SLjQ==}
-
-  clean-pkg-json@1.3.0:
-    resolution: {integrity: sha512-EsOnQbKkrmCTIHCYODpIZ4FS1kP8UqX9fEji5SAA2OhG4K+Z/xuXON53hJdSBroVIpxddrUtR/dbh+QF5Aq7Vw==}
-    hasBin: true
 
   cleye@2.0.0:
     resolution: {integrity: sha512-O4pienLd7x3kzjdhzz0nIEmPuX84I1C1UjLPdMe+0TebP2aTuPoXx15zvLMgSUIn+ZAJJzH9cH4aEVA1bDdmsA==}
@@ -1490,8 +1483,6 @@ snapshots:
   ci-info@3.9.0: {}
 
   cjs-module-lexer@2.1.1: {}
-
-  clean-pkg-json@1.3.0: {}
 
   cleye@2.0.0:
     dependencies:

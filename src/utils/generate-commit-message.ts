@@ -19,6 +19,8 @@ const MAX_DIFF_LENGTH = 30_000;
 const MAX_AGENT_STEPS = 4;
 const MAX_NON_AGENTIC_FILES = 50;
 const NON_AGENTIC_CHUNK_SIZE = 10;
+const AGENT_ATTEMPTS = 2;
+const ONE_SHOT_ATTEMPTS = 2;
 
 export type CommitMessage = {
 	subject: string;
@@ -64,9 +66,13 @@ const buildCommitInstructions = (
 		'Mention the important behavior change, not file names.',
 		`Write in ${locale}. Format: ${formats[type]}.`,
 		type === 'conventional'
-			? 'Use fix for corrected behavior; use feat only for a new capability.'
+			? [
+					'Use fix for corrected behavior and feat only for a new user-facing capability.',
+					'Use refactor for internal restructuring and chore for maintenance, tests, or specifications.',
+					'Never mark a commit as breaking unless the staged changes clearly break a public API.',
+				].join('\n')
 			: undefined,
-		`The subject must be at most ${maxLength} characters.`,
+		`Prefer a concise subject around ${maxLength} characters, but always finish the thought even if it needs to be longer.`,
 		includeBody
 			? 'Return a concise, non-empty body after a blank line.'
 			: 'Return no body.',
@@ -118,14 +124,13 @@ const getModelDetails = (model: LanguageModel) =>
 
 const parseOneShotMessage = (
 	text: string,
-	maxLength: number,
 	includeBody: boolean
 ): CommitMessage => {
 	const lines = text
 		.replace(/```(?:\w+)?/g, '')
 		.trim()
 		.split('\n');
-	const subject = (lines.shift() || '').trim().slice(0, maxLength);
+	const subject = (lines.shift() || '').trim();
 	if (!subject) {
 		throw new Error('The model did not generate a commit message.');
 	}
@@ -171,7 +176,7 @@ export const generateCommitMessage = async ({
 	const isTogetherModel = provider.startsWith('togetherai.');
 	const useAgent =
 		isTogetherModel && supportsTogetherAgenticGeneration(modelId);
-	const reasoningOptions = isTogetherModel
+	const reasoningOptions = isTogetherModel && useAgent
 		? getTogetherReasoningOptions(modelId)
 		: {};
 	const runOneShot = async (
@@ -179,35 +184,46 @@ export const generateCommitMessage = async ({
 		oneShotIncludeBody = includeBody,
 		taskInstruction?: string
 	) => {
-		const result = await generateText({
-			model,
-			system: buildCommitInstructions(
-				{
-					type,
-					locale,
-					maxLength,
-					includeBody: oneShotIncludeBody,
-					customPrompt,
-				},
-				[
-					'Return only the commit message. Put the subject on the first line.',
-					taskInstruction,
-				]
-			),
-			prompt,
-			maxOutputTokens: 512,
-			timeout,
-			...reasoningOptions,
-		});
-		return {
-			message: parseOneShotMessage(
-				result.text,
-				maxLength,
-				oneShotIncludeBody
-			),
-			usage: result.usage,
-			steps: result.steps.length,
-		};
+		const results = [];
+		for (let attempt = 1; attempt <= ONE_SHOT_ATTEMPTS; attempt += 1) {
+			const result = await generateText({
+				model,
+				system: buildCommitInstructions(
+					{
+						type,
+						locale,
+						maxLength,
+						includeBody: oneShotIncludeBody,
+						customPrompt,
+					},
+					[
+						'Return only the commit message. Put the subject on the first line.',
+						taskInstruction,
+					]
+				),
+				prompt,
+				maxOutputTokens: 512,
+				timeout,
+				...reasoningOptions,
+			});
+			results.push(result);
+			try {
+				return {
+					message: parseOneShotMessage(
+						result.text,
+						oneShotIncludeBody
+					),
+					usage: combineUsage(results.map(({ usage }) => usage)),
+					steps: results.reduce(
+						(total, current) => total + current.steps.length,
+						0
+					),
+				};
+			} catch (error) {
+				if (attempt === ONE_SHOT_ATTEMPTS) throw error;
+			}
+		}
+		throw new Error('The model did not generate a commit message.');
 	};
 
 	if (!useAgent) {
@@ -262,8 +278,10 @@ export const generateCommitMessage = async ({
 	const submitCommitMessage = tool({
 		description: 'Submit the final commit message.',
 		inputSchema: z.object({
-			subject: z.string().min(1).max(maxLength),
-			body: includeBody ? z.string().trim().min(1) : z.null(),
+			subject: z.string().min(1),
+			body: includeBody
+				? z.string().trim().min(1)
+				: z.string().nullable().optional(),
 		}),
 	});
 	const agent = new ToolLoopAgent({
@@ -301,24 +319,45 @@ export const generateCommitMessage = async ({
 		timeout,
 		onError: () => {},
 	};
-	const result = await agent.stream(streamOptions);
-	const staticToolCalls = await result.staticToolCalls;
-	const submission = staticToolCalls.find(
-		(call) => call.toolName === 'submitCommitMessage'
-	);
+	const runAgent = async () => {
+		const result = await agent.stream(streamOptions);
+		const staticToolCalls = await result.staticToolCalls;
+		return {
+			result,
+			submission: staticToolCalls.find(
+				(call) => call.toolName === 'submitCommitMessage'
+			),
+		};
+	};
+	const agentAttempts: Awaited<ReturnType<typeof runAgent>>[] = [];
+	for (let attempt = 1; attempt <= AGENT_ATTEMPTS; attempt += 1) {
+		const result = await runAgent();
+		agentAttempts.push(result);
+		if (result.submission) break;
+	}
+	const submission = agentAttempts.find(
+		(attempt) => attempt.submission
+	)?.submission;
 	if (!submission) {
 		throw new Error('The model did not submit a commit message.');
 	}
 
 	const subject = submission.input.subject
 		.trim()
-		.split('\n')[0]
-		.slice(0, maxLength);
+		.split('\n')[0];
 	const body = includeBody ? submission.input.body?.trim() : undefined;
 
 	return {
 		message: { subject, ...(body ? { body } : {}) },
-		usage: await result.usage,
-		steps: (await result.steps).length,
+		usage: combineUsage(
+			await Promise.all(
+				agentAttempts.map(({ result }) => result.usage)
+			)
+		),
+		steps: (
+			await Promise.all(
+				agentAttempts.map(({ result }) => result.steps)
+			)
+		).reduce((total, steps) => total + steps.length, 0),
 	};
 };

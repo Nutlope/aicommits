@@ -2,6 +2,7 @@ import { expect, testSuite } from 'manten';
 import { MockLanguageModelV4, simulateReadableStream } from 'ai/test';
 import {
 	supportsTogetherAgenticGeneration,
+	TogetherProvider,
 	TOGETHER_NON_AGENTIC_MODELS,
 } from '../../src/feature/providers/together.js';
 import { generateCommitMessage } from '../../src/utils/generate-commit-message.js';
@@ -59,6 +60,12 @@ export default testSuite(({ describe }) => {
 				supportsTogetherAgenticGeneration('openai/gpt-oss-20b')
 			).toBe(false);
 			expect(TOGETHER_NON_AGENTIC_MODELS.size).toBe(7);
+			expect(TogetherProvider.defaultModels).toEqual([
+				'moonshotai/Kimi-K2.7-Code',
+				'zai-org/GLM-5.2',
+				'moonshotai/Kimi-K2.6',
+				'MiniMaxAI/MiniMax-M2.7',
+			]);
 		});
 
 		test('submits a small staged diff in one model call', async () => {
@@ -119,7 +126,128 @@ export default testSuite(({ describe }) => {
 				togetherai: { reasoning: { enabled: false } },
 			});
 			expect(model.doStreamCalls[0].responseFormat).toBeUndefined();
+			expect(finalPrompt).toMatch(
+				'Use refactor for internal restructuring and chore for maintenance'
+			);
+			expect(finalPrompt).toMatch(
+				'Never mark a commit as breaking unless the staged changes clearly break'
+			);
 
+			await fixture.rm();
+		});
+
+		test('accepts a complete agent subject beyond the preferred length', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const subject =
+				'refactor(provider): replace URL support checks with structured metadata';
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'moonshotai/Kimi-K2.7-Code',
+				doStream: toolCallStream(
+					'submit-message-1',
+					'submitCommitMessage',
+					{ subject, body: null }
+				),
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 50,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe(subject);
+			await fixture.rm();
+		});
+
+		test('accepts an empty body when no description is requested', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'MiniMaxAI/MiniMax-M3',
+				doStream: toolCallStream(
+					'submit-message-1',
+					'submitCommitMessage',
+					{
+						subject: 'fix: update fixture',
+						body: '',
+					}
+				),
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('fix: update fixture');
+			await fixture.rm();
+		});
+
+		test('retries once when an agent does not submit a valid message', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'Qwen/Qwen3.5-9B',
+				doStream: [
+					toolCallStream(
+						'invalid-submit-message-1',
+						'submitCommitMessage',
+						{
+							subject: 'fix: update fixture',
+							body: 42,
+						}
+					),
+					toolCallStream(
+						'submit-message-2',
+						'submitCommitMessage',
+						{
+							subject: 'fix: update fixture',
+							body: null,
+						}
+					),
+				],
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('fix: update fixture');
+			expect(model.doStreamCalls.length).toBe(2);
 			await fixture.rm();
 		});
 
@@ -203,6 +331,68 @@ export default testSuite(({ describe }) => {
 			expect(model.doGenerateCalls.length).toBe(1);
 			expect(model.doStreamCalls.length).toBe(0);
 			expect(model.doGenerateCalls[0].tools).toBeUndefined();
+			expect(model.doGenerateCalls[0].reasoning).toBeUndefined();
+			expect(model.doGenerateCalls[0].providerOptions).toBeUndefined();
+			await fixture.rm();
+		});
+
+		test('retries an empty one-shot response once', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'openai/gpt-oss-20b',
+				doGenerate: [
+					textGeneration(''),
+					textGeneration('fix: update fixture value'),
+				],
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('fix: update fixture value');
+			expect(model.doGenerateCalls.length).toBe(2);
+			await fixture.rm();
+		});
+
+		test('keeps a complete one-shot subject beyond the preferred length', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const subject =
+				'refactor(provider): replace URL support checks with structured metadata';
+			const model = new MockLanguageModelV4({
+				doGenerate: textGeneration(subject),
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 50,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe(subject);
 			await fixture.rm();
 		});
 

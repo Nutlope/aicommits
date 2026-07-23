@@ -10,6 +10,9 @@ import { generateCommitMessage as generateCandidateMessage } from '../src/utils/
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const LEGACY_REF = '8a4d2316e5ce52e2cafcdde19d03b1f0ff98df49';
+const LEGACY_MAX_FILES = 50;
+const LEGACY_CHUNK_SIZE = 10;
+const LEGACY_MAX_DIFF_LENGTH = 30_000;
 const MAX_LENGTH = 72;
 const TIMEOUT = Number(process.env.AICOMMITS_BENCHMARK_TIMEOUT || 60_000);
 const REPEATS = Number(process.env.AICOMMITS_BENCHMARK_REPEATS || 1);
@@ -82,20 +85,36 @@ const models = process.env.AICOMMITS_BENCHMARK_MODELS
 	? process.env.AICOMMITS_BENCHMARK_MODELS.split(',').filter(Boolean)
 	: defaultModels;
 
-type LegacyGenerator = (options: {
+type LegacyUsage = {
+	total_tokens?: number;
+	totalTokens?: number;
+};
+
+type LegacyResult = {
+	messages: string[];
+	usage: LegacyUsage;
+};
+
+type LegacyGeneratorOptions = {
 	baseUrl: string;
 	apiKey: string;
 	model: string;
 	locale: string;
-	diff: string;
-	completions: number;
 	maxLength: number;
 	type: 'conventional';
 	timeout: number;
-}) => Promise<{
-	messages: string[];
-	usage: { total_tokens: number };
-}>;
+};
+
+type LegacyGenerator = (
+	options: LegacyGeneratorOptions & {
+		diff: string;
+		completions: number;
+	}
+) => Promise<LegacyResult>;
+
+type LegacyCombiner = (
+	options: LegacyGeneratorOptions & { messages: string[] }
+) => Promise<LegacyResult>;
 
 const measure = async <Value>(run: () => Promise<Value>) => {
 	const start = performance.now();
@@ -117,7 +136,7 @@ const measure = async <Value>(run: () => Promise<Value>) => {
 	}
 };
 
-const loadLegacyGenerator = async () => {
+const loadLegacyRuntime = async () => {
 	const worktree = await mkdtemp(join(tmpdir(), 'aicommits-legacy-'));
 	await rm(worktree, { recursive: true, force: true });
 	await execa(
@@ -131,9 +150,92 @@ const loadLegacyGenerator = async () => {
 	);
 	return {
 		generate: legacyModule.generateCommitMessage as LegacyGenerator,
+		combine: legacyModule.combineCommitMessages as LegacyCombiner,
 		cleanup: async () => {
 			await rm(join(worktree, 'node_modules'));
 			await execa('git', ['worktree', 'remove', worktree], { cwd: repoRoot });
+		},
+	};
+};
+
+type LegacyRuntime = Awaited<ReturnType<typeof loadLegacyRuntime>>;
+type PreparedFixture = Awaited<ReturnType<typeof prepareFixture>>;
+
+const getLegacyTokenCount = (usage: LegacyUsage) =>
+	usage.total_tokens ?? usage.totalTokens ?? 0;
+
+const truncateLegacyDiff = (diff: string) =>
+	diff.length > LEGACY_MAX_DIFF_LENGTH
+		? `${diff.slice(0, LEGACY_MAX_DIFF_LENGTH)}\n\n[Diff truncated due to size]`
+		: diff;
+
+const generateLegacyCliMessage = async ({
+	legacy,
+	staged,
+	baseUrl,
+	apiKey,
+	model,
+}: {
+	legacy: LegacyRuntime;
+	staged: PreparedFixture;
+	baseUrl: string;
+	apiKey: string;
+	model: string;
+}): Promise<{ messages: string[]; usage: { total_tokens: number } }> => {
+	const options: LegacyGeneratorOptions = {
+		baseUrl,
+		apiKey,
+		model,
+		locale: 'en',
+		maxLength: MAX_LENGTH,
+		type: 'conventional',
+		timeout: TIMEOUT,
+	};
+	const generate = (diff: string) =>
+		legacy.generate({
+			...options,
+			diff: truncateLegacyDiff(diff),
+			completions: 1,
+		});
+
+	if (staged.files.length <= LEGACY_MAX_FILES) {
+		const result = await generate(staged.diff);
+		return {
+			messages: result.messages,
+			usage: { total_tokens: getLegacyTokenCount(result.usage) },
+		};
+	}
+
+	const messages: string[] = [];
+	let totalTokens = 0;
+	for (
+		let index = 0;
+		index < staged.files.length;
+		index += LEGACY_CHUNK_SIZE
+	) {
+		const paths = staged.files.slice(index, index + LEGACY_CHUNK_SIZE);
+		const { stdout } = await execa(
+			'git',
+			[
+				'--literal-pathspecs',
+				'diff',
+				'--cached',
+				'--diff-algorithm=minimal',
+				'--',
+				...paths,
+			],
+			{ cwd: staged.cwd }
+		);
+		const result = await generate(stdout);
+		messages.push(...result.messages);
+		totalTokens += getLegacyTokenCount(result.usage);
+	}
+
+	const combined = await legacy.combine({ ...options, messages });
+	return {
+		messages: combined.messages,
+		usage: {
+			total_tokens: totalTokens + getLegacyTokenCount(combined.usage),
 		},
 	};
 };
@@ -208,7 +310,7 @@ const main = async () => {
 		throw new Error('Benchmark requires a configured Together AI provider.');
 	}
 
-	const legacy = await loadLegacyGenerator();
+	const legacy = await loadLegacyRuntime();
 	const results = [];
 	try {
 		for (const model of models) {
@@ -221,16 +323,12 @@ const main = async () => {
 					const fixture = fixtures[index];
 					const staged = preparedFixtures[index];
 					const legacyResult = await measure(() =>
-						legacy.generate({
+						generateLegacyCliMessage({
+							legacy,
+							staged,
 							baseUrl: provider.getBaseUrl(),
 							apiKey: provider.getApiKey() || '',
 							model,
-							locale: 'en',
-							diff: staged.diff,
-							completions: 1,
-							maxLength: MAX_LENGTH,
-							type: 'conventional',
-							timeout: TIMEOUT,
 						})
 					);
 					const candidateResult = await measure(() =>
@@ -275,6 +373,9 @@ const main = async () => {
 								  }
 								: { ...candidateResult, mode: candidateMode },
 					});
+					console.error(
+						`Completed ${model} ${fixture.repo}#${fixture.pr} attempt ${attempt}`
+					);
 
 					if (index === 0 && candidateResult.status === 'error') break;
 				}
@@ -296,6 +397,10 @@ const main = async () => {
 			suite,
 			repeats: REPEATS,
 			models,
+			legacy: {
+				ref: LEGACY_REF,
+				orchestration: 'CLI truncation and chunking',
+			},
 			fixtures: preparedFixtureData,
 			results,
 		},

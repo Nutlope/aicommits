@@ -350,7 +350,8 @@ aicommits config set timeout=20000 # 20s
 
 #### max-length
 
-The maximum character length of the generated commit message.
+The preferred character length of the generated commit subject. This guides the
+model toward concise messages, but complete subjects may be longer.
 
 Default: `72`
 

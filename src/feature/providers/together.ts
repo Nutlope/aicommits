@@ -1,6 +1,6 @@
 import { ProviderDef } from './base.js';
 
-// Failed the aicommits two-step tool protocol twice on 2026-07-22.
+// Failed the aicommits two-step tool protocol twice on 2026-07-22 and 2026-07-23.
 // Unknown and future Together models remain agentic by default.
 export const TOGETHER_NON_AGENTIC_MODELS = new Set([
 	'arize-ai/qwen-2-1.5b-instruct',
@@ -44,7 +44,9 @@ export const TogetherProvider: ProviderDef = {
 			.map((m: any) => m.id),
 	defaultModels: [
 		'moonshotai/Kimi-K2.7-Code',
-		'MiniMaxAI/MiniMax-M3',
+		'zai-org/GLM-5.2',
+		'moonshotai/Kimi-K2.6',
+		'MiniMaxAI/MiniMax-M2.7',
 	],
 	requiresApiKey: true,
 };
