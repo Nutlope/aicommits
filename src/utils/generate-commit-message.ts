@@ -16,9 +16,13 @@ import {
 	supportsTogetherAgenticGeneration,
 } from '../feature/providers/together.js';
 import type { CommitType } from './config-types.js';
-import { isToolUnsupportedError } from './error.js';
+import {
+	isInvalidJsonResponseError,
+	isToolUnsupportedError,
+} from './error.js';
 
 const MAX_DIFF_LENGTH = 30_000;
+const MAX_LOCAL_DIFF_LENGTH = 3_000;
 const MAX_AGENT_STEPS = 4;
 const MAX_NON_AGENTIC_FILES = 50;
 const NON_AGENTIC_CHUNK_SIZE = 10;
@@ -40,6 +44,7 @@ export type GenerateCommitMessageOptions = {
 	includeBody: boolean;
 	timeout: number;
 	customPrompt?: string;
+	isLocalProvider?: boolean;
 };
 
 const formats: Record<CommitType, string> = {
@@ -85,9 +90,9 @@ const buildCommitInstructions = (
 		.filter(Boolean)
 		.join('\n');
 
-const truncateDiff = (diff: string) =>
-	diff.length > MAX_DIFF_LENGTH
-		? `${diff.slice(0, MAX_DIFF_LENGTH)}\n\n[Diff truncated]`
+const truncateDiff = (diff: string, maxLength = MAX_DIFF_LENGTH) =>
+	diff.length > maxLength
+		? `${diff.slice(0, maxLength)}\n\n[Diff truncated]`
 		: diff;
 
 const sumTokenCounts = (counts: Array<number | undefined>) =>
@@ -175,6 +180,7 @@ export const generateCommitMessage = async ({
 	includeBody,
 	timeout,
 	customPrompt,
+	isLocalProvider,
 }: GenerateCommitMessageOptions) => {
 	const getStagedDiff = async (paths: string[]) => {
 		if (paths.some((path) => !files.includes(path))) {
@@ -201,6 +207,13 @@ export const generateCommitMessage = async ({
 	const isOpenAiModel = provider.startsWith('openai.');
 	const isXAiModel = provider.startsWith('xai.');
 	const isLmStudioModel = provider.startsWith('lmstudio.');
+	const isLocalModel =
+		isLocalProvider ||
+		isLmStudioModel ||
+		provider.startsWith('ollama.');
+	const maxDiffLength = isLocalModel
+		? MAX_LOCAL_DIFF_LENGTH
+		: MAX_DIFF_LENGTH;
 	const useAgent =
 		(isTogetherModel &&
 			supportsTogetherAgenticGeneration(modelId)) ||
@@ -227,26 +240,38 @@ export const generateCommitMessage = async ({
 	) => {
 		const results = [];
 		for (let attempt = 1; attempt <= ONE_SHOT_ATTEMPTS; attempt += 1) {
-			const result = await generateText({
-				model,
-				system: buildCommitInstructions(
-					{
-						type,
-						locale,
-						maxLength,
-						includeBody: oneShotIncludeBody,
-						customPrompt,
-					},
-					[
-						'Return only the commit message. Put the subject on the first line.',
-						taskInstruction,
-					]
-				),
-				prompt,
-				maxOutputTokens: 512,
-				timeout,
-				...reasoningOptions,
-			});
+			let result;
+			try {
+				result = await generateText({
+					model,
+					system: buildCommitInstructions(
+						{
+							type,
+							locale,
+							maxLength,
+							includeBody: oneShotIncludeBody,
+							customPrompt,
+						},
+						[
+							'Return only the commit message. Put the subject on the first line.',
+							taskInstruction,
+						]
+					),
+					prompt,
+					maxOutputTokens: 512,
+					timeout,
+					...reasoningOptions,
+				});
+			} catch (error) {
+				if (
+					isLocalModel &&
+					attempt < ONE_SHOT_ATTEMPTS &&
+					isInvalidJsonResponseError(error)
+				) {
+					continue;
+				}
+				throw error;
+			}
 			results.push(result);
 			try {
 				return {
@@ -269,7 +294,7 @@ export const generateCommitMessage = async ({
 
 	if (!useAgent) {
 		if (files.length <= MAX_NON_AGENTIC_FILES) {
-			return runOneShot(truncateDiff(stagedDiff));
+			return runOneShot(truncateDiff(stagedDiff, maxDiffLength));
 		}
 
 		const chunkResults = [];
@@ -278,7 +303,7 @@ export const generateCommitMessage = async ({
 			const chunkDiff = await getStagedDiff(chunkFiles);
 			chunkResults.push(
 				await runOneShot(
-					truncateDiff(chunkDiff),
+					truncateDiff(chunkDiff, maxDiffLength),
 					false,
 					'Summarize only this subset of the staged changes.'
 				)
@@ -305,15 +330,25 @@ export const generateCommitMessage = async ({
 		};
 	}
 
-	const hasCompleteDiff = stagedDiff.length <= MAX_DIFF_LENGTH;
+	const hasCompleteDiff = stagedDiff.length <= maxDiffLength;
+	let remainingLocalDiffLength = maxDiffLength;
 	const readStagedDiff = tool({
 		description: 'Read the staged Git diff for one or more staged files.',
 		inputSchema: z.object({ paths: z.array(z.string()).min(1) }),
 		execute: async ({ paths }) => {
+			if (isLocalModel && remainingLocalDiffLength <= 0) {
+				return '[Diff read budget exhausted]';
+			}
 			const stdout = await getStagedDiff(paths);
-			return stdout.length > MAX_DIFF_LENGTH
-				? `${stdout.slice(0, MAX_DIFF_LENGTH)}\n\n[Diff truncated]`
-				: stdout;
+			if (!isLocalModel) {
+				return truncateDiff(stdout, maxDiffLength);
+			}
+			const result = truncateDiff(stdout, remainingLocalDiffLength);
+			remainingLocalDiffLength -= Math.min(
+				stdout.length,
+				remainingLocalDiffLength
+			);
+			return result;
 		},
 	});
 	const submitCommitMessage = tool({
@@ -365,6 +400,7 @@ export const generateCommitMessage = async ({
 	};
 	const runAgent = async () => {
 		agentStreamError = undefined;
+		remainingLocalDiffLength = maxDiffLength;
 		const result = await agent.stream(streamOptions);
 		let staticToolCalls: Awaited<typeof result.staticToolCalls>;
 		try {
@@ -382,20 +418,32 @@ export const generateCommitMessage = async ({
 	const agentAttempts: Awaited<ReturnType<typeof runAgent>>[] = [];
 	try {
 		for (let attempt = 1; attempt <= AGENT_ATTEMPTS; attempt += 1) {
-			const result = await runAgent();
+			let result: Awaited<ReturnType<typeof runAgent>>;
+			try {
+				result = await runAgent();
+			} catch (error) {
+				if (
+					isLocalModel &&
+					attempt < AGENT_ATTEMPTS &&
+					isInvalidJsonResponseError(error)
+				) {
+					continue;
+				}
+				throw error;
+			}
 			agentAttempts.push(result);
 			if (result.submission) break;
 		}
 	} catch (error) {
 		if (!isToolUnsupportedError(error)) throw error;
-		return runOneShot(truncateDiff(stagedDiff));
+		return runOneShot(truncateDiff(stagedDiff, maxDiffLength));
 	}
 	const submission = agentAttempts.find(
 		(attempt) => attempt.submission
 	)?.submission;
 	if (!submission) {
 		if (isLmStudioModel) {
-			return runOneShot(truncateDiff(stagedDiff));
+			return runOneShot(truncateDiff(stagedDiff, maxDiffLength));
 		}
 		throw new Error('The model did not submit a commit message.');
 	}

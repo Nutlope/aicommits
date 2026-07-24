@@ -309,6 +309,56 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		test('bounds LM Studio diff context across repeated tool reads', async () => {
+			const original = `${'a'.repeat(31_000)}\n`;
+			const staged = `${'b'.repeat(31_000)}\n`;
+			const { fixture } = await createFixture({ 'large.txt': original });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('large.txt', staged);
+			await git('add', ['large.txt']);
+
+			const model = new MockLanguageModelV4({
+				provider: 'lmstudio.chat',
+				modelId: 'local-tool-model',
+				doStream: [
+					toolCallStream('read-diff-1', 'readStagedDiff', {
+						paths: ['large.txt'],
+					}),
+					toolCallStream('read-diff-2', 'readStagedDiff', {
+						paths: ['large.txt'],
+					}),
+					toolCallStream('submit-message-1', 'submitCommitMessage', {
+						subject: 'fix: summarize a large local change',
+						body: null,
+					}),
+				],
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['large.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 60_000,
+			});
+
+			expect(result.message.subject).toBe(
+				'fix: summarize a large local change'
+			);
+			const secondPrompt = JSON.stringify(model.doStreamCalls[1].prompt);
+			const thirdPrompt = JSON.stringify(model.doStreamCalls[2].prompt);
+			expect(secondPrompt).not.toMatch('b'.repeat(3_001));
+			expect(secondPrompt).toMatch('[Diff truncated]');
+			expect(thirdPrompt).toMatch('[Diff read budget exhausted]');
+			expect(thirdPrompt).not.toMatch('b'.repeat(6_000));
+			await fixture.rm();
+		});
+
 		test('falls back to one-shot when a provider rejects tool calling', async () => {
 			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
 			const git = await createGit(fixture.path);
@@ -370,6 +420,48 @@ export default testSuite(({ describe }) => {
 			expect(result.message.subject).toBe('fix: update fixture');
 			expect(model.doStreamCalls.length).toBe(2);
 			expect(model.doGenerateCalls.length).toBe(1);
+			await fixture.rm();
+		});
+
+		test('retries a transient invalid JSON response from LM Studio', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			let attempts = 0;
+			const model = new MockLanguageModelV4({
+				provider: 'lmstudio.chat',
+				modelId: 'local-tool-model',
+				doStream: async () => {
+					attempts += 1;
+					if (attempts === 1) {
+						throw new Error('Invalid JSON response');
+					}
+					return toolCallStream(
+						'submit-message-1',
+						'submitCommitMessage',
+						{ subject: 'fix: retry malformed local response', body: null }
+					);
+				},
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 60_000,
+			});
+
+			expect(result.message.subject).toBe(
+				'fix: retry malformed local response'
+			);
+			expect(model.doStreamCalls.length).toBe(2);
 			await fixture.rm();
 		});
 

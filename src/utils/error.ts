@@ -64,6 +64,21 @@ export const isToolUnsupportedError = (error: unknown) => {
 	return rejectsToolCalling || rejectsToolParameter;
 };
 
+export const isInvalidJsonResponseError = (error: unknown) => {
+	let current: unknown = error;
+	for (let depth = 0; depth < 5 && current; depth += 1) {
+		if (
+			current instanceof Error &&
+			current.message.toLowerCase().includes('invalid json response')
+		) {
+			return true;
+		}
+		if (typeof current !== 'object') break;
+		current = (current as Record<string, unknown>).cause;
+	}
+	return false;
+};
+
 const indent = '    ';
 
 export const handleCliError = (error: unknown) => {

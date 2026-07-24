@@ -132,6 +132,7 @@ export default async (
 							includeBody: includeDescription,
 							timeout,
 							customPrompt,
+							isLocalProvider: providerInstance.isLocal(),
 						})
 					)
 				);

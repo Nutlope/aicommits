@@ -1,5 +1,6 @@
 import { expect, testSuite } from 'manten';
 import {
+	isInvalidJsonResponseError,
 	isModelUnavailableError,
 	isToolUnsupportedError,
 } from '../../src/utils/error.js';
@@ -41,6 +42,21 @@ export default testSuite(({ describe }) => {
 				isToolUnsupportedError(
 					new Error("Model called tool 'search' which is not available")
 				)
+			).toBe(false);
+		});
+	});
+
+	describe('invalid JSON response errors', ({ test }) => {
+		test('recognizes malformed provider responses through their cause chain', () => {
+			const error = Object.assign(new Error('Generation failed'), {
+				cause: new Error('Invalid JSON response'),
+			});
+			expect(isInvalidJsonResponseError(error)).toBe(true);
+		});
+
+		test('does not classify unrelated JSON failures as provider responses', () => {
+			expect(
+				isInvalidJsonResponseError(new Error('Invalid JSON in config file'))
 			).toBe(false);
 		});
 	});

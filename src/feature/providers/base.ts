@@ -134,6 +134,10 @@ export class Provider {
 		);
 	}
 
+	isLocal(): boolean {
+		return isLoopbackUrl(this.getBaseUrl());
+	}
+
 	getHeaders(): Record<string, string> | undefined {
 		return this.def.headers;
 	}

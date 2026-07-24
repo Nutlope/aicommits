@@ -6,6 +6,7 @@ describe('aicommits', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/generate-commit-message.js'));
 	runTestSuite(import('./specs/providers.js'));
 	runTestSuite(import('./specs/error.js'));
+	runTestSuite(import('./specs/commit-helpers.js'));
 	runTestSuite(import('./specs/config.js'));
 	runTestSuite(import('./specs/git-hook.js'));
 });

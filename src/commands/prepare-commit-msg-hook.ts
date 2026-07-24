@@ -75,6 +75,7 @@ export default () =>
 						maxLength: config['max-length'],
 						includeBody: false,
 						timeout,
+						isLocalProvider: providerInstance.isLocal(),
 					})
 				)
 			);
