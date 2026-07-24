@@ -26,6 +26,44 @@ export const isModelUnavailableError = (error: unknown) => {
 	);
 };
 
+export const isToolUnsupportedError = (error: unknown) => {
+	let current: unknown = error;
+	const messages: string[] = [];
+	for (let depth = 0; depth < 5 && current; depth += 1) {
+		if (current instanceof Error) messages.push(current.message.toLowerCase());
+		if (typeof current !== 'object') break;
+		const errorRecord = current as Record<string, unknown>;
+		for (const key of ['responseBody', 'data']) {
+			const value = errorRecord[key];
+			if (typeof value === 'string') messages.push(value.toLowerCase());
+		}
+		current = errorRecord.cause;
+	}
+
+	const message = messages.join(' ');
+	const namesToolParameter =
+		message.includes("'tools'") ||
+		message.includes('"tools"') ||
+		message.includes('tool_choice') ||
+		message.includes('tool choice');
+	const rejectsToolCalling =
+		message.includes('does not support tools') ||
+		message.includes("doesn't support tools") ||
+		message.includes('tools are not supported') ||
+		message.includes('tool calling is not supported') ||
+		message.includes('does not support tool calling') ||
+		message.includes('function calling is not supported') ||
+		message.includes('does not support function calling');
+	const rejectsToolParameter =
+		namesToolParameter &&
+		(message.includes('unsupported parameter') ||
+			message.includes('invalid parameter') ||
+			message.includes('unknown parameter') ||
+			message.includes('not supported'));
+
+	return rejectsToolCalling || rejectsToolParameter;
+};
+
 const indent = '    ';
 
 export const handleCliError = (error: unknown) => {

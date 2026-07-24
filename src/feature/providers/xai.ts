@@ -7,11 +7,18 @@ export const XAiProvider: ProviderDef = {
 	apiKeyFormat: 'xai-',
 	modelsFilter: (models) =>
 		models
-			.filter(
-				(m: any) =>
-					m.id && (!m.type || m.type === 'chat' || m.type === 'language'),
-			)
+			.filter((m: any) => {
+				const id = m.id?.toLowerCase();
+				return (
+					id &&
+					(!m.type || m.type === 'chat' || m.type === 'language') &&
+					!id.includes('imagine') &&
+					!id.includes('image') &&
+					!id.includes('video') &&
+					!id.includes('voice')
+				);
+			})
 			.map((m: any) => m.id),
-	defaultModels: ['grok-4.5'],
+	defaultModels: ['grok-4.5', 'grok-build-0.1', 'grok-4.3'],
 	requiresApiKey: true,
 };

@@ -5,6 +5,15 @@ import type { LanguageModel } from 'ai';
 import { fetchModels } from '../models.js';
 import type { ValidConfig } from '../../utils/config-types.js';
 
+const isLoopbackUrl = (baseUrl: string): boolean => {
+	try {
+		const hostname = new URL(baseUrl).hostname.toLowerCase();
+		return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(hostname);
+	} catch {
+		return false;
+	}
+};
+
 export type ProviderDef = {
 	name: string;
 	displayName: string;
@@ -12,6 +21,7 @@ export type ProviderDef = {
 	apiKeyFormat?: string;
 	modelsFilter?: (models: any[]) => string[];
 	defaultModels: string[];
+	defaultTimeout?: number;
 	requiresApiKey: boolean;
 	headers?: Record<string, string>;
 };
@@ -114,6 +124,14 @@ export class Provider {
 
 	getHighlightedModels(): string[] {
 		return this.def.defaultModels;
+	}
+
+	getRequestTimeout(configuredTimeout?: number): number {
+		return (
+			configuredTimeout ??
+			this.def.defaultTimeout ??
+			(isLoopbackUrl(this.getBaseUrl()) ? 60_000 : 10_000)
+		);
 	}
 
 	getHeaders(): Record<string, string> | undefined {

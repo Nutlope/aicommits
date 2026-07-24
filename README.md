@@ -45,8 +45,10 @@ This will guide you through:
   - **LM Studio** (local) - No API key required. Runs on your computer via [LM Studio](https://lmstudio.ai/)
   - **Custom OpenAI-compatible endpoint** - Use any service that implements the OpenAI API
 
-  Tested Together AI models use the agentic two-step generation flow. Models
-  without compatible tool calls continue through the one-shot fallback.
+  Together AI, OpenAI, and xAI models use the agentic generation flow. Tested
+  Together models without compatible tool calls use the one-shot path; OpenAI
+  and xAI models fall back when an endpoint rejects tools. Other providers
+  continue through the one-shot flow.
 
   **For CI/CD environments**, you can also set up configuration via the config file:
 

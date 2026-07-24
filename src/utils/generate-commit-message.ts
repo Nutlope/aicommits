@@ -4,7 +4,9 @@ import {
 	hasToolCall,
 	stepCountIs,
 	tool,
+	type JSONValue,
 	type LanguageModel,
+	type LanguageModelCallOptions,
 	type LanguageModelUsage,
 } from 'ai';
 import { execa } from 'execa';
@@ -14,6 +16,7 @@ import {
 	supportsTogetherAgenticGeneration,
 } from '../feature/providers/together.js';
 import type { CommitType } from './config-types.js';
+import { isToolUnsupportedError } from './error.js';
 
 const MAX_DIFF_LENGTH = 30_000;
 const MAX_AGENT_STEPS = 4;
@@ -122,6 +125,27 @@ const getModelDetails = (model: LanguageModel) =>
 		? { provider: '', modelId: model }
 		: { provider: model.provider, modelId: model.modelId };
 
+type AgentReasoningOptions = {
+	reasoning?: LanguageModelCallOptions['reasoning'];
+	providerOptions?: Record<string, Record<string, JSONValue>>;
+};
+
+const getXAiReasoningOptions = (modelId: string): AgentReasoningOptions => {
+	if (modelId.startsWith('grok-4.5')) {
+		return {
+			reasoning: 'low',
+			providerOptions: { xai: { reasoningEffort: 'low' } },
+		};
+	}
+	if (modelId.startsWith('grok-4.3')) {
+		return {
+			reasoning: 'none',
+			providerOptions: { xai: { reasoningEffort: 'none' } },
+		};
+	}
+	return {};
+};
+
 const parseOneShotMessage = (
 	text: string,
 	includeBody: boolean
@@ -174,11 +198,26 @@ export const generateCommitMessage = async ({
 	const stagedDiff = await getStagedDiff(files);
 	const { provider, modelId } = getModelDetails(model);
 	const isTogetherModel = provider.startsWith('togetherai.');
+	const isOpenAiModel = provider.startsWith('openai.');
+	const isXAiModel = provider.startsWith('xai.');
 	const useAgent =
-		isTogetherModel && supportsTogetherAgenticGeneration(modelId);
-	const reasoningOptions = isTogetherModel && useAgent
-		? getTogetherReasoningOptions(modelId)
-		: {};
+		(isTogetherModel &&
+			supportsTogetherAgenticGeneration(modelId)) ||
+		isOpenAiModel ||
+		isXAiModel;
+	const reasoningOptions: AgentReasoningOptions =
+		isTogetherModel && useAgent
+			? getTogetherReasoningOptions(modelId)
+			: isOpenAiModel && useAgent
+				? {
+						reasoning: 'none' as const,
+						providerOptions: {
+							openai: { reasoningEffort: 'none' },
+						},
+					}
+				: isXAiModel && useAgent
+					? getXAiReasoningOptions(modelId)
+					: {};
 	const runOneShot = async (
 		prompt: string,
 		oneShotIncludeBody = includeBody,
@@ -284,6 +323,7 @@ export const generateCommitMessage = async ({
 				: z.string().nullable().optional(),
 		}),
 	});
+	let agentStreamError: unknown;
 	const agent = new ToolLoopAgent({
 		model,
 		instructions: buildCommitInstructions(
@@ -317,11 +357,19 @@ export const generateCommitMessage = async ({
 				: 'The staged diff is too large to include. Read the relevant staged diffs before submitting.',
 		].join('\n\n'),
 		timeout,
-		onError: () => {},
+		onError: ({ error }: { error: unknown }) => {
+			agentStreamError = error;
+		},
 	};
 	const runAgent = async () => {
+		agentStreamError = undefined;
 		const result = await agent.stream(streamOptions);
-		const staticToolCalls = await result.staticToolCalls;
+		let staticToolCalls: Awaited<typeof result.staticToolCalls>;
+		try {
+			staticToolCalls = await result.staticToolCalls;
+		} catch (error) {
+			throw agentStreamError ?? error;
+		}
 		return {
 			result,
 			submission: staticToolCalls.find(
@@ -330,10 +378,15 @@ export const generateCommitMessage = async ({
 		};
 	};
 	const agentAttempts: Awaited<ReturnType<typeof runAgent>>[] = [];
-	for (let attempt = 1; attempt <= AGENT_ATTEMPTS; attempt += 1) {
-		const result = await runAgent();
-		agentAttempts.push(result);
-		if (result.submission) break;
+	try {
+		for (let attempt = 1; attempt <= AGENT_ATTEMPTS; attempt += 1) {
+			const result = await runAgent();
+			agentAttempts.push(result);
+			if (result.submission) break;
+		}
+	} catch (error) {
+		if (!isToolUnsupportedError(error)) throw error;
+		return runOneShot(truncateDiff(stagedDiff));
 	}
 	const submission = agentAttempts.find(
 		(attempt) => attempt.submission

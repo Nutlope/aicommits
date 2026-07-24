@@ -93,9 +93,7 @@ export default async (
 			}
 		}
 
-		// Use config timeout, or default per provider
-		const timeout =
-			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 10_000);
+		const timeout = providerInstance.getRequestTimeout(config.timeout);
 
 		// Validate provider config
 		const validation = providerInstance.validateConfig();
