@@ -52,6 +52,19 @@ const textGeneration = (text: string) => ({
 	warnings: [],
 });
 
+const emptyStream = () => ({
+	stream: simulateReadableStream({
+		chunks: [
+			{ type: 'stream-start' as const, warnings: [] },
+			{
+				type: 'finish' as const,
+				finishReason: { unified: 'stop' as const, raw: undefined },
+				usage,
+			},
+		],
+	}),
+});
+
 export default testSuite(({ describe }) => {
 	describe('generateCommitMessage', ({ test }) => {
 		test('keeps unknown Together models agentic by default', () => {
@@ -212,6 +225,90 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		test('uses agentic generation for LM Studio models that support tools', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'lmstudio.chat',
+				modelId: 'local-tool-model',
+				doStream: toolCallStream(
+					'submit-message-1',
+					'submitCommitMessage',
+					{ subject: 'fix: update fixture', body: null }
+				),
+				doGenerate: textGeneration('fix: incomplete one-shot result'),
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('fix: update fixture');
+			expect(model.doStreamCalls.length).toBe(1);
+			expect(model.doGenerateCalls.length).toBe(0);
+			await fixture.rm();
+		});
+
+		test('keeps LM Studio tool choice compatible through the final agent step', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'lmstudio.chat',
+				modelId: 'local-tool-model',
+				doStream: [
+					toolCallStream('read-diff-1', 'readStagedDiff', {
+						paths: ['file.txt'],
+					}),
+					toolCallStream('read-diff-2', 'readStagedDiff', {
+						paths: ['file.txt'],
+					}),
+					toolCallStream('read-diff-3', 'readStagedDiff', {
+						paths: ['file.txt'],
+					}),
+					toolCallStream(
+						'submit-message-1',
+						'submitCommitMessage',
+						{ subject: 'fix: update fixture', body: null }
+					),
+				],
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('fix: update fixture');
+			expect(model.doStreamCalls.length).toBe(4);
+			expect(
+				model.doStreamCalls.every(
+					(call) => call.toolChoice?.type === 'required'
+				)
+			).toBe(true);
+			await fixture.rm();
+		});
+
 		test('falls back to one-shot when a provider rejects tool calling', async () => {
 			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
 			const git = await createGit(fixture.path);
@@ -241,6 +338,37 @@ export default testSuite(({ describe }) => {
 
 			expect(result.message.subject).toBe('fix: update fixture');
 			expect(model.doStreamCalls.length).toBe(1);
+			expect(model.doGenerateCalls.length).toBe(1);
+			await fixture.rm();
+		});
+
+		test('falls back when an LM Studio model does not submit the required tool', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'lmstudio.chat',
+				modelId: 'local-text-model',
+				doStream: [emptyStream(), emptyStream()],
+				doGenerate: textGeneration('fix: update fixture'),
+			});
+
+			const result = await generateCommitMessage({
+				model,
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('fix: update fixture');
+			expect(model.doStreamCalls.length).toBe(2);
 			expect(model.doGenerateCalls.length).toBe(1);
 			await fixture.rm();
 		});

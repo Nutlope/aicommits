@@ -200,11 +200,13 @@ export const generateCommitMessage = async ({
 	const isTogetherModel = provider.startsWith('togetherai.');
 	const isOpenAiModel = provider.startsWith('openai.');
 	const isXAiModel = provider.startsWith('xai.');
+	const isLmStudioModel = provider.startsWith('lmstudio.');
 	const useAgent =
 		(isTogetherModel &&
 			supportsTogetherAgenticGeneration(modelId)) ||
 		isOpenAiModel ||
-		isXAiModel;
+		isXAiModel ||
+		isLmStudioModel;
 	const reasoningOptions: AgentReasoningOptions =
 		isTogetherModel && useAgent
 			? getTogetherReasoningOptions(modelId)
@@ -343,7 +345,7 @@ export const generateCommitMessage = async ({
 		...reasoningOptions,
 		prepareStep: ({ stepNumber }) => ({
 			toolChoice:
-				stepNumber === MAX_AGENT_STEPS - 1
+				!isLmStudioModel && stepNumber === MAX_AGENT_STEPS - 1
 					? { type: 'tool', toolName: 'submitCommitMessage' }
 					: 'required',
 		}),
@@ -392,6 +394,9 @@ export const generateCommitMessage = async ({
 		(attempt) => attempt.submission
 	)?.submission;
 	if (!submission) {
+		if (isLmStudioModel) {
+			return runOneShot(truncateDiff(stagedDiff));
+		}
 		throw new Error('The model did not submit a commit message.');
 	}
 
