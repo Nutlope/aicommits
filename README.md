@@ -32,7 +32,8 @@ This will guide you through:
 - Selecting your AI provider (sets the `provider` config)
 - Configuring your API key
 - **Automatically fetching and selecting from available models** (when supported)
-- **Choosing your preferred commit message format** (plain, conventional, or gitmoji)
+- **Choosing your preferred commit message format** (`plain`, `conventional`,
+  `conventional+body`, `gitmoji`, or `subject+body`)
 
   Supported providers include:
 
