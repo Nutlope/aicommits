@@ -9,7 +9,10 @@ import {
 import { execa } from 'execa';
 import { z } from 'zod';
 import type { GenerationModel } from './providers/base.js';
-import type { CommitType } from '../utils/config-types.js';
+import {
+	getCommitTypePolicy,
+	type CommitType,
+} from '../utils/config-types.js';
 import {
 	isInvalidJsonResponseError,
 	isToolUnsupportedError,
@@ -33,6 +36,9 @@ export type CommitMessage = {
 	body?: string;
 };
 
+export const formatCommitMessage = ({ subject, body }: CommitMessage) =>
+	body ? `${subject}\n\n${body}` : subject;
+
 export type GenerateCommitMessageOptions = {
 	model: GenerationModel;
 	cwd: string;
@@ -45,17 +51,11 @@ export type GenerateCommitMessageOptions = {
 	customPrompt?: string;
 };
 
-const formats: Record<CommitType, string> = {
+const formatInstructions = {
 	plain: 'plain text',
 	conventional: 'Conventional Commits: <type>(optional scope): <subject>',
-	'conventional+body':
-		'Conventional Commits: <type>(optional scope): <subject>',
 	gitmoji: 'Gitmoji: <emoji> <subject>',
-	'subject+body': 'plain text',
 };
-
-const isConventionalType = (type: CommitType) =>
-	type === 'conventional' || type === 'conventional+body';
 
 type CommitInstructionOptions = Pick<
 	GenerateCommitMessageOptions,
@@ -71,13 +71,14 @@ const buildCommitInstructions = (
 		customPrompt,
 	}: CommitInstructionOptions,
 	pathInstructions: Array<string | undefined>
-) =>
-	[
+) => {
+	const { format } = getCommitTypePolicy(type);
+	return [
 		'Write an accurate Git commit message for the staged changes.',
 		...pathInstructions,
 		'Mention the important behavior change, not file names.',
-		`Write in ${locale}. Format: ${formats[type]}.`,
-		isConventionalType(type)
+		`Write in ${locale}. Format: ${formatInstructions[format]}.`,
+		format === 'conventional'
 			? [
 					'Use fix for corrected behavior and feat only for a new user-facing capability.',
 					'Use refactor for internal restructuring and chore for maintenance, tests, or specifications.',
@@ -93,6 +94,7 @@ const buildCommitInstructions = (
 	]
 		.filter(Boolean)
 		.join('\n');
+};
 
 const createGenerationBudget = (timeout: number) => {
 	const deadline = Date.now() + timeout;

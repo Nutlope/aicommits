@@ -16,7 +16,11 @@ import {
 } from '../utils/git.js';
 import { getConfig, setConfigs } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
-import { generateCommitMessage } from '../feature/generate-commit-message.js';
+import {
+	formatCommitMessage,
+	generateCommitMessage,
+} from '../feature/generate-commit-message.js';
+import { getCommitTypePolicy } from '../utils/config-types.js';
 import {
 	KnownError,
 	handleCommandError,
@@ -107,11 +111,9 @@ export default async (
 
 		// Use the unified model setting or provider default
 		config.model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
-		const usesBodyCommitType =
-			config.type === 'conventional+body' ||
-			config.type === 'subject+body';
-		const includeBody = includeDescription || usesBodyCommitType;
-		const generationCount = usesBodyCommitType ? 1 : config.generate;
+		const { requiresBody } = getCommitTypePolicy(config.type);
+		const includeBody = includeDescription || requiresBody;
+		const generationCount = requiresBody ? 1 : config.generate;
 
 		const attemptGeneration = async () => {
 			const model = providerInstance.getGenerationModel(config.model!);
@@ -141,13 +143,7 @@ export default async (
 					)
 				);
 				return Array.from(
-					new Set(
-						results.map(({ message }) =>
-							message.body
-								? `${message.subject}\n\n${message.body}`
-								: message.subject
-						)
-					)
+					new Set(results.map(({ message }) => formatCommitMessage(message)))
 				);
 			} finally {
 				if (s) {
