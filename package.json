@@ -23,31 +23,29 @@
 		"aic": "dist/cli.mjs"
 	},
 	"scripts": {
-		"build": "pkgroll --minify --clean-dist",
+		"build": "pkgroll --minify",
 		"lint": "",
 		"type-check": "tsc",
 		"test": "tsx tests",
-		"test:together-tools": "tsx scripts/test-together-tool-compatibility.ts",
-		"prepack": "pnpm build"
+		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"devDependencies": {
-		"@ai-sdk/openai": "^4.0.16",
-		"@ai-sdk/openai-compatible": "^3.0.13",
-		"@ai-sdk/togetherai": "^3.0.14",
 		"@clack/prompts": "^0.11.0",
 		"@types/ini": "^1.3.31",
 		"@types/node": "^24.10.1",
-		"ai": "^7.0.32",
+		"clean-pkg-json": "^1.3.0",
 		"cleye": "^2.0.0",
 		"execa": "^7.0.0",
 		"fs-fixture": "^1.2.0",
 		"ini": "^3.0.1",
 		"kolorist": "^1.8.0",
 		"manten": "^0.7.0",
+		"ai": "^6.0.97",
+		"@ai-sdk/openai": "^3.0.30",
+		"@ai-sdk/openai-compatible": "^2.0.30",
 		"pkgroll": "^2.20.1",
 		"tsx": "^4.21.0",
-		"typescript": "^5.9.3",
-		"zod": "^4.4.3"
+		"typescript": "^5.9.3"
 	},
 	"release": {
 		"branches": [

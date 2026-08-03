@@ -7,6 +7,5 @@ export const OllamaProvider: ProviderDef = {
 	modelsFilter: (models) =>
 		models.filter((m: any) => m.name).map((m: any) => m.name),
 	defaultModels: ['gpt-oss:latest', 'llama3.2:latest'],
-	defaultTimeout: 60_000,
 	requiresApiKey: false,
 };

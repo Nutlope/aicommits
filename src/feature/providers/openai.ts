@@ -19,12 +19,6 @@ export const OpenAiProvider: ProviderDef = {
 						m.type === 'chat')
 			)
 			.map((m: any) => m.id),
-	defaultModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol'],
+	defaultModels: ['gpt-5-mini', 'gpt-4o-mini', 'gpt-4o', 'gpt-5-nano'],
 	requiresApiKey: true,
-	agenticGeneration: {
-		callOptions: () => ({
-			reasoning: 'none',
-			providerOptions: { openai: { reasoningEffort: 'none' } },
-		}),
-	},
 };
