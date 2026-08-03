@@ -10,6 +10,22 @@ const commitTypes = [
 
 export type CommitType = (typeof commitTypes)[number];
 
+type CommitFormat = 'plain' | 'conventional' | 'gitmoji';
+
+const commitTypePolicies: Record<
+	CommitType,
+	{ format: CommitFormat; requiresBody: boolean }
+> = {
+	plain: { format: 'plain', requiresBody: false },
+	conventional: { format: 'conventional', requiresBody: false },
+	'conventional+body': { format: 'conventional', requiresBody: true },
+	gitmoji: { format: 'gitmoji', requiresBody: false },
+	'subject+body': { format: 'plain', requiresBody: true },
+};
+
+export const getCommitTypePolicy = (type: CommitType) =>
+	commitTypePolicies[type];
+
 const { hasOwnProperty } = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) =>
 	hasOwnProperty.call(object, key);

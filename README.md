@@ -32,7 +32,8 @@ This will guide you through:
 - Selecting your AI provider (sets the `provider` config)
 - Configuring your API key
 - **Automatically fetching and selecting from available models** (when supported)
-- **Choosing your preferred commit message format** (plain, conventional, conventional+body, gitmoji, or subject+body)
+- **Choosing your preferred commit message format** (`plain`, `conventional`,
+  `conventional+body`, `gitmoji`, or `subject+body`)
 
   Supported providers include:
 
@@ -44,6 +45,12 @@ This will guide you through:
   - **Ollama** (local) - Run AI models locally with [Ollama](https://ollama.ai)
   - **LM Studio** (local) - No API key required. Runs on your computer via [LM Studio](https://lmstudio.ai/)
   - **Custom OpenAI-compatible endpoint** - Use any service that implements the OpenAI API
+
+  Together AI, OpenAI, xAI, and LM Studio models use the agentic generation
+  flow. Tested Together models without compatible tool calls use the one-shot
+  path; OpenAI, xAI, and LM Studio fall back when an endpoint rejects tools.
+  LM Studio also falls back when a local model does not submit the required
+  tool call. Other providers continue through the one-shot flow.
 
   **For CI/CD environments**, you can also set up configuration via the config file:
 
@@ -106,6 +113,7 @@ aicommits --all # or -a
 - `--clipboard` or `-c`: Copy the selected message to the clipboard instead of committing (default: **false**)
 - `--generate` or `-g`: Number of messages to generate (default: **1**)
 - `--exclude` or `-x`: Files to exclude from AI analysis
+- `--description`: Include a commit message description
 - `--type` or `-t`: Git commit message format (default: **plain**). Supports `plain`, `conventional`, `conventional+body`, `gitmoji`, and `subject+body`
 - `--prompt` or `-p`: Custom prompt to guide the LLM behavior (e.g., specific language, style instructions)
 - `--no-verify` or `-n`: Bypass pre-commit hooks while committing (default: **false**)
@@ -121,24 +129,32 @@ aicommits --generate <i> # or -g <i>
 
 > Warning: this uses more tokens, meaning it costs more.
 
+#### Include a description
+
+Add `--description` when the commit needs context beyond its subject:
+
+```sh
+aicommits --description
+```
+
 #### Commit Message Formats
 
 You can choose from five different commit message formats:
 
 - **plain** (default): Simple, unstructured commit messages
 - **conventional**: [Conventional Commits](https://conventionalcommits.org/) format with type and scope
-- **conventional+body**: Conventional commit subject plus a body generated from the diff
+- **conventional+body**: Conventional Commit subject plus a generated body
 - **gitmoji**: Emoji-based commit messages
-- **subject+body**: Git-style subject line plus a body (description) generated from the diff
+- **subject+body**: Plain subject plus a generated body
 
 Use the `--type` flag to specify the format:
 
 ```sh
-aicommits --type conventional      # or -t conventional
-aicommits --type conventional+body # or -t conventional+body (conventional subject + body)
-aicommits --type gitmoji           # or -t gitmoji
-aicommits --type plain             # or -t plain (default)
-aicommits --type subject+body      # or -t subject+body (subject + body)
+aicommits --type conventional # or -t conventional
+aicommits --type conventional+body
+aicommits --type gitmoji       # or -t gitmoji
+aicommits --type subject+body
+aicommits --type plain         # or -t plain (default)
 ```
 
 This feature is useful if your project follows a specific commit message standard or if you're using tools that rely on these commit formats.
@@ -334,7 +350,8 @@ Note, this will use more tokens as it generates more results.
 
 The timeout for network requests to the OpenAI API in milliseconds.
 
-Default: `10000` (10 seconds)
+Default: `10000` (10 seconds) for hosted providers, `60000` (60 seconds) for
+Together AI and local providers.
 
 ```sh
 aicommits config set timeout=20000 # 20s
@@ -342,7 +359,8 @@ aicommits config set timeout=20000 # 20s
 
 #### max-length
 
-The maximum character length of the generated commit message.
+The preferred character length of the generated commit subject. This guides the
+model toward concise messages, but complete subjects may be longer.
 
 Default: `72`
 
@@ -358,9 +376,9 @@ The type of commit message to generate. Available options:
 
 - `plain`: Simple, unstructured commit messages
 - `conventional`: Conventional Commits format with type and scope
-- `conventional+body`: Conventional commit subject plus a body generated from the diff
+- `conventional+body`: Conventional Commit subject plus a generated body
 - `gitmoji`: Emoji-based commit messages
-- `subject+body`: Git-style subject line plus a body generated from the diff
+- `subject+body`: Plain subject plus a generated body
 
 Examples:
 
@@ -368,13 +386,15 @@ Examples:
 aicommits config set type=conventional
 aicommits config set type=conventional+body
 aicommits config set type=gitmoji
-aicommits config set type=plain
 aicommits config set type=subject+body
+aicommits config set type=plain
 ```
 
 ## How it works
 
-This CLI tool runs `git diff` to grab all your latest code changes, sends them to the configured AI provider (TogetherAI by default), then returns the AI generated commit message.
+The model receives the staged file list, requests the staged diffs it needs, and
+submits a validated commit subject with an optional description. The tool can
+only read Git's staged snapshot, so unstaged edits are never sent to the model.
 
 Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
 

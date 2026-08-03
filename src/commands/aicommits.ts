@@ -11,18 +11,21 @@ import {
 } from '@clack/prompts';
 import {
 	assertGitRepo,
-	getStagedDiff,
-	getStagedDiffForFiles,
+	getStagedFiles,
 	getDetectedMessage,
 } from '../utils/git.js';
 import { getConfig, setConfigs } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
 import {
+	formatCommitMessage,
 	generateCommitMessage,
-	generateCommitDescription,
-	combineCommitMessages,
-} from '../utils/openai.js';
-import { KnownError, handleCommandError } from '../utils/error.js';
+} from '../feature/generate-commit-message.js';
+import { getCommitTypePolicy } from '../utils/config-types.js';
+import {
+	KnownError,
+	handleCommandError,
+	isModelUnavailableError,
+} from '../utils/error.js';
 
 import { getCommitMessage } from '../utils/commit-helpers.js';
 import { isHeadless } from '../utils/headless.js';
@@ -35,25 +38,26 @@ export default async (
 	skipConfirm: boolean,
 	copyToClipboard: boolean,
 	noVerify: boolean,
+	includeDescription: boolean,
 	customPrompt: string | undefined,
 	rawArgv: string[]
 ) =>
 	(async () => {
 		const headless = isHeadless();
-		
+
 		if (!headless) {
 			intro(bgCyan(black(' aicommits ')));
 		}
 
-		await assertGitRepo();
+		const gitRoot = await assertGitRepo();
 
 		if (stageAll) {
 			await execa('git', ['add', '--update']);
 		}
 
-		const staged = await getStagedDiff(excludeFiles);
+		const stagedFiles = await getStagedFiles(excludeFiles);
 
-		if (!staged) {
+		if (!stagedFiles) {
 			throw new KnownError(
 				'No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.'
 			);
@@ -61,20 +65,19 @@ export default async (
 
 		if (!headless) {
 			const detectingFiles = spinner();
-			if (staged.files.length <= 10) {
+			if (stagedFiles.length <= 10) {
 				detectingFiles.start('Detecting staged files');
 				detectingFiles.stop(
-					`📁 ${getDetectedMessage(staged.files)}:\n${staged.files
+					`📁 ${getDetectedMessage(stagedFiles)}:\n${stagedFiles
 						.map((file) => `     ${file}`)
 						.join('\n')}`
 				);
 			} else {
 				detectingFiles.start('Detecting staged files');
-				detectingFiles.stop(`📁 ${getDetectedMessage(staged.files)}`);
+				detectingFiles.stop(`📁 ${getDetectedMessage(stagedFiles)}`);
 			}
 		}
 
-		const { env } = process;
 		const config = await getConfig({
 			generate: generate?.toString(),
 			type: commitType?.toString(),
@@ -83,7 +86,7 @@ export default async (
 		const providerInstance = getProvider(config);
 		if (!providerInstance) {
 			if (!headless) {
-				console.log("Welcome to aicommits! Let's set up your AI provider.");
+				console.log(`Welcome to aicommits! Let's set up your AI provider.`);
 				console.log('Run `aicommits setup` to configure your provider.');
 				outro('Setup required. Please run: aicommits setup');
 				return;
@@ -94,9 +97,7 @@ export default async (
 			}
 		}
 
-		// Use config timeout, or default per provider
-		const timeout =
-			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 15_000);
+		const timeout = providerInstance.getRequestTimeout(config.timeout);
 
 		// Validate provider config
 		const validation = providerInstance.validateConfig();
@@ -110,177 +111,40 @@ export default async (
 
 		// Use the unified model setting or provider default
 		config.model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
+		const { requiresBody } = getCommitTypePolicy(config.type);
+		const includeBody = includeDescription || requiresBody;
+		const generationCount = requiresBody ? 1 : config.generate;
 
-		// Check if diff is large and needs chunking
-		const MAX_FILES = 50;
-		const CHUNK_SIZE = 10;
-		let isChunking = false;
-		if (staged.files.length > MAX_FILES) {
-			isChunking = true;
-		}
-
-		const baseUrl = providerInstance.getBaseUrl();
-		const apiKey = providerInstance.getApiKey() || '';
-		const providerHeaders = providerInstance.getHeaders();
-
-		const attemptGeneration = async (): Promise<{ messages: string[]; usage: any }> => {
+		const attemptGeneration = async () => {
+			const model = providerInstance.getGenerationModel(config.model!);
 			const s = headless ? null : spinner();
 			if (s) {
 				s.start(
-					`🔍 Analyzing changes in ${staged.files.length} file${
-						staged.files.length === 1 ? '' : 's'
+					`🔍 Analyzing changes in ${stagedFiles.length} file${
+						stagedFiles.length === 1 ? '' : 's'
 					}`
 				);
 			}
 			const startTime = Date.now();
 			try {
-				let messages: string[];
-				let usage: any;
-				const maxDiffLength = 30000;
-				let diffToUse = staged.diff;
-				if (diffToUse.length > maxDiffLength) {
-					diffToUse =
-						diffToUse.substring(0, maxDiffLength) +
-						'\n\n[Diff truncated due to size]';
-				}
-
-				if (config.type === 'conventional+body' || config.type === 'subject+body') {
-					const result = await generateCommitMessage({
-						baseUrl,
-						apiKey,
-						model: config.model!,
-						locale: config.locale,
-						diff: diffToUse,
-						completions: 1,
-						maxLength: config['max-length'],
-						type: config.type,
-						timeout,
-						customPrompt,
-						headers: providerHeaders,
-					});
-					const title = result.messages[0];
-					const { description } = await generateCommitDescription({
-						baseUrl,
-						apiKey,
-						model: config.model!,
-						locale: config.locale,
-						title,
-						diff: diffToUse,
-						timeout,
-						maxLength: config['max-length'],
-						customPrompt,
-						headers: providerHeaders,
-					});
-					messages = [
-						description.trim()
-							? `${title}\n\n${description.trim()}`
-							: title,
-					];
-					usage = result.usage;
-				} else if (isChunking) {
-					// Split files into chunks
-					const chunks: string[][] = [];
-					for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
-						chunks.push(staged.files.slice(i, i + CHUNK_SIZE));
-					}
-
-					const chunkMessages: string[] = [];
-					let totalUsage = {
-						prompt_tokens: 0,
-						completion_tokens: 0,
-						total_tokens: 0,
-					};
-
-					for (const chunk of chunks) {
-						const chunkDiff = await getStagedDiffForFiles(chunk, excludeFiles);
-						if (chunkDiff && chunkDiff.diff) {
-							// Truncate diff if too large to avoid context limits
-							const maxDiffLength = 30000; // Approximate 7.5k tokens
-							let diffToUse = chunkDiff.diff;
-							if (diffToUse.length > maxDiffLength) {
-								diffToUse =
-									diffToUse.substring(0, maxDiffLength) +
-									'\n\n[Diff truncated due to size]';
-							}
-							const result = await generateCommitMessage({
-								baseUrl,
-								apiKey,
-								model: config.model!,
-								locale: config.locale,
-								diff: diffToUse,
-								completions: config.generate,
-								maxLength: config['max-length'],
-								type: config.type,
-								timeout,
-								customPrompt,
-								headers: providerHeaders,
-							});
-							chunkMessages.push(...result.messages);
-							if (result.usage) {
-								totalUsage.prompt_tokens +=
-									(result.usage as any).prompt_tokens ||
-									(result.usage as any).promptTokens ||
-									0;
-								totalUsage.completion_tokens +=
-									(result.usage as any).completion_tokens ||
-									(result.usage as any).completionTokens ||
-									0;
-								totalUsage.total_tokens +=
-									(result.usage as any).total_tokens ||
-									(result.usage as any).totalTokens ||
-									0;
-							}
-						}
-					}
-
-					// Combine the chunk messages
-					const combineResult = await combineCommitMessages({
-						messages: chunkMessages,
-						baseUrl,
-						apiKey,
-						model: config.model!,
-						locale: config.locale,
-						maxLength: config['max-length'],
-						type: config.type,
-						timeout,
-						customPrompt,
-						headers: providerHeaders,
-					});
-					messages = combineResult.messages;
-					if (combineResult.usage) {
-						totalUsage.prompt_tokens +=
-							(combineResult.usage as any).prompt_tokens ||
-							(combineResult.usage as any).promptTokens ||
-							0;
-						totalUsage.completion_tokens +=
-							(combineResult.usage as any).completion_tokens ||
-							(combineResult.usage as any).completionTokens ||
-							0;
-						totalUsage.total_tokens +=
-							(combineResult.usage as any).total_tokens ||
-							(combineResult.usage as any).totalTokens ||
-							0;
-					}
-					usage = totalUsage;
-				} else {
-					const result = await generateCommitMessage({
-						baseUrl,
-						apiKey,
-						model: config.model!,
-						locale: config.locale,
-						diff: diffToUse,
-						completions: config.generate,
-						maxLength: config['max-length'],
-						type: config.type,
-						timeout,
-						customPrompt,
-						headers: providerHeaders,
-					});
-					messages = result.messages;
-					usage = result.usage;
-				}
-
-				return { messages, usage };
+				const results = await Promise.all(
+					Array.from({ length: generationCount }, () =>
+						generateCommitMessage({
+							model,
+							cwd: gitRoot,
+							files: stagedFiles,
+							type: config.type,
+							locale: config.locale,
+							maxLength: config['max-length'],
+							includeBody,
+							timeout,
+							customPrompt,
+						})
+					)
+				);
+				return Array.from(
+					new Set(results.map(({ message }) => formatCommitMessage(message)))
+				);
 			} finally {
 				if (s) {
 					const duration = Date.now() - startTime;
@@ -291,27 +155,28 @@ export default async (
 			}
 		};
 
-		let messages!: string[];
-		let usage!: any;
+		let messages: string[];
 		try {
-			({ messages, usage } = await attemptGeneration());
-		} catch (error: any) {
-			if ((error as any).isModelDeprecated) {
-				const fallbackModel = providerInstance.getDefaultModel();
-				if (fallbackModel && fallbackModel !== config.model) {
-					const deprecatedModel = config.model;
-					if (!headless) {
-						console.log(yellow(`⚠ Model "${deprecatedModel}" is deprecated. Switching to "${fallbackModel}".`));
-					}
-					config.model = fallbackModel;
-					await setConfigs([['OPENAI_MODEL', fallbackModel]]);
-					({ messages, usage } = await attemptGeneration());
-				} else {
-					throw error;
-				}
-			} else {
-				throw error;
+			messages = await attemptGeneration();
+		} catch (error) {
+			if (!isModelUnavailableError(error)) throw error;
+			const fallbackModel = providerInstance.getDefaultModel();
+			if (!fallbackModel || fallbackModel === config.model) {
+				throw new KnownError(
+					`Model "${config.model}" is not available or has been deprecated.`
+				);
 			}
+
+			if (!headless) {
+				console.log(
+					yellow(
+						`⚠ Model "${config.model}" is unavailable. Switching to "${fallbackModel}".`
+					)
+				);
+			}
+			config.model = fallbackModel;
+			await setConfigs([['OPENAI_MODEL', fallbackModel]]);
+			messages = await attemptGeneration();
 		}
 
 		if (messages.length === 0) {
@@ -343,10 +208,16 @@ export default async (
 
 		// Commit the message with timeout (use multiple -m for multi-line messages)
 		try {
+			const bodySeparator = message.indexOf('\n\n');
 			const commitArgs =
-				message.includes('\n\n')
-					? ['-m', message.split(/\n\n/)[0], '-m', message.slice(message.indexOf('\n\n') + 2)]
-					: ['-m', message];
+				bodySeparator === -1
+					? ['-m', message]
+					: [
+							'-m',
+							message.slice(0, bodySeparator),
+							'-m',
+							message.slice(bodySeparator + 2),
+						];
 			if (noVerify) {
 				commitArgs.push('--no-verify');
 			}
@@ -358,25 +229,35 @@ export default async (
 			outro(`${green('✔')} Successfully committed!`);
 		} catch (error: any) {
 			if (error.timedOut) {
+				// Copy to clipboard if commit times out
 				const success = await copyMessage(message);
 				if (success) {
 					outro(
-						`${yellow('⚠')} Commit timed out after 10 seconds. Message copied to clipboard.`
+						`${yellow(
+							'⚠'
+						)} Commit timed out after 10 seconds. Message copied to clipboard.`
 					);
 				} else {
 					outro(
-						`${yellow('⚠')} Commit timed out after 10 seconds. Could not copy to clipboard.`
+						`${yellow(
+							'⚠'
+						)} Commit timed out after 10 seconds. Could not copy to clipboard.`
 					);
 				}
 				return;
 			}
+
+			// Handle pre-commit hook failures or other git commit errors
 			if (error.exitCode !== undefined) {
-				outro(`${red('✘')} Commit failed. This may be due to pre-commit hooks.`);
+				outro(
+					`${red('✘')} Commit failed. This may be due to pre-commit hooks.`
+				);
 				console.error(
 					`  ${dim('Use')} --no-verify ${dim('to bypass pre-commit hooks')}`
 				);
 				process.exit(1);
 			}
+
 			throw error;
 		}
 	})().catch(handleCommandError);

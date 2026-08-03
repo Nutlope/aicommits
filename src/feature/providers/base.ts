@@ -1,5 +1,22 @@
+import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createTogetherAI } from '@ai-sdk/togetherai';
+import type {
+	JSONValue,
+	LanguageModel,
+	LanguageModelCallOptions,
+} from 'ai';
 import { fetchModels } from '../models.js';
 import type { ValidConfig } from '../../utils/config-types.js';
+
+const isLoopbackUrl = (baseUrl: string): boolean => {
+	try {
+		const hostname = new URL(baseUrl).hostname.toLowerCase();
+		return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(hostname);
+	} catch {
+		return false;
+	}
+};
 
 export type ProviderDef = {
 	name: string;
@@ -8,10 +25,28 @@ export type ProviderDef = {
 	apiKeyFormat?: string;
 	modelsFilter?: (models: any[]) => string[];
 	defaultModels: string[];
+	defaultTimeout?: number;
 	requiresApiKey: boolean;
 	headers?: Record<string, string>;
 	cacheModels?: boolean;
 	isLocal?: boolean;
+	agenticGeneration?: {
+		supports?: (model: string) => boolean;
+		callOptions?: (model: string) => GenerationCallOptions;
+	};
+};
+
+export type GenerationCallOptions = {
+	maxOutputTokens?: LanguageModelCallOptions['maxOutputTokens'];
+	reasoning?: LanguageModelCallOptions['reasoning'];
+	providerOptions?: Record<string, Record<string, JSONValue>>;
+};
+
+export type GenerationModel = {
+	languageModel: LanguageModel;
+	mode: 'agentic' | 'fallback';
+	isLocal: boolean;
+	callOptions: GenerationCallOptions;
 };
 
 export class Provider {
@@ -119,8 +154,66 @@ export class Provider {
 		return this.def.defaultModels;
 	}
 
+	getRequestTimeout(configuredTimeout?: number): number {
+		return (
+			configuredTimeout ??
+			this.def.defaultTimeout ??
+			(isLoopbackUrl(this.getBaseUrl()) ? 60_000 : 10_000)
+		);
+	}
+
+	isLocal(): boolean {
+		return this.def.isLocal ?? isLoopbackUrl(this.getBaseUrl());
+	}
+
 	getHeaders(): Record<string, string> | undefined {
 		return this.def.headers;
+	}
+
+	getLanguageModel(model: string): LanguageModel {
+		const baseUrl = this.getBaseUrl();
+		const apiKey = this.getApiKey() || '';
+		const provider = (() => {
+			if (this.name === 'openai') {
+				return createOpenAI({ apiKey });
+			}
+
+			if (this.name === 'togetherai') {
+				return createTogetherAI({ apiKey, baseURL: baseUrl });
+			}
+
+			return createOpenAICompatible({
+				name: this.name,
+				apiKey,
+				baseURL: baseUrl,
+				headers: this.getHeaders(),
+			});
+		})();
+		return provider(model);
+	}
+
+	getGenerationModel(model: string): GenerationModel {
+		return {
+			languageModel: this.getLanguageModel(model),
+			...this.getGenerationPolicy(model),
+		};
+	}
+
+	getGenerationPolicy(
+		model: string
+	): Omit<GenerationModel, 'languageModel'> {
+		const agenticGeneration = this.def.agenticGeneration;
+		const supportsAgenticGeneration = Boolean(
+			agenticGeneration && (agenticGeneration.supports?.(model) ?? true)
+		);
+
+		return {
+			mode: supportsAgenticGeneration ? 'agentic' : 'fallback',
+			isLocal: this.isLocal(),
+			callOptions: supportsAgenticGeneration
+				? agenticGeneration?.callOptions?.(model) ?? {}
+				: {},
+		};
 	}
 
 	validateConfig(): { valid: boolean; errors: string[] } {

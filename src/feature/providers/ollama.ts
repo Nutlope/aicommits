@@ -7,6 +7,7 @@ export const OllamaProvider: ProviderDef = {
 	modelsFilter: (models) =>
 		models.filter((m: any) => m.id || m.name).map((m: any) => m.id || m.name),
 	defaultModels: ['qwen3.5:4b', 'llama3.2:latest'],
+	defaultTimeout: 60_000,
 	requiresApiKey: false,
 	cacheModels: false,
 	isLocal: true,
