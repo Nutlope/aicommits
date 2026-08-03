@@ -59,13 +59,16 @@ export default () =>
 		// Use the unified model or provider default
 		const modelName = config.OPENAI_MODEL || providerInstance.getDefaultModel();
 		const model = providerInstance.getGenerationModel(modelName);
+		const includeBody =
+			config.type === 'conventional+body' || config.type === 'subject+body';
+		const generationCount = includeBody ? 1 : config.generate;
 
 		const s = headless ? null : spinner();
 		s?.start('The AI is analyzing your changes');
 		let messages: string[];
 		try {
 			const results = await Promise.all(
-				Array.from({ length: config.generate }, () =>
+				Array.from({ length: generationCount }, () =>
 					generateCommitMessage({
 						model,
 						cwd: gitRoot,
@@ -73,12 +76,16 @@ export default () =>
 						type: config.type,
 						locale: config.locale,
 						maxLength: config['max-length'],
-						includeBody: false,
+						includeBody,
 						timeout,
 					})
 				)
 			);
-			messages = results.map(({ message }) => message.subject);
+			messages = results.map(({ message }) =>
+				message.body
+					? `${message.subject}\n\n${message.body}`
+					: message.subject
+			);
 		} finally {
 			s?.stop('Changes analyzed');
 		}

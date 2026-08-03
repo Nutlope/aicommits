@@ -1,6 +1,12 @@
 import { KnownError } from './error.js';
 
-const commitTypes = ['plain', 'conventional', 'gitmoji'] as const;
+const commitTypes = [
+	'plain',
+	'conventional',
+	'conventional+body',
+	'gitmoji',
+	'subject+body',
+] as const;
 
 export type CommitType = (typeof commitTypes)[number];
 

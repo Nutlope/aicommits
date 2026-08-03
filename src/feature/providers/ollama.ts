@@ -5,8 +5,10 @@ export const OllamaProvider: ProviderDef = {
 	displayName: 'Ollama (local)',
 	baseUrl: 'http://localhost:11434/v1',
 	modelsFilter: (models) =>
-		models.filter((m: any) => m.name).map((m: any) => m.name),
-	defaultModels: ['gpt-oss:latest', 'llama3.2:latest'],
+		models.filter((m: any) => m.id || m.name).map((m: any) => m.id || m.name),
+	defaultModels: ['qwen3.5:4b', 'llama3.2:latest'],
 	defaultTimeout: 60_000,
 	requiresApiKey: false,
+	cacheModels: false,
+	isLocal: true,
 };

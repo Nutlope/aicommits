@@ -68,17 +68,25 @@ const writeCache = async (key: string, entry: CacheEntry): Promise<void> => {
 	}
 };
 
+interface FetchModelsOptions {
+	baseUrl: string;
+	apiKey?: string;
+	cacheModels?: boolean;
+}
+
 // Fetch models from API
 export const fetchModels = async (
-	baseUrl: string,
-	apiKey: string,
+	options: FetchModelsOptions,
 ): Promise<{ models: ModelObject[]; error?: string }> => {
+	const { baseUrl, apiKey = '', cacheModels = true } = options;
 	const cacheKey = getCacheKey(baseUrl);
 	const now = Date.now();
-	const cached = await readCache(cacheKey);
 
-	if (cached && now - cached.timestamp < CACHE_DURATION) {
-		return cached.data;
+	if (cacheModels) {
+		const cached = await readCache(cacheKey);
+		if (cached && now - cached.timestamp < CACHE_DURATION) {
+			return cached.data;
+		}
 	}
 
 	try {
@@ -98,7 +106,7 @@ export const fetchModels = async (
 		const modelsArray: ModelObject[] = (data.data ? data.data : data) || [];
 
 		const result = { models: modelsArray };
-		if (modelsArray.length > 0) {
+		if (cacheModels && modelsArray.length > 0) {
 			await writeCache(cacheKey, { data: result, timestamp: now });
 		}
 		return result;
@@ -117,7 +125,11 @@ const fetchAndFilterModels = async (
 	providerDef?: ProviderDef,
 ): Promise<string[]> => {
 	// Fetch models
-	const result = await fetchModels(baseUrl, apiKey);
+	const result = await fetchModels({
+		baseUrl,
+		apiKey,
+		cacheModels: providerDef?.cacheModels,
+	});
 
 	if (result.error) {
 		console.error(`Failed to fetch models: ${result.error}`);
@@ -125,11 +137,12 @@ const fetchAndFilterModels = async (
 
 	// Apply provider-specific filtering
 	let models: string[] = [];
+	const modelsArray = Array.isArray(result.models) ? result.models : [];
 	if (providerDef?.modelsFilter) {
-		models = providerDef.modelsFilter(result.models);
+		models = providerDef.modelsFilter(modelsArray);
 	} else {
 		// Fallback: just use model ids/names
-		models = result.models
+		models = modelsArray
 			.map((model) => model.id || model.name)
 			.filter(Boolean) as string[];
 	}
@@ -318,6 +331,12 @@ export const selectModel = async (
 		}
 	} else {
 		// Fallback to manual input
+		if (providerDef?.isLocal) {
+			console.log(
+				`No models found on ${providerName || 'local provider'}. Please download a model first, then run \`aicommits model\` to select it.`,
+			);
+			return null;
+		}
 		console.log(
 			'Could not fetch available models. Please specify a model name manually.',
 		);

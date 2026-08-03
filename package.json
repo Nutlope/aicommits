@@ -50,12 +50,6 @@
 		"zod": "^4.4.3"
 	},
 	"release": {
-		"branches": [
-			"main",
-			{
-				"name": "develop",
-				"prerelease": true
-			}
-		]
+		"branches": ["develop"]
 	}
 }

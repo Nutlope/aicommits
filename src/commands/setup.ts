@@ -127,7 +127,9 @@ export default command(
 				options: [
 					{ value: 'plain', label: 'Plain - Simple format without structure' },
 					{ value: 'conventional', label: 'Conventional - Standard conventional commits' },
+					{ value: 'conventional+body', label: 'Conventional + body - Conventional commit subject and body' },
 					{ value: 'gitmoji', label: 'Gitmoji - Using emojis for commit types' },
+					{ value: 'subject+body', label: 'Subject + body - Git-style subject line and body' },
 				],
 				initialValue: 'plain',
 			});

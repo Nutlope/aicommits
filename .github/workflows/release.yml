@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-      branches: [main, develop]
+    branches: [develop]
 
 jobs:
   release:
@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      issues: write
+      id-token: write
 
     steps:
       - name: Checkout
@@ -31,4 +33,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: false
         run: pnpm dlx semantic-release

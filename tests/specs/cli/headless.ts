@@ -111,6 +111,76 @@ export default testSuite(({ describe }) => {
 			}
 		});
 
+		test('preserves conventional+body config on the agentic generator', async () => {
+			const agentServer = await startAgentServer('Explain the conventional change.');
+			const { fixture, aicommits } = await createFixture({
+				'.aicommits': [
+					'OPENAI_API_KEY=test-key',
+					`OPENAI_BASE_URL=${agentServer.baseUrl}`,
+					'OPENAI_MODEL=test-model',
+					'type=conventional+body',
+					'generate=2',
+				].join('\n'),
+				'data.json': '{"agentic":true}\n',
+			});
+			const git = await createGit(fixture.path);
+			await git('add', ['data.json']);
+
+			try {
+				const { stdout, exitCode } = await aicommits([], {
+					reject: false,
+					env: { CI: '1' },
+				});
+
+				expect(exitCode).toBe(0);
+				expect(stdout).toBe(
+					'feat: add test data\n\nExplain the conventional change.'
+				);
+				expect(agentServer.requests[0]).toMatch('Conventional Commits');
+				expect(agentServer.requests[0]).toMatch(
+					'Return a concise, non-empty body'
+				);
+				expect(agentServer.requests.length).toBe(1);
+			} finally {
+				await agentServer.close();
+				await fixture.rm();
+			}
+		});
+
+		test('preserves subject+body config on the agentic generator', async () => {
+			const agentServer = await startAgentServer('Explain the plain subject change.');
+			const { fixture, aicommits } = await createFixture({
+				'.aicommits': [
+					'OPENAI_API_KEY=test-key',
+					`OPENAI_BASE_URL=${agentServer.baseUrl}`,
+					'OPENAI_MODEL=test-model',
+					'type=subject+body',
+				].join('\n'),
+				'data.json': '{"agentic":true}\n',
+			});
+			const git = await createGit(fixture.path);
+			await git('add', ['data.json']);
+
+			try {
+				const { stdout, exitCode } = await aicommits([], {
+					reject: false,
+					env: { CI: '1' },
+				});
+
+				expect(exitCode).toBe(0);
+				expect(stdout).toBe(
+					'feat: add test data\n\nExplain the plain subject change.'
+				);
+				expect(agentServer.requests[0]).toMatch('Format: plain text');
+				expect(agentServer.requests[0]).toMatch(
+					'Return a concise, non-empty body'
+				);
+			} finally {
+				await agentServer.close();
+				await fixture.rm();
+			}
+		});
+
 		test('setup requires an interactive terminal', async () => {
 			const { fixture, aicommits } = await createFixture();
 

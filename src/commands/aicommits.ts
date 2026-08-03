@@ -107,6 +107,11 @@ export default async (
 
 		// Use the unified model setting or provider default
 		config.model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
+		const usesBodyCommitType =
+			config.type === 'conventional+body' ||
+			config.type === 'subject+body';
+		const includeBody = includeDescription || usesBodyCommitType;
+		const generationCount = usesBodyCommitType ? 1 : config.generate;
 
 		const attemptGeneration = async () => {
 			const model = providerInstance.getGenerationModel(config.model!);
@@ -121,7 +126,7 @@ export default async (
 			const startTime = Date.now();
 			try {
 				const results = await Promise.all(
-					Array.from({ length: config.generate }, () =>
+					Array.from({ length: generationCount }, () =>
 						generateCommitMessage({
 							model,
 							cwd: gitRoot,
@@ -129,7 +134,7 @@ export default async (
 							type: config.type,
 							locale: config.locale,
 							maxLength: config['max-length'],
-							includeBody: includeDescription,
+							includeBody,
 							timeout,
 							customPrompt,
 						})
@@ -205,9 +210,18 @@ export default async (
 			return;
 		}
 
-		// Commit the message with timeout
+		// Commit the message with timeout (use multiple -m for multi-line messages)
 		try {
-			const commitArgs = ['-m', message];
+			const bodySeparator = message.indexOf('\n\n');
+			const commitArgs =
+				bodySeparator === -1
+					? ['-m', message]
+					: [
+							'-m',
+							message.slice(0, bodySeparator),
+							'-m',
+							message.slice(bodySeparator + 2),
+						];
 			if (noVerify) {
 				commitArgs.push('--no-verify');
 			}

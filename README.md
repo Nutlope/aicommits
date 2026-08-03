@@ -113,7 +113,7 @@ aicommits --all # or -a
 - `--generate` or `-g`: Number of messages to generate (default: **1**)
 - `--exclude` or `-x`: Files to exclude from AI analysis
 - `--description`: Include a commit message description
-- `--type` or `-t`: Git commit message format (default: **plain**). Supports `plain`, `conventional`, and `gitmoji`
+- `--type` or `-t`: Git commit message format (default: **plain**). Supports `plain`, `conventional`, `conventional+body`, `gitmoji`, and `subject+body`
 - `--prompt` or `-p`: Custom prompt to guide the LLM behavior (e.g., specific language, style instructions)
 - `--no-verify` or `-n`: Bypass pre-commit hooks while committing (default: **false**)
 - `--yes` or `-y`: Skip confirmation when committing after message generation (default: **false**)
@@ -138,17 +138,21 @@ aicommits --description
 
 #### Commit Message Formats
 
-You can choose from three different commit message formats:
+You can choose from five different commit message formats:
 
 - **plain** (default): Simple, unstructured commit messages
 - **conventional**: [Conventional Commits](https://conventionalcommits.org/) format with type and scope
+- **conventional+body**: Conventional Commit subject plus a generated body
 - **gitmoji**: Emoji-based commit messages
+- **subject+body**: Plain subject plus a generated body
 
 Use the `--type` flag to specify the format:
 
 ```sh
 aicommits --type conventional # or -t conventional
+aicommits --type conventional+body
 aicommits --type gitmoji       # or -t gitmoji
+aicommits --type subject+body
 aicommits --type plain         # or -t plain (default)
 ```
 
@@ -345,7 +349,8 @@ Note, this will use more tokens as it generates more results.
 
 The timeout for network requests to the OpenAI API in milliseconds.
 
-Default: `10000` (10 seconds)
+Default: `10000` (10 seconds) for hosted providers, `60000` (60 seconds) for
+Together AI and local providers.
 
 ```sh
 aicommits config set timeout=20000 # 20s
@@ -370,13 +375,17 @@ The type of commit message to generate. Available options:
 
 - `plain`: Simple, unstructured commit messages
 - `conventional`: Conventional Commits format with type and scope
+- `conventional+body`: Conventional Commit subject plus a generated body
 - `gitmoji`: Emoji-based commit messages
+- `subject+body`: Plain subject plus a generated body
 
 Examples:
 
 ```sh
 aicommits config set type=conventional
+aicommits config set type=conventional+body
 aicommits config set type=gitmoji
+aicommits config set type=subject+body
 aicommits config set type=plain
 ```
 

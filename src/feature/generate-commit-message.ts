@@ -48,8 +48,14 @@ export type GenerateCommitMessageOptions = {
 const formats: Record<CommitType, string> = {
 	plain: 'plain text',
 	conventional: 'Conventional Commits: <type>(optional scope): <subject>',
+	'conventional+body':
+		'Conventional Commits: <type>(optional scope): <subject>',
 	gitmoji: 'Gitmoji: <emoji> <subject>',
+	'subject+body': 'plain text',
 };
+
+const isConventionalType = (type: CommitType) =>
+	type === 'conventional' || type === 'conventional+body';
 
 type CommitInstructionOptions = Pick<
 	GenerateCommitMessageOptions,
@@ -71,7 +77,7 @@ const buildCommitInstructions = (
 		...pathInstructions,
 		'Mention the important behavior change, not file names.',
 		`Write in ${locale}. Format: ${formats[type]}.`,
-		type === 'conventional'
+		isConventionalType(type)
 			? [
 					'Use fix for corrected behavior and feat only for a new user-facing capability.',
 					'Use refactor for internal restructuring and chore for maintenance, tests, or specifications.',
