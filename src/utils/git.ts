@@ -37,7 +37,7 @@ const isLockFile = (file: string) => {
 
 const filesToExclude = lockFilePatterns.map(excludeFromDiff);
 
-export const getStagedFiles = async (excludeFiles?: string[]) => {
+export const getStagedDiff = async (excludeFiles?: string[]) => {
 	const diffCached = ['diff', '--cached', '--diff-algorithm=minimal'];
 
 	// First, get all staged files without any excludes
@@ -79,7 +79,35 @@ export const getStagedFiles = async (excludeFiles?: string[]) => {
 		return;
 	}
 
-	return files.split('\n');
+	const { stdout: diff } = await execa('git', [
+		...diffCached,
+		...excludes,
+	]);
+
+	return {
+		files: files.split('\n'),
+		diff,
+	};
+};
+
+export const getStagedDiffForFiles = async (files: string[], excludeFiles?: string[]) => {
+	const diffCached = ['diff', '--cached', '--diff-algorithm=minimal'];
+	const excludes = [
+		...filesToExclude,
+		...(excludeFiles ? excludeFiles.map(excludeFromDiff) : []),
+	];
+
+	const { stdout: diff } = await execa('git', [
+		...diffCached,
+		'--',
+		...files,
+		...excludes,
+	]);
+
+	return {
+		files,
+		diff,
+	};
 };
 
 export const getDetectedMessage = (files: string[]) =>

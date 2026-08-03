@@ -13,10 +13,9 @@ export const GroqProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
+		'openai/gpt-oss-120b',
 		'llama-3.1-8b-instant',
 		'openai/gpt-oss-20b',
-		'llama-3.3-70b-versatile',
-		'openai/gpt-oss-120b',
 	],
 	requiresApiKey: true,
 };

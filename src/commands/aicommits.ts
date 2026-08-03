@@ -11,17 +11,17 @@ import {
 } from '@clack/prompts';
 import {
 	assertGitRepo,
-	getStagedFiles,
+	getStagedDiff,
+	getStagedDiffForFiles,
 	getDetectedMessage,
 } from '../utils/git.js';
 import { getConfig, setConfigs } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
-import { generateCommitMessage } from '../feature/generate-commit-message.js';
 import {
-	KnownError,
-	handleCommandError,
-	isModelUnavailableError,
-} from '../utils/error.js';
+	generateCommitMessage,
+	combineCommitMessages,
+} from '../utils/openai.js';
+import { KnownError, handleCommandError } from '../utils/error.js';
 
 import { getCommitMessage } from '../utils/commit-helpers.js';
 import { isHeadless } from '../utils/headless.js';
@@ -34,26 +34,25 @@ export default async (
 	skipConfirm: boolean,
 	copyToClipboard: boolean,
 	noVerify: boolean,
-	includeDescription: boolean,
 	customPrompt: string | undefined,
 	rawArgv: string[]
 ) =>
 	(async () => {
 		const headless = isHeadless();
-
+		
 		if (!headless) {
 			intro(bgCyan(black(' aicommits ')));
 		}
 
-		const gitRoot = await assertGitRepo();
+		await assertGitRepo();
 
 		if (stageAll) {
 			await execa('git', ['add', '--update']);
 		}
 
-		const stagedFiles = await getStagedFiles(excludeFiles);
+		const staged = await getStagedDiff(excludeFiles);
 
-		if (!stagedFiles) {
+		if (!staged) {
 			throw new KnownError(
 				'No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.'
 			);
@@ -61,19 +60,20 @@ export default async (
 
 		if (!headless) {
 			const detectingFiles = spinner();
-			if (stagedFiles.length <= 10) {
+			if (staged.files.length <= 10) {
 				detectingFiles.start('Detecting staged files');
 				detectingFiles.stop(
-					`📁 ${getDetectedMessage(stagedFiles)}:\n${stagedFiles
+					`📁 ${getDetectedMessage(staged.files)}:\n${staged.files
 						.map((file) => `     ${file}`)
 						.join('\n')}`
 				);
 			} else {
 				detectingFiles.start('Detecting staged files');
-				detectingFiles.stop(`📁 ${getDetectedMessage(stagedFiles)}`);
+				detectingFiles.stop(`📁 ${getDetectedMessage(staged.files)}`);
 			}
 		}
 
+		const { env } = process;
 		const config = await getConfig({
 			generate: generate?.toString(),
 			type: commitType?.toString(),
@@ -82,7 +82,7 @@ export default async (
 		const providerInstance = getProvider(config);
 		if (!providerInstance) {
 			if (!headless) {
-				console.log(`Welcome to aicommits! Let's set up your AI provider.`);
+				console.log("Welcome to aicommits! Let's set up your AI provider.");
 				console.log('Run `aicommits setup` to configure your provider.');
 				outro('Setup required. Please run: aicommits setup');
 				return;
@@ -93,7 +93,9 @@ export default async (
 			}
 		}
 
-		const timeout = providerInstance.getRequestTimeout(config.timeout);
+		// Use config timeout, or default per provider
+		const timeout =
+			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 10_000);
 
 		// Validate provider config
 		const validation = providerInstance.validateConfig();
@@ -108,42 +110,144 @@ export default async (
 		// Use the unified model setting or provider default
 		config.model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
 
-		const attemptGeneration = async () => {
-			const model = providerInstance.getGenerationModel(config.model!);
+		// Check if diff is large and needs chunking
+		const MAX_FILES = 50;
+		const CHUNK_SIZE = 10;
+		let isChunking = false;
+		if (staged.files.length > MAX_FILES) {
+			isChunking = true;
+		}
+
+		const baseUrl = providerInstance.getBaseUrl();
+		const apiKey = providerInstance.getApiKey() || '';
+		const providerHeaders = providerInstance.getHeaders();
+
+		const attemptGeneration = async (): Promise<{ messages: string[]; usage: any }> => {
 			const s = headless ? null : spinner();
 			if (s) {
 				s.start(
-					`🔍 Analyzing changes in ${stagedFiles.length} file${
-						stagedFiles.length === 1 ? '' : 's'
+					`🔍 Analyzing changes in ${staged.files.length} file${
+						staged.files.length === 1 ? '' : 's'
 					}`
 				);
 			}
 			const startTime = Date.now();
 			try {
-				const results = await Promise.all(
-					Array.from({ length: config.generate }, () =>
-						generateCommitMessage({
-							model,
-							cwd: gitRoot,
-							files: stagedFiles,
-							type: config.type,
-							locale: config.locale,
-							maxLength: config['max-length'],
-							includeBody: includeDescription,
-							timeout,
-							customPrompt,
-						})
-					)
-				);
-				return Array.from(
-					new Set(
-						results.map(({ message }) =>
-							message.body
-								? `${message.subject}\n\n${message.body}`
-								: message.subject
-						)
-					)
-				);
+				let messages: string[];
+				let usage: any;
+
+				if (isChunking) {
+					// Split files into chunks
+					const chunks: string[][] = [];
+					for (let i = 0; i < staged.files.length; i += CHUNK_SIZE) {
+						chunks.push(staged.files.slice(i, i + CHUNK_SIZE));
+					}
+
+					const chunkMessages: string[] = [];
+					let totalUsage = {
+						prompt_tokens: 0,
+						completion_tokens: 0,
+						total_tokens: 0,
+					};
+
+					for (const chunk of chunks) {
+						const chunkDiff = await getStagedDiffForFiles(chunk, excludeFiles);
+						if (chunkDiff && chunkDiff.diff) {
+							// Truncate diff if too large to avoid context limits
+							const maxDiffLength = 30000; // Approximate 7.5k tokens
+							let diffToUse = chunkDiff.diff;
+							if (diffToUse.length > maxDiffLength) {
+								diffToUse =
+									diffToUse.substring(0, maxDiffLength) +
+									'\n\n[Diff truncated due to size]';
+							}
+							const result = await generateCommitMessage({
+								baseUrl,
+								apiKey,
+								model: config.model!,
+								locale: config.locale,
+								diff: diffToUse,
+								completions: config.generate,
+								maxLength: config['max-length'],
+								type: config.type,
+								timeout,
+								customPrompt,
+								headers: providerHeaders,
+							});
+							chunkMessages.push(...result.messages);
+							if (result.usage) {
+								totalUsage.prompt_tokens +=
+									(result.usage as any).prompt_tokens ||
+									(result.usage as any).promptTokens ||
+									0;
+								totalUsage.completion_tokens +=
+									(result.usage as any).completion_tokens ||
+									(result.usage as any).completionTokens ||
+									0;
+								totalUsage.total_tokens +=
+									(result.usage as any).total_tokens ||
+									(result.usage as any).totalTokens ||
+									0;
+							}
+						}
+					}
+
+					// Combine the chunk messages
+					const combineResult = await combineCommitMessages({
+						messages: chunkMessages,
+						baseUrl,
+						apiKey,
+						model: config.model!,
+						locale: config.locale,
+						maxLength: config['max-length'],
+						type: config.type,
+						timeout,
+						customPrompt,
+						headers: providerHeaders,
+					});
+					messages = combineResult.messages;
+					if (combineResult.usage) {
+						totalUsage.prompt_tokens +=
+							(combineResult.usage as any).prompt_tokens ||
+							(combineResult.usage as any).promptTokens ||
+							0;
+						totalUsage.completion_tokens +=
+							(combineResult.usage as any).completion_tokens ||
+							(combineResult.usage as any).completionTokens ||
+							0;
+						totalUsage.total_tokens +=
+							(combineResult.usage as any).total_tokens ||
+							(combineResult.usage as any).totalTokens ||
+							0;
+					}
+					usage = totalUsage;
+				} else {
+					// Truncate diff if too large to avoid context limits
+					const maxDiffLength = 30000; // Approximate 7.5k tokens
+					let diffToUse = staged.diff;
+					if (diffToUse.length > maxDiffLength) {
+						diffToUse =
+							diffToUse.substring(0, maxDiffLength) +
+							'\n\n[Diff truncated due to size]';
+					}
+					const result = await generateCommitMessage({
+						baseUrl,
+						apiKey,
+						model: config.model!,
+						locale: config.locale,
+						diff: diffToUse,
+						completions: config.generate,
+						maxLength: config['max-length'],
+						type: config.type,
+						timeout,
+						customPrompt,
+						headers: providerHeaders,
+					});
+					messages = result.messages;
+					usage = result.usage;
+				}
+
+				return { messages, usage };
 			} finally {
 				if (s) {
 					const duration = Date.now() - startTime;
@@ -154,28 +258,27 @@ export default async (
 			}
 		};
 
-		let messages: string[];
+		let messages!: string[];
+		let usage!: any;
 		try {
-			messages = await attemptGeneration();
-		} catch (error) {
-			if (!isModelUnavailableError(error)) throw error;
-			const fallbackModel = providerInstance.getDefaultModel();
-			if (!fallbackModel || fallbackModel === config.model) {
-				throw new KnownError(
-					`Model "${config.model}" is not available or has been deprecated.`
-				);
+			({ messages, usage } = await attemptGeneration());
+		} catch (error: any) {
+			if ((error as any).isModelDeprecated) {
+				const fallbackModel = providerInstance.getDefaultModel();
+				if (fallbackModel && fallbackModel !== config.model) {
+					const deprecatedModel = config.model;
+					if (!headless) {
+						console.log(yellow(`⚠ Model "${deprecatedModel}" is deprecated. Switching to "${fallbackModel}".`));
+					}
+					config.model = fallbackModel;
+					await setConfigs([['OPENAI_MODEL', fallbackModel]]);
+					({ messages, usage } = await attemptGeneration());
+				} else {
+					throw error;
+				}
+			} else {
+				throw error;
 			}
-
-			if (!headless) {
-				console.log(
-					yellow(
-						`⚠ Model "${config.model}" is unavailable. Switching to "${fallbackModel}".`
-					)
-				);
-			}
-			config.model = fallbackModel;
-			await setConfigs([['OPENAI_MODEL', fallbackModel]]);
-			messages = await attemptGeneration();
 		}
 
 		if (messages.length === 0) {
@@ -206,16 +309,16 @@ export default async (
 		}
 
 		// Commit the message with timeout
-		try {
-			const commitArgs = ['-m', message];
-			if (noVerify) {
-				commitArgs.push('--no-verify');
-			}
-			await execa('git', ['commit', ...commitArgs, ...rawArgv], {
-				stdio: 'inherit',
-				cleanup: true,
-				timeout: 10000,
-			});
+			try {
+				const commitArgs = ['-m', message];
+				if (noVerify) {
+					commitArgs.push('--no-verify');
+				}
+				await execa('git', ['commit', ...commitArgs, ...rawArgv], {
+					stdio: 'inherit',
+					cleanup: true,
+					timeout: 10000
+				});
 			outro(`${green('✔')} Successfully committed!`);
 		} catch (error: any) {
 			if (error.timedOut) {
