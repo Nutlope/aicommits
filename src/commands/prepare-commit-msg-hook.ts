@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import { intro, outro, spinner } from '@clack/prompts';
 import { black, green, red, bgCyan } from 'kolorist';
-import { getStagedDiff } from '../utils/git.js';
+import { assertGitRepo, getStagedFiles } from '../utils/git.js';
 import { getConfig } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
-import { generateCommitMessage } from '../utils/openai.js';
+import { generateCommitMessage } from '../feature/generate-commit-message.js';
 import { KnownError, handleCommandError } from '../utils/error.js';
 import { isHeadless } from '../utils/headless.js';
 
@@ -24,8 +24,9 @@ export default () =>
 		}
 
 		// All staged files can be ignored by our filter
-		const staged = await getStagedDiff();
-		if (!staged) {
+		const gitRoot = await assertGitRepo();
+		const stagedFiles = await getStagedFiles();
+		if (!stagedFiles) {
 			return;
 		}
 
@@ -53,34 +54,31 @@ export default () =>
 			);
 		}
 
-		const baseUrl = providerInstance.getBaseUrl();
-		const apiKey = providerInstance.getApiKey() || '';
-		const providerHeaders = providerInstance.getHeaders();
-
-		// Use config timeout, or default per provider
-		const timeout =
-			config.timeout || (providerInstance.name === 'ollama' ? 30_000 : 10_000);
+		const timeout = providerInstance.getRequestTimeout(config.timeout);
 
 		// Use the unified model or provider default
-		let model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
+		const modelName = config.OPENAI_MODEL || providerInstance.getDefaultModel();
+		const model = providerInstance.getGenerationModel(modelName);
 
 		const s = headless ? null : spinner();
 		s?.start('The AI is analyzing your changes');
 		let messages: string[];
 		try {
-			const result = await generateCommitMessage({
-				baseUrl,
-				apiKey,
-				model,
-				locale: config.locale,
-				diff: staged!.diff,
-				completions: config.generate,
-				maxLength: config['max-length'],
-				type: config.type,
-				timeout,
-				headers: providerHeaders,
-			});
-			messages = result.messages;
+			const results = await Promise.all(
+				Array.from({ length: config.generate }, () =>
+					generateCommitMessage({
+						model,
+						cwd: gitRoot,
+						files: stagedFiles,
+						type: config.type,
+						locale: config.locale,
+						maxLength: config['max-length'],
+						includeBody: false,
+						timeout,
+					})
+				)
+			);
+			messages = results.map(({ message }) => message.subject);
 		} finally {
 			s?.stop('Changes analyzed');
 		}

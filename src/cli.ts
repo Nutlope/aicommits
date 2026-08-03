@@ -85,6 +85,11 @@ cli(
 				alias: 'n',
 				default: false,
 			},
+			description: {
+				type: Boolean,
+				description: 'Include a commit message description',
+				default: false,
+			},
 			prompt: {
 				type: String,
 				description:
@@ -123,8 +128,9 @@ cli(
 				argv.flags.yes,
 				argv.flags.clipboard,
 				argv.flags.noVerify,
+				argv.flags.description,
 				argv.flags.prompt,
-				rawArgv
+				rawArgv.filter((argument) => argument !== '--description')
 			);
 		}
 	},

@@ -45,6 +45,12 @@ This will guide you through:
   - **LM Studio** (local) - No API key required. Runs on your computer via [LM Studio](https://lmstudio.ai/)
   - **Custom OpenAI-compatible endpoint** - Use any service that implements the OpenAI API
 
+  Together AI, OpenAI, xAI, and LM Studio models use the agentic generation
+  flow. Tested Together models without compatible tool calls use the one-shot
+  path; OpenAI, xAI, and LM Studio fall back when an endpoint rejects tools.
+  LM Studio also falls back when a local model does not submit the required
+  tool call. Other providers continue through the one-shot flow.
+
   **For CI/CD environments**, you can also set up configuration via the config file:
 
   ```bash
@@ -106,6 +112,7 @@ aicommits --all # or -a
 - `--clipboard` or `-c`: Copy the selected message to the clipboard instead of committing (default: **false**)
 - `--generate` or `-g`: Number of messages to generate (default: **1**)
 - `--exclude` or `-x`: Files to exclude from AI analysis
+- `--description`: Include a commit message description
 - `--type` or `-t`: Git commit message format (default: **plain**). Supports `plain`, `conventional`, and `gitmoji`
 - `--prompt` or `-p`: Custom prompt to guide the LLM behavior (e.g., specific language, style instructions)
 - `--no-verify` or `-n`: Bypass pre-commit hooks while committing (default: **false**)
@@ -120,6 +127,14 @@ aicommits --generate <i> # or -g <i>
 ```
 
 > Warning: this uses more tokens, meaning it costs more.
+
+#### Include a description
+
+Add `--description` when the commit needs context beyond its subject:
+
+```sh
+aicommits --description
+```
 
 #### Commit Message Formats
 
@@ -338,7 +353,8 @@ aicommits config set timeout=20000 # 20s
 
 #### max-length
 
-The maximum character length of the generated commit message.
+The preferred character length of the generated commit subject. This guides the
+model toward concise messages, but complete subjects may be longer.
 
 Default: `72`
 
@@ -366,7 +382,9 @@ aicommits config set type=plain
 
 ## How it works
 
-This CLI tool runs `git diff` to grab all your latest code changes, sends them to the configured AI provider (TogetherAI by default), then returns the AI generated commit message.
+The model receives the staged file list, requests the staged diffs it needs, and
+submits a validated commit subject with an optional description. The tool can
+only read Git's staged snapshot, so unstaged edits are never sent to the model.
 
 Video coming soon where I rebuild it from scratch to show you how to easily build your own CLI tools powered by AI.
 

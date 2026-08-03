@@ -9,5 +9,7 @@ export const LMStudioProvider: ProviderDef = {
 			.filter((m: any) => !m.type || m.type === 'chat' || m.type === 'language')
 			.map((m: any) => m.id),
 	defaultModels: ['qwen/qwen3-4b-2507', 'qwen/qwen3-8b'],
+	defaultTimeout: 60_000,
 	requiresApiKey: false,
+	agenticGeneration: {},
 };
