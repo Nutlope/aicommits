@@ -6,7 +6,7 @@ import { execa } from 'execa';
 import { getProvider } from '../src/feature/providers/index.js';
 import { supportsTogetherAgenticGeneration } from '../src/feature/providers/together.js';
 import { getConfig } from '../src/utils/config-runtime.js';
-import { generateCommitMessage as generateCandidateMessage } from '../src/utils/generate-commit-message.js';
+import { generateCommitMessage as generateCandidateMessage } from '../src/feature/generate-commit-message.js';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const LEGACY_REF = '8a4d2316e5ce52e2cafcdde19d03b1f0ff98df49';
@@ -22,7 +22,7 @@ const defaultModels = [
 	'zai-org/GLM-5.2',
 	'moonshotai/Kimi-K2.6',
 	'MiniMaxAI/MiniMax-M3',
-	'MiniMaxAI/MiniMax-M2.7',
+	'moonshotai/Kimi-K3',
 	'google/gemma-4-31B-it',
 	'openai/gpt-oss-20b',
 	'Qwen/Qwen3.5-9B',
@@ -333,7 +333,7 @@ const main = async () => {
 					);
 					const candidateResult = await measure(() =>
 						generateCandidateMessage({
-							model: provider.getLanguageModel(model),
+							model: provider.getGenerationModel(model),
 							cwd: staged.cwd,
 							files: staged.files,
 							type: 'conventional',

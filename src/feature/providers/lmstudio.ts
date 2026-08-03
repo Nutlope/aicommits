@@ -11,4 +11,5 @@ export const LMStudioProvider: ProviderDef = {
 	defaultModels: ['qwen/qwen3-4b-2507', 'qwen/qwen3-8b'],
 	defaultTimeout: 60_000,
 	requiresApiKey: false,
+	agenticGeneration: {},
 };

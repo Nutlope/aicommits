@@ -1,7 +1,11 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createTogetherAI } from '@ai-sdk/togetherai';
-import type { LanguageModel } from 'ai';
+import type {
+	JSONValue,
+	LanguageModel,
+	LanguageModelCallOptions,
+} from 'ai';
 import { fetchModels } from '../models.js';
 import type { ValidConfig } from '../../utils/config-types.js';
 
@@ -24,6 +28,23 @@ export type ProviderDef = {
 	defaultTimeout?: number;
 	requiresApiKey: boolean;
 	headers?: Record<string, string>;
+	agenticGeneration?: {
+		supports?: (model: string) => boolean;
+		callOptions?: (model: string) => GenerationCallOptions;
+	};
+};
+
+export type GenerationCallOptions = {
+	maxOutputTokens?: LanguageModelCallOptions['maxOutputTokens'];
+	reasoning?: LanguageModelCallOptions['reasoning'];
+	providerOptions?: Record<string, Record<string, JSONValue>>;
+};
+
+export type GenerationModel = {
+	languageModel: LanguageModel;
+	mode: 'agentic' | 'fallback';
+	isLocal: boolean;
+	callOptions: GenerationCallOptions;
 };
 
 export class Provider {
@@ -162,6 +183,30 @@ export class Provider {
 			});
 		})();
 		return provider(model);
+	}
+
+	getGenerationModel(model: string): GenerationModel {
+		return {
+			languageModel: this.getLanguageModel(model),
+			...this.getGenerationPolicy(model),
+		};
+	}
+
+	getGenerationPolicy(
+		model: string
+	): Omit<GenerationModel, 'languageModel'> {
+		const agenticGeneration = this.def.agenticGeneration;
+		const supportsAgenticGeneration = Boolean(
+			agenticGeneration && (agenticGeneration.supports?.(model) ?? true)
+		);
+
+		return {
+			mode: supportsAgenticGeneration ? 'agentic' : 'fallback',
+			isLocal: this.isLocal(),
+			callOptions: supportsAgenticGeneration
+				? agenticGeneration?.callOptions?.(model) ?? {}
+				: {},
+		};
 	}
 
 	validateConfig(): { valid: boolean; errors: string[] } {

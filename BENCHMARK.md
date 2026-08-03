@@ -1,6 +1,6 @@
 # Agentic generation benchmark
 
-Last run: 2026-07-23
+Comparative benchmark: 2026-07-23. Tool-compatibility refresh: 2026-07-31.
 
 The benchmark runner and GitHub PR fixtures live in
 `scripts/benchmark-together-models.ts`. It checks the current generator against
@@ -79,9 +79,46 @@ disabled and retry once after a completed invalid submission.
 
 ## Tool compatibility
 
-The 2026-07-23 Together catalog contained 22 serverless chat models. Fifteen
-completed the streaming two-tool protocol after retrying one transient Qwen
-failure. Seven consistently failed and remain on the non-agentic fallback path.
+The 2026-07-31 authenticated Together catalog contained 23 serverless chat
+models. Fourteen completed the streaming two-tool protocol on the first pass.
+`thinkingmachines/Inkling` passed its retry, five subsequent protocol repeats,
+and all six real-PR generator runs with accurate subjects at a 1.91-second
+average. A fresh 2026-08-03 built-CLI check exposed a 512-token output-budget
+failure: Inkling sometimes spent 511 tokens reasoning and reached
+`finish_reason: length` before producing final text or a tool call. Its provider
+policy now allows 2,048 output tokens; five subsequent built-CLI agentic runs
+all passed in 1.88-6.22 seconds. Inkling remains agentic. The eight fallback
+models are:
+
+- `arize-ai/qwen-2-1.5b-instruct`
+- `deepcogito/cogito-v2-1-671b`
+- `google/gemma-3n-E4B-it`
+- `meta-llama/Llama-3.3-70B-Instruct-Turbo`
+- `openai/gpt-oss-120b`
+- `openai/gpt-oss-20b`
+- `pearl-ai/gemma-4-31b-it`
+- `Qwen/Qwen2.5-7B-Instruct-Turbo`
+
+`MiniMaxAI/MiniMax-M3` and the newly available `moonshotai/Kimi-K3` each passed
+all six focused two-tool checks. On the real three-PR small suite, repeated
+twice, both produced accurate commit subjects in all six runs. MiniMax M3
+averaged 2.69 seconds; Kimi K3 averaged 6.39 seconds and had more variable
+latency. `MiniMaxAI/MiniMax-M2.7` was no longer present in the live serverless
+chat catalog.
+
+The same 2026-08-03 built-CLI check exposed a separate timeout issue. Together
+requests now default to 60 seconds instead of the generic 10 seconds. GLM 5.2
+completed 3/3 runs (2.46-8.19s), Kimi K3 completed 3/3 runs
+(2.69-16.38s), MiniMax M3 completed its focused run in 1.98s, and the Qwen 2.5
+fallback completed in 1.71s. Kimi K3's 16.38-second success directly exercises
+the longer provider timeout.
+
+The bounded full-coverage path was also rerun against the 95-file,
+271,334-character `vercel/ai#5759` fixture with Kimi K2.7 Code. It completed in
+12.96 seconds and produced `refactor(ai): rename text stream part from
+text-delta to text and generated text to typed object shape`, covering both
+major changes without silently truncating the diff. The historical prefix-only
+path took 71.51 seconds on the same run.
 
 Raw JSON reports are generated locally under `docs/research/`, which is ignored
 by Git:
@@ -90,3 +127,9 @@ by Git:
 - `2026-07-23-final-fair-large-benchmark-results.json`
 - `2026-07-23-together-tool-compatibility.json`
 - `2026-07-23-together-tool-compatibility-retry.json`
+- `2026-07-31-together-tool-compatibility.json`
+- `2026-07-31-together-tool-compatibility-retry.json`
+- `2026-07-31-targeted-agentic-repeat-{1..5}.json`
+- `2026-07-31-minimax-m3-kimi-k3-small-benchmark.json`
+- `2026-07-31-inkling-small-benchmark.json`
+- `2026-08-03-large-covered-benchmark.json`

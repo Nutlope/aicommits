@@ -4,30 +4,29 @@ import {
 	hasToolCall,
 	stepCountIs,
 	tool,
-	type JSONValue,
-	type LanguageModel,
-	type LanguageModelCallOptions,
 	type LanguageModelUsage,
 } from 'ai';
 import { execa } from 'execa';
 import { z } from 'zod';
-import {
-	getTogetherReasoningOptions,
-	supportsTogetherAgenticGeneration,
-} from '../feature/providers/together.js';
-import type { CommitType } from './config-types.js';
+import type { GenerationModel } from './providers/base.js';
+import type { CommitType } from '../utils/config-types.js';
 import {
 	isInvalidJsonResponseError,
 	isToolUnsupportedError,
-} from './error.js';
+	KnownError,
+} from '../utils/error.js';
 
 const MAX_DIFF_LENGTH = 30_000;
 const MAX_LOCAL_DIFF_LENGTH = 3_000;
+const MAX_REMOTE_TOTAL_DIFF_BYTES = 500_000;
+const MAX_LOCAL_TOTAL_DIFF_BYTES = 30_000;
+const MAX_STAGED_FILES = 100;
+const MAX_DIFF_CHUNKS = 20;
+const MAX_MODEL_CALLS = 42;
 const MAX_AGENT_STEPS = 4;
-const MAX_NON_AGENTIC_FILES = 50;
-const NON_AGENTIC_CHUNK_SIZE = 10;
+const MAX_AGENT_DIFF_READS = MAX_AGENT_STEPS - 1;
 const AGENT_ATTEMPTS = 2;
-const ONE_SHOT_ATTEMPTS = 2;
+const ONE_SHOT_ATTEMPTS = 3;
 
 export type CommitMessage = {
 	subject: string;
@@ -35,7 +34,7 @@ export type CommitMessage = {
 };
 
 export type GenerateCommitMessageOptions = {
-	model: LanguageModel;
+	model: GenerationModel;
 	cwd: string;
 	files: string[];
 	type: CommitType;
@@ -44,7 +43,6 @@ export type GenerateCommitMessageOptions = {
 	includeBody: boolean;
 	timeout: number;
 	customPrompt?: string;
-	isLocalProvider?: boolean;
 };
 
 const formats: Record<CommitType, string> = {
@@ -90,10 +88,78 @@ const buildCommitInstructions = (
 		.filter(Boolean)
 		.join('\n');
 
-const truncateDiff = (diff: string, maxLength = MAX_DIFF_LENGTH) =>
-	diff.length > maxLength
-		? `${diff.slice(0, maxLength)}\n\n[Diff truncated]`
-		: diff;
+const createGenerationBudget = (timeout: number) => {
+	const deadline = Date.now() + timeout;
+	let modelCalls = 0;
+
+	const remainingTime = () => {
+		const remaining = deadline - Date.now();
+		if (remaining <= 0) {
+			throw new KnownError(`Commit generation timed out after ${timeout}ms.`);
+		}
+		return remaining;
+	};
+
+	return {
+		remainingTime,
+		nextModelTimeout: () => {
+			if (modelCalls >= MAX_MODEL_CALLS) {
+				throw new KnownError(
+					`Commit generation exceeded the ${MAX_MODEL_CALLS}-request model budget.`
+				);
+			}
+			modelCalls += 1;
+			return remainingTime();
+		},
+	};
+};
+
+const splitAtLineBoundary = (text: string, maxLength: number) => {
+	const segments: string[] = [];
+	let offset = 0;
+	while (offset < text.length) {
+		let end = Math.min(offset + maxLength, text.length);
+		if (end < text.length) {
+			const lineEnd = text.lastIndexOf('\n', end);
+			if (lineEnd > offset + Math.floor(maxLength / 2)) {
+				end = lineEnd + 1;
+			}
+		}
+		segments.push(text.slice(offset, end));
+		offset = end;
+	}
+	return segments;
+};
+
+const splitCompleteDiff = (diff: string, maxLength: number) => {
+	const fileDiffs = diff.split(/(?=^diff --git )/m).filter(Boolean);
+	const segmentContentLength = maxLength - 80;
+	const segments = fileDiffs.flatMap((fileDiff) => {
+		if (fileDiff.length <= maxLength) return [fileDiff];
+		const parts = splitAtLineBoundary(fileDiff, segmentContentLength);
+		return parts.map(
+			(part, index) =>
+				`[Oversized file diff segment ${index + 1}/${parts.length}]\n${part}`
+		);
+	});
+	const chunks: string[] = [];
+	let current = '';
+	for (const segment of segments) {
+		if (current && current.length + segment.length > maxLength) {
+			chunks.push(current);
+			current = '';
+		}
+		current += segment;
+	}
+	if (current) chunks.push(current);
+
+	if (chunks.length > MAX_DIFF_CHUNKS) {
+		throw new KnownError(
+			`The staged diff needs ${chunks.length} analysis chunks; the safe maximum is ${MAX_DIFF_CHUNKS}. Split this commit into smaller changes.`
+		);
+	}
+	return chunks;
+};
 
 const sumTokenCounts = (counts: Array<number | undefined>) =>
 	counts.every((count) => count === undefined)
@@ -125,30 +191,21 @@ const combineUsage = (usages: LanguageModelUsage[]): LanguageModelUsage => ({
 	totalTokens: sumTokenCounts(usages.map((usage) => usage.totalTokens)),
 });
 
-const getModelDetails = (model: LanguageModel) =>
-	typeof model === 'string'
-		? { provider: '', modelId: model }
-		: { provider: model.provider, modelId: model.modelId };
+const isCompleteSubject = (subject: string) =>
+	!/(?:\.\.\.|…)\s*$/.test(subject);
 
-type AgentReasoningOptions = {
-	reasoning?: LanguageModelCallOptions['reasoning'];
-	providerOptions?: Record<string, Record<string, JSONValue>>;
-};
+const normalizeSubject = (subject: string) =>
+	subject.trim().split('\n')[0].trim();
 
-const getXAiReasoningOptions = (modelId: string): AgentReasoningOptions => {
-	if (modelId.startsWith('grok-4.5')) {
-		return {
-			reasoning: 'low',
-			providerOptions: { xai: { reasoningEffort: 'low' } },
-		};
+const validateSubject = (subject: string) => {
+	const normalizedSubject = normalizeSubject(subject);
+	if (!normalizedSubject) {
+		throw new Error('The model did not generate a commit message.');
 	}
-	if (modelId.startsWith('grok-4.3')) {
-		return {
-			reasoning: 'none',
-			providerOptions: { xai: { reasoningEffort: 'none' } },
-		};
+	if (!isCompleteSubject(normalizedSubject)) {
+		throw new Error('The model generated an incomplete commit message.');
 	}
-	return {};
+	return normalizedSubject;
 };
 
 const parseOneShotMessage = (
@@ -159,10 +216,7 @@ const parseOneShotMessage = (
 		.replace(/```(?:\w+)?/g, '')
 		.trim()
 		.split('\n');
-	const subject = (lines.shift() || '').trim();
-	if (!subject) {
-		throw new Error('The model did not generate a commit message.');
-	}
+	const subject = validateSubject(lines.shift() || '');
 	const body = includeBody ? lines.join('\n').trim() : '';
 	if (includeBody && !body) {
 		throw new Error('The model did not generate a commit message description.');
@@ -180,59 +234,63 @@ export const generateCommitMessage = async ({
 	includeBody,
 	timeout,
 	customPrompt,
-	isLocalProvider,
 }: GenerateCommitMessageOptions) => {
+	if (files.length > MAX_STAGED_FILES) {
+		throw new KnownError(
+			`Commit generation supports at most ${MAX_STAGED_FILES} staged files; found ${files.length}. Split this commit into smaller changes.`
+		);
+	}
+
+	const { languageModel, mode, isLocal, callOptions } = model;
+	const useAgent = mode === 'agentic';
+	const maxDiffLength = isLocal ? MAX_LOCAL_DIFF_LENGTH : MAX_DIFF_LENGTH;
+	const maxTotalDiffBytes = isLocal
+		? MAX_LOCAL_TOTAL_DIFF_BYTES
+		: MAX_REMOTE_TOTAL_DIFF_BYTES;
+	const budget = createGenerationBudget(timeout);
+	let remainingGitDiffBytes = maxTotalDiffBytes;
 	const getStagedDiff = async (paths: string[]) => {
 		if (paths.some((path) => !files.includes(path))) {
 			throw new Error('Only staged files may be read.');
 		}
+		if (remainingGitDiffBytes <= 0) {
+			throw new KnownError('The staged diff read budget is exhausted.');
+		}
 
-		const { stdout } = await execa(
-			'git',
-			[
-				'--literal-pathspecs',
-				'diff',
-				'--cached',
-				'--diff-algorithm=minimal',
-				'--',
-				...paths,
-			],
-			{ cwd }
-		);
+		let stdout: string;
+		try {
+			({ stdout } = await execa(
+				'git',
+				[
+					'--literal-pathspecs',
+					'diff',
+					'--cached',
+					'--diff-algorithm=minimal',
+					'--',
+					...paths,
+				],
+				{
+					cwd,
+					maxBuffer: remainingGitDiffBytes,
+					timeout: budget.remainingTime(),
+				}
+			));
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				(error.name === 'MaxBufferError' ||
+					error.message.includes('maxBuffer exceeded'))
+			) {
+				throw new KnownError(
+					`The staged diff exceeds the ${maxTotalDiffBytes.toLocaleString()}-byte analysis budget. Split this commit into smaller changes.`
+				);
+			}
+			throw error;
+		}
+		remainingGitDiffBytes -= Buffer.byteLength(stdout);
 		return stdout;
 	};
 	const stagedDiff = await getStagedDiff(files);
-	const { provider, modelId } = getModelDetails(model);
-	const isTogetherModel = provider.startsWith('togetherai.');
-	const isOpenAiModel = provider.startsWith('openai.');
-	const isXAiModel = provider.startsWith('xai.');
-	const isLmStudioModel = provider.startsWith('lmstudio.');
-	const isLocalModel =
-		isLocalProvider ||
-		isLmStudioModel ||
-		provider.startsWith('ollama.');
-	const maxDiffLength = isLocalModel
-		? MAX_LOCAL_DIFF_LENGTH
-		: MAX_DIFF_LENGTH;
-	const useAgent =
-		(isTogetherModel &&
-			supportsTogetherAgenticGeneration(modelId)) ||
-		isOpenAiModel ||
-		isXAiModel ||
-		isLmStudioModel;
-	const reasoningOptions: AgentReasoningOptions =
-		isTogetherModel && useAgent
-			? getTogetherReasoningOptions(modelId)
-			: isOpenAiModel && useAgent
-				? {
-						reasoning: 'none' as const,
-						providerOptions: {
-							openai: { reasoningEffort: 'none' },
-						},
-					}
-				: isXAiModel && useAgent
-					? getXAiReasoningOptions(modelId)
-					: {};
 	const runOneShot = async (
 		prompt: string,
 		oneShotIncludeBody = includeBody,
@@ -243,7 +301,7 @@ export const generateCommitMessage = async ({
 			let result;
 			try {
 				result = await generateText({
-					model,
+					model: languageModel,
 					system: buildCommitInstructions(
 						{
 							type,
@@ -259,12 +317,12 @@ export const generateCommitMessage = async ({
 					),
 					prompt,
 					maxOutputTokens: 512,
-					timeout,
-					...reasoningOptions,
+					timeout: budget.nextModelTimeout(),
+					...callOptions,
 				});
 			} catch (error) {
 				if (
-					isLocalModel &&
+					isLocal &&
 					attempt < ONE_SHOT_ATTEMPTS &&
 					isInvalidJsonResponseError(error)
 				) {
@@ -292,23 +350,25 @@ export const generateCommitMessage = async ({
 		throw new Error('The model did not generate a commit message.');
 	};
 
-	if (!useAgent) {
-		if (files.length <= MAX_NON_AGENTIC_FILES) {
-			return runOneShot(truncateDiff(stagedDiff, maxDiffLength));
-		}
-
+	const summarizeCoveredDiff = async () => {
+		const diffChunks = splitCompleteDiff(stagedDiff, maxDiffLength);
 		const chunkResults = [];
-		for (let index = 0; index < files.length; index += NON_AGENTIC_CHUNK_SIZE) {
-			const chunkFiles = files.slice(index, index + NON_AGENTIC_CHUNK_SIZE);
-			const chunkDiff = await getStagedDiff(chunkFiles);
+		for (const diffChunk of diffChunks) {
 			chunkResults.push(
 				await runOneShot(
-					truncateDiff(chunkDiff, maxDiffLength),
+					diffChunk,
 					false,
-					'Summarize only this subset of the staged changes.'
+					'Summarize only this complete segment of the staged diff.'
 				)
 			);
 		}
+		return chunkResults;
+	};
+	const runCoveredFallback = async (
+		coveredChunks?: Awaited<ReturnType<typeof summarizeCoveredDiff>>
+	) => {
+		if (stagedDiff.length <= maxDiffLength) return runOneShot(stagedDiff);
+		const chunkResults = coveredChunks ?? (await summarizeCoveredDiff());
 
 		const combined = await runOneShot(
 			chunkResults
@@ -328,33 +388,52 @@ export const generateCommitMessage = async ({
 				chunkResults.reduce((total, result) => total + result.steps, 0) +
 				combined.steps,
 		};
+	};
+
+	if (!useAgent) {
+		return runCoveredFallback();
 	}
 
 	const hasCompleteDiff = stagedDiff.length <= maxDiffLength;
-	let remainingLocalDiffLength = maxDiffLength;
+	const coveredDiffSummaries = hasCompleteDiff
+		? []
+		: await summarizeCoveredDiff();
+	let remainingAgentDiffLength = maxDiffLength;
+	let agentDiffReads = 0;
 	const readStagedDiff = tool({
 		description: 'Read the staged Git diff for one or more staged files.',
 		inputSchema: z.object({ paths: z.array(z.string()).min(1) }),
 		execute: async ({ paths }) => {
-			if (isLocalModel && remainingLocalDiffLength <= 0) {
+			agentDiffReads += 1;
+			if (agentDiffReads > MAX_AGENT_DIFF_READS) {
+				return '[Diff read call budget exhausted]';
+			}
+			if (remainingAgentDiffLength <= 0) {
 				return '[Diff read budget exhausted]';
 			}
 			const stdout = await getStagedDiff(paths);
-			if (!isLocalModel) {
-				return truncateDiff(stdout, maxDiffLength);
+			if (stdout.length > remainingAgentDiffLength) {
+				return `[Requested diff is ${stdout.length.toLocaleString()} characters but only ${remainingAgentDiffLength.toLocaleString()} remain. Request fewer staged paths.]`;
 			}
-			const result = truncateDiff(stdout, remainingLocalDiffLength);
-			remainingLocalDiffLength -= Math.min(
-				stdout.length,
-				remainingLocalDiffLength
-			);
-			return result;
+			remainingAgentDiffLength -= stdout.length;
+			return stdout;
 		},
 	});
 	const submitCommitMessage = tool({
 		description: 'Submit the final commit message.',
 		inputSchema: z.object({
-			subject: z.string().min(1),
+			subject: z
+				.string()
+				.transform(normalizeSubject)
+				.pipe(
+					z
+						.string()
+						.min(1)
+						.refine(
+							isCompleteSubject,
+							'Subject must not end with an ellipsis.'
+						)
+				),
 			body: includeBody
 				? z.string().trim().min(1)
 				: z.string().nullable().optional(),
@@ -362,7 +441,7 @@ export const generateCommitMessage = async ({
 	});
 	let agentStreamError: unknown;
 	const agent = new ToolLoopAgent({
-		model,
+		model: languageModel,
 		instructions: buildCommitInstructions(
 			{ type, locale, maxLength, includeBody, customPrompt },
 			[
@@ -377,10 +456,10 @@ export const generateCommitMessage = async ({
 			stepCountIs(MAX_AGENT_STEPS),
 		],
 		maxOutputTokens: 512,
-		...reasoningOptions,
+		...callOptions,
 		prepareStep: ({ stepNumber }) => ({
 			toolChoice:
-				!isLmStudioModel && stepNumber === MAX_AGENT_STEPS - 1
+				!isLocal && stepNumber === MAX_AGENT_STEPS - 1
 					? { type: 'tool', toolName: 'submitCommitMessage' }
 					: 'required',
 		}),
@@ -391,17 +470,24 @@ export const generateCommitMessage = async ({
 			`Staged files:\n${files.map((file) => `- ${file}`).join('\n')}`,
 			hasCompleteDiff
 				? `The complete staged diff is included below. Submit directly unless another diff read is necessary.\n\n${stagedDiff}`
-				: 'The staged diff is too large to include. Read the relevant staged diffs before submitting.',
+				: [
+						'The complete staged diff was analyzed in bounded segments. Submit a message covering all segment summaries below.',
+						...coveredDiffSummaries.map(
+							({ message }, index) =>
+								`Segment ${index + 1}: ${message.subject}`
+						),
+					].join('\n'),
 		].join('\n\n'),
-		timeout,
 		onError: ({ error }: { error: unknown }) => {
 			agentStreamError = error;
 		},
 	};
 	const runAgent = async () => {
 		agentStreamError = undefined;
-		remainingLocalDiffLength = maxDiffLength;
-		const result = await agent.stream(streamOptions);
+		const result = await agent.stream({
+			...streamOptions,
+			timeout: budget.nextModelTimeout(),
+		});
 		let staticToolCalls: Awaited<typeof result.staticToolCalls>;
 		try {
 			staticToolCalls = await result.staticToolCalls;
@@ -423,7 +509,7 @@ export const generateCommitMessage = async ({
 				result = await runAgent();
 			} catch (error) {
 				if (
-					isLocalModel &&
+					isLocal &&
 					attempt < AGENT_ATTEMPTS &&
 					isInvalidJsonResponseError(error)
 				) {
@@ -436,34 +522,40 @@ export const generateCommitMessage = async ({
 		}
 	} catch (error) {
 		if (!isToolUnsupportedError(error)) throw error;
-		return runOneShot(truncateDiff(stagedDiff, maxDiffLength));
+		return runCoveredFallback(coveredDiffSummaries);
 	}
 	const submission = agentAttempts.find(
 		(attempt) => attempt.submission
 	)?.submission;
 	if (!submission) {
-		if (isLmStudioModel) {
-			return runOneShot(truncateDiff(stagedDiff, maxDiffLength));
+		if (isLocal) {
+			return runCoveredFallback(coveredDiffSummaries);
 		}
 		throw new Error('The model did not submit a commit message.');
 	}
 
-	const subject = submission.input.subject
-		.trim()
-		.split('\n')[0];
+	const subject = normalizeSubject(submission.input.subject);
 	const body = includeBody ? submission.input.body?.trim() : undefined;
 
 	return {
 		message: { subject, ...(body ? { body } : {}) },
 		usage: combineUsage(
-			await Promise.all(
-				agentAttempts.map(({ result }) => result.usage)
-			)
+			[
+				...coveredDiffSummaries.map(({ usage }) => usage),
+				...(await Promise.all(
+					agentAttempts.map(({ result }) => result.usage)
+				)),
+			]
 		),
-		steps: (
-			await Promise.all(
-				agentAttempts.map(({ result }) => result.steps)
-			)
-		).reduce((total, steps) => total + steps.length, 0),
+		steps:
+			coveredDiffSummaries.reduce(
+				(total, summary) => total + summary.steps,
+				0
+			) +
+			(
+				await Promise.all(
+					agentAttempts.map(({ result }) => result.steps)
+				)
+			).reduce((total, steps) => total + steps.length, 0),
 	};
 };

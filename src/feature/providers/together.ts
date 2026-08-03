@@ -1,6 +1,6 @@
 import { ProviderDef } from './base.js';
 
-// Failed the aicommits two-step tool protocol twice on 2026-07-22 and 2026-07-23.
+// Failed the aicommits tool protocol or real CLI submission checks as of 2026-08-03.
 // Unknown and future Together models remain agentic by default.
 export const TOGETHER_NON_AGENTIC_MODELS = new Set([
 	'arize-ai/qwen-2-1.5b-instruct',
@@ -10,6 +10,7 @@ export const TOGETHER_NON_AGENTIC_MODELS = new Set([
 	'openai/gpt-oss-120b',
 	'openai/gpt-oss-20b',
 	'pearl-ai/gemma-4-31b-it',
+	'Qwen/Qwen2.5-7B-Instruct-Turbo',
 ]);
 
 const TOGETHER_REASONING_ONLY_MODELS = new Set([
@@ -19,15 +20,19 @@ const TOGETHER_REASONING_ONLY_MODELS = new Set([
 export const supportsTogetherAgenticGeneration = (model: string) =>
 	!TOGETHER_NON_AGENTIC_MODELS.has(model);
 
-export const getTogetherReasoningOptions = (model: string) =>
-	TOGETHER_REASONING_ONLY_MODELS.has(model)
+export const getTogetherGenerationOptions = (model: string) => ({
+	...(TOGETHER_REASONING_ONLY_MODELS.has(model)
 		? {}
 		: {
 				reasoning: 'none' as const,
 				providerOptions: {
 					togetherai: { reasoning: { enabled: false } },
 				},
-			};
+			}),
+	...(model === 'thinkingmachines/Inkling'
+		? { maxOutputTokens: 2048 }
+		: {}),
+});
 
 export const TogetherProvider: ProviderDef = {
 	name: 'togetherai',
@@ -46,7 +51,12 @@ export const TogetherProvider: ProviderDef = {
 		'moonshotai/Kimi-K2.7-Code',
 		'zai-org/GLM-5.2',
 		'moonshotai/Kimi-K2.6',
-		'MiniMaxAI/MiniMax-M2.7',
+		'moonshotai/Kimi-K3',
 	],
+	defaultTimeout: 60_000,
 	requiresApiKey: true,
+	agenticGeneration: {
+		supports: supportsTogetherAgenticGeneration,
+		callOptions: getTogetherGenerationOptions,
+	},
 };

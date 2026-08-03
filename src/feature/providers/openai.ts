@@ -21,4 +21,10 @@ export const OpenAiProvider: ProviderDef = {
 			.map((m: any) => m.id),
 	defaultModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol'],
 	requiresApiKey: true,
+	agenticGeneration: {
+		callOptions: () => ({
+			reasoning: 'none',
+			providerOptions: { openai: { reasoningEffort: 'none' } },
+		}),
+	},
 };

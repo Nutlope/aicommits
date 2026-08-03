@@ -9,7 +9,7 @@ import {
 } from 'ai';
 import { z } from 'zod';
 import { getProvider } from '../src/feature/providers/index.js';
-import { getTogetherReasoningOptions } from '../src/feature/providers/together.js';
+import { getTogetherGenerationOptions } from '../src/feature/providers/together.js';
 import { getConfig } from '../src/utils/config-runtime.js';
 
 const DEFAULT_TIMEOUT = 45_000;
@@ -141,7 +141,7 @@ const testModel = async (
 			stopWhen: [hasToolCall('submitCommitMessage'), stepCountIs(2)],
 			maxOutputTokens: MAX_OUTPUT_TOKENS,
 			maxRetries: 0,
-			...getTogetherReasoningOptions(modelId),
+			...getTogetherGenerationOptions(modelId),
 			prepareStep: ({ stepNumber }) => ({
 				toolChoice: {
 					type: 'tool',

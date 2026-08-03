@@ -16,7 +16,7 @@ import {
 } from '../utils/git.js';
 import { getConfig, setConfigs } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
-import { generateCommitMessage } from '../utils/generate-commit-message.js';
+import { generateCommitMessage } from '../feature/generate-commit-message.js';
 import {
 	KnownError,
 	handleCommandError,
@@ -109,7 +109,7 @@ export default async (
 		config.model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
 
 		const attemptGeneration = async () => {
-			const model = providerInstance.getLanguageModel(config.model!);
+			const model = providerInstance.getGenerationModel(config.model!);
 			const s = headless ? null : spinner();
 			if (s) {
 				s.start(
@@ -132,7 +132,6 @@ export default async (
 							includeBody: includeDescription,
 							timeout,
 							customPrompt,
-							isLocalProvider: providerInstance.isLocal(),
 						})
 					)
 				);

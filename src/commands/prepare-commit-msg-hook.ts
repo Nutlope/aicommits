@@ -4,7 +4,7 @@ import { black, green, red, bgCyan } from 'kolorist';
 import { assertGitRepo, getStagedFiles } from '../utils/git.js';
 import { getConfig } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
-import { generateCommitMessage } from '../utils/generate-commit-message.js';
+import { generateCommitMessage } from '../feature/generate-commit-message.js';
 import { KnownError, handleCommandError } from '../utils/error.js';
 import { isHeadless } from '../utils/headless.js';
 
@@ -58,7 +58,7 @@ export default () =>
 
 		// Use the unified model or provider default
 		const modelName = config.OPENAI_MODEL || providerInstance.getDefaultModel();
-		const model = providerInstance.getLanguageModel(modelName);
+		const model = providerInstance.getGenerationModel(modelName);
 
 		const s = headless ? null : spinner();
 		s?.start('The AI is analyzing your changes');
@@ -75,7 +75,6 @@ export default () =>
 						maxLength: config['max-length'],
 						includeBody: false,
 						timeout,
-						isLocalProvider: providerInstance.isLocal(),
 					})
 				)
 			);

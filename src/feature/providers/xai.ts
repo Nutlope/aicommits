@@ -1,5 +1,21 @@
 import { ProviderDef } from './base.js';
 
+const getReasoningOptions = (model: string) => {
+	if (model.startsWith('grok-4.5')) {
+		return {
+			reasoning: 'low' as const,
+			providerOptions: { xai: { reasoningEffort: 'low' } },
+		};
+	}
+	if (model.startsWith('grok-4.3')) {
+		return {
+			reasoning: 'none' as const,
+			providerOptions: { xai: { reasoningEffort: 'none' } },
+		};
+	}
+	return {};
+};
+
 export const XAiProvider: ProviderDef = {
 	name: 'xai',
 	displayName: 'xAI',
@@ -21,4 +37,5 @@ export const XAiProvider: ProviderDef = {
 			.map((m: any) => m.id),
 	defaultModels: ['grok-4.5', 'grok-build-0.1', 'grok-4.3'],
 	requiresApiKey: true,
+	agenticGeneration: { callOptions: getReasoningOptions },
 };

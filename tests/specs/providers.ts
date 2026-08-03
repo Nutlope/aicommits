@@ -18,6 +18,10 @@ export default testSuite(({ describe }) => {
 			expect(createProvider('openai').getRequestTimeout()).toBe(10_000);
 		});
 
+		test('uses a one-minute timeout for Together generation', () => {
+			expect(createProvider('togetherai').getRequestTimeout()).toBe(60_000);
+		});
+
 		test('highlights the current xAI models', () => {
 			expect(createProvider('xai').getHighlightedModels()).toEqual([
 				'grok-4.5',
@@ -65,6 +69,35 @@ export default testSuite(({ describe }) => {
 			expect(createProvider('lmstudio').getRequestTimeout(20_000)).toBe(
 				20_000
 			);
+		});
+
+		test('owns generation policy at the provider seam', () => {
+			expect(
+				createProvider('togetherai').getGenerationPolicy('moonshotai/Kimi-K3')
+			).toMatchObject({ mode: 'agentic', isLocal: false });
+			expect(
+				createProvider('togetherai').getGenerationPolicy(
+					'Qwen/Qwen2.5-7B-Instruct-Turbo'
+				)
+			).toMatchObject({ mode: 'fallback', isLocal: false });
+			expect(
+				createProvider('togetherai').getGenerationPolicy(
+					'thinkingmachines/Inkling'
+				)
+			).toMatchObject({
+				mode: 'agentic',
+				isLocal: false,
+				callOptions: { maxOutputTokens: 2048 },
+			});
+			expect(
+				createProvider('openai').getGenerationPolicy('gpt-5.6-luna')
+			).toMatchObject({
+				mode: 'agentic',
+				callOptions: { reasoning: 'none' },
+			});
+			expect(
+				createProvider('lmstudio').getGenerationPolicy('local-tool-model')
+			).toMatchObject({ mode: 'agentic', isLocal: true });
 		});
 	});
 });

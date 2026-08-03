@@ -4,15 +4,24 @@ const { version } = pkg;
 
 export class KnownError extends Error {}
 
-export const isModelUnavailableError = (error: unknown) => {
+const getErrorChain = (error: unknown) => {
+	const chain: unknown[] = [];
 	let current: unknown = error;
-	const messages: string[] = [];
 	for (let depth = 0; depth < 5 && current; depth += 1) {
-		if (current instanceof Error) messages.push(current.message.toLowerCase());
+		chain.push(current);
 		if (typeof current !== 'object') break;
+		current = (current as Record<string, unknown>).cause;
+	}
+	return chain;
+};
+
+export const isModelUnavailableError = (error: unknown) => {
+	const messages: string[] = [];
+	for (const current of getErrorChain(error)) {
+		if (current instanceof Error) messages.push(current.message.toLowerCase());
+		if (typeof current !== 'object') continue;
 		const errorRecord = current as Record<string, unknown>;
 		if (errorRecord.status === 404 || errorRecord.statusCode === 404) return true;
-		current = errorRecord.cause;
 	}
 
 	const message = messages.join(' ');
@@ -27,17 +36,15 @@ export const isModelUnavailableError = (error: unknown) => {
 };
 
 export const isToolUnsupportedError = (error: unknown) => {
-	let current: unknown = error;
 	const messages: string[] = [];
-	for (let depth = 0; depth < 5 && current; depth += 1) {
+	for (const current of getErrorChain(error)) {
 		if (current instanceof Error) messages.push(current.message.toLowerCase());
-		if (typeof current !== 'object') break;
+		if (typeof current !== 'object') continue;
 		const errorRecord = current as Record<string, unknown>;
 		for (const key of ['responseBody', 'data']) {
 			const value = errorRecord[key];
 			if (typeof value === 'string') messages.push(value.toLowerCase());
 		}
-		current = errorRecord.cause;
 	}
 
 	const message = messages.join(' ');
@@ -65,16 +72,13 @@ export const isToolUnsupportedError = (error: unknown) => {
 };
 
 export const isInvalidJsonResponseError = (error: unknown) => {
-	let current: unknown = error;
-	for (let depth = 0; depth < 5 && current; depth += 1) {
+	for (const current of getErrorChain(error)) {
 		if (
 			current instanceof Error &&
 			current.message.toLowerCase().includes('invalid json response')
 		) {
 			return true;
 		}
-		if (typeof current !== 'object') break;
-		current = (current as Record<string, unknown>).cause;
 	}
 	return false;
 };
