@@ -368,6 +368,39 @@ Default: `72`
 aicommits config set max-length=100
 ```
 
+#### max-output-tokens
+
+The maximum number of tokens the model may generate for a commit message.
+
+Default: `512`
+
+> **Why you might need this:** reasoning models (e.g. models that emit a
+> `reasoning_content` thinking phase before answering, such as DeepSeek-R1 or
+> Qwen-based reasoning models) can exhaust the 512-token output budget on
+> reasoning alone and never produce an actual commit message. If you see
+> "The model did not generate a commit message." with a reasoning model, raise
+> this value.
+
+```sh
+aicommits config set max-output-tokens=4096
+```
+
+#### thinking
+
+Whether the model's reasoning (thinking) phase is enabled.
+
+Default: `enabled`
+
+Set to `disabled` to send `thinking: { type: 'disabled' }` in the request body
+of OpenAI-compatible providers, turning off the reasoning phase for faster,
+cheaper responses. Only takes effect with providers that support disabling
+thinking (e.g. Qwen/DashScope, MiMo, DeepSeek reasoning models on compatible
+endpoints).
+
+```sh
+aicommits config set thinking=disabled
+```
+
 #### type
 
 Default: `plain`
