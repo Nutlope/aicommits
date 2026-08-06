@@ -217,6 +217,43 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		test('uses minimal reasoning for GPT-5 mini', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'openai.responses',
+				modelId: 'gpt-5-mini',
+				doStream: toolCallStream(
+					'submit-message-1',
+					'submitCommitMessage',
+					{ subject: 'fix: update fixture', body: null }
+				),
+			});
+
+			const result = await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe('fix: update fixture');
+			expect(model.doStreamCalls.length).toBe(1);
+			expect(model.doStreamCalls[0].reasoning).toBe('minimal');
+			expect(model.doStreamCalls[0].providerOptions).toEqual({
+				openai: { reasoningEffort: 'minimal' },
+			});
+			await fixture.rm();
+		});
+
 		test('uses agentic generation for xAI models at their lowest reasoning level', async () => {
 			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
 			const git = await createGit(fixture.path);

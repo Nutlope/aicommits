@@ -90,6 +90,17 @@ export default testSuite(({ describe }) => {
 				callOptions: { maxOutputTokens: 2048 },
 			});
 			expect(
+				createProvider('openai').getGenerationPolicy('gpt-5-mini')
+			).toMatchObject({
+				mode: 'agentic',
+				callOptions: {
+					reasoning: 'minimal',
+					providerOptions: {
+						openai: { reasoningEffort: 'minimal' },
+					},
+				},
+			});
+			expect(
 				createProvider('openai').getGenerationPolicy('gpt-5.6-luna')
 			).toMatchObject({
 				mode: 'agentic',

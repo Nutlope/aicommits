@@ -1,5 +1,8 @@
 import { ProviderDef } from './base.js';
 
+const usesMinimalReasoning = (model: string) =>
+	/^(?:gpt-5|gpt-5-mini|gpt-5-nano)(?:-\d{4}-\d{2}-\d{2})?$/.test(model);
+
 export const OpenAiProvider: ProviderDef = {
 	name: 'openai',
 	displayName: 'OpenAI',
@@ -22,9 +25,14 @@ export const OpenAiProvider: ProviderDef = {
 	defaultModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol'],
 	requiresApiKey: true,
 	agenticGeneration: {
-		callOptions: () => ({
-			reasoning: 'none',
-			providerOptions: { openai: { reasoningEffort: 'none' } },
-		}),
+		callOptions: (model) => {
+			const reasoningEffort = usesMinimalReasoning(model)
+				? 'minimal'
+				: 'none';
+			return {
+				reasoning: reasoningEffort,
+				providerOptions: { openai: { reasoningEffort } },
+			};
+		},
 	},
 };
