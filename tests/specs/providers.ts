@@ -110,5 +110,32 @@ export default testSuite(({ describe }) => {
 				createProvider('lmstudio').getGenerationPolicy('local-tool-model')
 			).toMatchObject({ mode: 'agentic', isLocal: true });
 		});
+
+		test('merges configured provider options with the generation policy', () => {
+			expect(
+				createProvider('openai', {
+					PROVIDER_OPTIONS: { openai: { store: true } },
+				}).getGenerationPolicy('gpt-5-mini')
+			).toMatchObject({
+				callOptions: {
+					providerOptions: {
+						openai: { reasoningEffort: 'minimal', store: true },
+					},
+				},
+			});
+		});
+
+		test('passes configured provider options to custom providers', () => {
+			expect(
+				createProvider('custom', {
+					PROVIDER_OPTIONS: { custom: { customOption: 'value' } },
+				}).getGenerationPolicy('custom-model')
+			).toMatchObject({
+				mode: 'fallback',
+				callOptions: {
+					providerOptions: { custom: { customOption: 'value' } },
+				},
+			});
+		});
 	});
 });

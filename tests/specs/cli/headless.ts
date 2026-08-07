@@ -55,6 +55,7 @@ export default testSuite(({ describe }) => {
 					'OPENAI_API_KEY=test-key',
 					`OPENAI_BASE_URL=${agentServer.baseUrl}`,
 					'OPENAI_MODEL=test-model',
+					'PROVIDER_OPTIONS={"custom":{"customOption":"value"}}',
 				].join('\n'),
 				'data.json': '{"agentic":true}\n',
 			});
@@ -71,6 +72,7 @@ export default testSuite(({ describe }) => {
 				expect(stdout).toBe('feat: add test data');
 				expect(agentServer.requests.length).toBe(1);
 				expect(agentServer.requests[0]).toMatch('agentic');
+				expect(JSON.parse(agentServer.requests[0]).customOption).toBe('value');
 			} finally {
 				await agentServer.close();
 				await fixture.rm();
