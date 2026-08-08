@@ -340,9 +340,23 @@ export const generateCommitMessage = async ({
 			}
 			results.push(result);
 			try {
+				const reasoning = result.reasoning;
+				const reasoningText =
+					typeof reasoning === 'string'
+						? reasoning
+						: Array.isArray(reasoning)
+							? reasoning
+									.filter(
+										(p): p is { type: 'reasoning'; text: string } =>
+											p.type === 'reasoning' && 'text' in p
+									)
+									.map((p) => p.text)
+									.join('')
+							: '';
+				const text = result.text || reasoningText || '';
 				return {
 					message: parseOneShotMessage(
-						result.text,
+						text,
 						oneShotIncludeBody
 					),
 					usage: combineUsage(results.map(({ usage }) => usage)),
