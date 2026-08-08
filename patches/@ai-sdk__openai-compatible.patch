@@ -1,0 +1,31 @@
+diff --git a/dist/index.js b/dist/index.js
+index 4051f9e584ce5cd09893ccc48dccf52b7e09192b..5e3af7ca6887fc620b4afa79d9370450c7ad4709 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -611,7 +611,7 @@ var OpenAICompatibleChatLanguageModel = class _OpenAICompatibleChatLanguageModel
+   async doGenerate(options) {
+     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+     const { args, warnings, metadataKey } = await this.getArgs({ ...options });
+-    const transformedBody = this.transformRequestBody(args);
++    const transformedBody = this.transformRequestBody({ ...args, stream: false });
+     const body = JSON.stringify(transformedBody);
+     const {
+       responseHeaders,
+@@ -938,7 +938,7 @@ var OpenAICompatibleChatResponseSchema = z3.looseObject({
+   choices: z3.array(
+     z3.object({
+       message: z3.object({
+-        role: z3.literal("assistant").nullish(),
++        role: z3.string().nullish(),
+         content: z3.string().nullish(),
+         reasoning_content: z3.string().nullish(),
+         reasoning: z3.string().nullish(),
+@@ -970,7 +970,7 @@ var chunkBaseSchema = z3.looseObject({
+   choices: z3.array(
+     z3.object({
+       delta: z3.object({
+-        role: z3.enum(["assistant", ""]).nullish(),
++        role: z3.string().nullish(),
+         content: z3.string().nullish(),
+         // Most openai-compatible models set `reasoning_content`, but some
+         // providers serving `gpt-oss` set `reasoning`. See #7866

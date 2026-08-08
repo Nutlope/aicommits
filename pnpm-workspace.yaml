@@ -3,3 +3,6 @@ packages:
 
 allowBuilds:
   esbuild: true
+
+patchedDependencies:
+  '@ai-sdk/openai-compatible': patches/@ai-sdk__openai-compatible.patch

@@ -85,10 +85,63 @@ export const isInvalidJsonResponseError = (error: unknown) => {
 
 const indent = '    ';
 
+/**
+ * Extract diagnostic details from API-like errors (APICallError, etc.)
+ * without leaking secrets. Returns a short summary for the user.
+ */
+const describeApiError = (error: unknown): string | null => {
+	if (typeof error !== 'object' || error === null) return null;
+	const record = error as Record<string, unknown>;
+	const parts: string[] = [];
+
+	if (typeof record.statusCode === 'number') {
+		parts.push(`HTTP ${record.statusCode}`);
+	}
+
+	if (typeof record.responseBody === 'string') {
+		const body = record.responseBody.trim();
+		if (body.length === 0) {
+			parts.push('empty response body');
+		} else {
+			try {
+				const parsed = JSON.parse(body);
+				// Extract error message from common API error shapes
+				const errMsg =
+					parsed?.error?.message ||
+					parsed?.message ||
+					(parsed?.error && typeof parsed.error === 'string'
+						? parsed.error
+						: null);
+				if (errMsg) {
+					parts.push(`API error: ${String(errMsg).slice(0, 200)}`);
+				} else if (!parsed.choices) {
+					// Response is valid JSON but missing expected fields
+					const keys = Object.keys(parsed);
+					parts.push(
+						`unexpected response shape (keys: ${keys.join(', ').slice(0, 100)})`
+					);
+				}
+			} catch {
+				// Not JSON — show truncated preview (sanitize newlines)
+				const preview = body.slice(0, 200).replace(/[\r\n]+/g, ' ');
+				if (preview.length > 0) {
+					parts.push(`non-JSON response: "${preview}"`);
+				}
+			}
+		}
+	}
+
+	return parts.length > 0 ? ` (${parts.join('; ')})` : null;
+};
+
 export const handleCliError = (error: unknown) => {
 	if (error instanceof Error && !(error instanceof KnownError)) {
 		if (error.stack) {
 			console.error(dim(error.stack.split('\n').slice(1).join('\n')));
+		}
+		const detail = describeApiError(error);
+		if (detail) {
+			console.error(`\n${indent}${dim(detail)}`);
 		}
 		console.error(`\n${indent}${dim(`aicommits v${version}`)}`);
 		console.error(

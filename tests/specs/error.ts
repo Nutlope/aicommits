@@ -58,6 +58,12 @@ export default testSuite(({ describe }) => {
 			expect(
 				isInvalidJsonResponseError(new Error('Invalid JSON in config file'))
 			).toBe(false);
-		});
-	});
+			});
+
+			test('does not treat network timeouts as invalid JSON', () => {
+			expect(
+				isInvalidJsonResponseError(new Error('The operation was aborted'))
+			).toBe(false);
+			});
+			});
 });
