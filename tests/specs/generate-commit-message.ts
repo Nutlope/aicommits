@@ -376,7 +376,7 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
-		test('rejects an LM Studio diff beyond the aggregate byte budget', async () => {
+		test('accepts an LM Studio diff beyond the previous byte budget', async () => {
 			const original = `${'a'.repeat(31_000)}\n`;
 			const staged = `${'b'.repeat(31_000)}\n`;
 			const { fixture } = await createFixture({ 'large.txt': original });
@@ -389,33 +389,30 @@ export default testSuite(({ describe }) => {
 			const model = new MockLanguageModelV4({
 				provider: 'lmstudio.chat',
 				modelId: 'local-tool-model',
+				doGenerate: async () =>
+					textGeneration('fix: summarize a large local diff segment'),
 				doStream: toolCallStream(
 					'submit-message-1',
 					'submitCommitMessage',
 					{ subject: 'fix: summarize a large local change', body: null }
 				),
 			});
-			let error: unknown;
+			const result = await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['large.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 60_000,
+			});
 
-			try {
-				await generateCommitMessage({
-					model: asGenerationModel(model),
-					cwd: fixture.path,
-					files: ['large.txt'],
-					type: 'conventional',
-					locale: 'en',
-					maxLength: 72,
-					includeBody: false,
-					timeout: 60_000,
-				});
-			} catch (caughtError) {
-				error = caughtError;
-			}
-
-			expect((error as Error).message).toMatch(
-				'exceeds the 30,000-byte analysis budget'
+			expect(result.message.subject).toBe(
+				'fix: summarize a large local change'
 			);
-			expect(model.doStreamCalls.length).toBe(0);
+			expect(model.doGenerateCalls.length).toBeLessThanOrEqual(20);
+			expect(model.doStreamCalls.length).toBe(1);
 			await fixture.rm();
 		});
 
@@ -729,11 +726,14 @@ export default testSuite(({ describe }) => {
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
 				modelId: 'future/tool-model',
-				doGenerate: async () =>
-					textGeneration('chore: summarize large diff segment'),
 				doStream: [
-					toolCallStream('read-diff-1', 'readStagedDiff', {
-						paths: ['large.txt'],
+					toolCallStream('inspect-diff-1', 'inspectStagedChanges', {
+						groups: [
+							{
+								name: 'Large fixture',
+								selectors: ['large.txt'],
+							},
+						],
 					}),
 					toolCallStream('submit-message-1', 'submitCommitMessage', {
 						subject: 'chore: update large fixture',
@@ -753,17 +753,122 @@ export default testSuite(({ describe }) => {
 				timeout: 5000,
 			});
 
-			expect(result.steps).toBeGreaterThan(2);
+			expect(result.steps).toBe(2);
+			expect(model.doGenerateCalls.length).toBe(0);
+			expect(model.doStreamCalls.length).toBe(2);
 			expect(JSON.stringify(model.doStreamCalls[0].prompt)).not.toMatch(
 				'a'.repeat(100)
 			);
-			expect(JSON.stringify(model.doStreamCalls[1].prompt)).toMatch(
-				'[Requested diff is'
-			);
+			const inspectedPrompt = JSON.stringify(model.doStreamCalls[1].prompt);
+			expect(inspectedPrompt).toMatch('[Large fixture: 1]');
+			expect(inspectedPrompt).toMatch('[Representative diff excerpt');
 			expect(model.doStreamCalls[0].tools).toEqual(
 				model.doStreamCalls[1].tools
 			);
 
+			await fixture.rm();
+		});
+
+		test('automatically inspects files omitted from AI-created groups', async () => {
+			const original = `${'a'.repeat(20_000)}\n`;
+			const staged = `${'b'.repeat(20_000)}\n`;
+			const { fixture } = await createFixture({
+				'src/sync.ts': original,
+				'docs/guide.md': original,
+			});
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('src/sync.ts', staged);
+			await fixture.writeFile('docs/guide.md', staged);
+			await git('add', ['.']);
+
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'future/tool-model',
+				doStream: [
+					toolCallStream('inspect-diff-1', 'inspectStagedChanges', {
+						groups: [
+							{
+								name: 'Sync behavior',
+								selectors: ['src/'],
+							},
+						],
+					}),
+					toolCallStream('submit-message-1', 'submitCommitMessage', {
+						subject: 'fix: update sync behavior and documentation',
+						body: null,
+					}),
+				],
+			});
+
+			const result = await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['src/sync.ts', 'docs/guide.md'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe(
+				'fix: update sync behavior and documentation'
+			);
+			const inspectedPrompt = JSON.stringify(model.doStreamCalls[1].prompt);
+			expect(inspectedPrompt).toMatch('[Sync behavior: 1]');
+			expect(inspectedPrompt).toMatch('[Other changed files: 1]');
+			expect(inspectedPrompt).toMatch('docs/guide.md');
+			await fixture.rm();
+		});
+
+		test('does not exceed the remaining agent diff read budget', async () => {
+			const { fixture } = await createFixture({
+				'small.txt': `${'a'.repeat(1400)}\n`,
+				'large.txt': `${'a'.repeat(31_000)}\n`,
+			});
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('small.txt', `${'b'.repeat(1400)}\n`);
+			await fixture.writeFile('large.txt', `${'b'.repeat(31_000)}\n`);
+			await git('add', ['.']);
+
+			const model = new MockLanguageModelV4({
+				provider: 'lmstudio.chat',
+				modelId: 'local-tool-model',
+				doGenerate: async () =>
+					textGeneration('chore: summarize local diff segment'),
+				doStream: [
+					toolCallStream('read-small-1', 'readStagedDiff', {
+						paths: ['small.txt'],
+					}),
+					toolCallStream('read-large-2', 'readStagedDiff', {
+						paths: ['large.txt'],
+					}),
+					toolCallStream('submit-message-3', 'submitCommitMessage', {
+						subject: 'chore: update local fixtures',
+						body: null,
+					}),
+				],
+			});
+
+			const result = await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['small.txt', 'large.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 60_000,
+			});
+
+			expect(result.message.subject).toBe('chore: update local fixtures');
+			expect(JSON.stringify(model.doStreamCalls[2].prompt)).toMatch(
+				'[Diff read budget exhausted]'
+			);
 			await fixture.rm();
 		});
 
@@ -1010,8 +1115,51 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
-		test('rejects staged changes beyond the aggregate file budget', async () => {
-			const fileCount = 101;
+		test('accepts staged diffs beyond the previous remote byte budget', async () => {
+			const { fixture } = await createFixture({
+				'large.txt': 'before\n',
+			});
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile(
+				'large.txt',
+				`START-SENTINEL\n${'🌳'.repeat(170_000)}\nEND-SENTINEL\n`
+			);
+			await git('add', ['large.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'openai/gpt-oss-20b',
+				doGenerate: async () =>
+					textGeneration('chore: summarize very large staged changes'),
+			});
+
+			const result = await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['large.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(result.message.subject).toBe(
+				'chore: summarize very large staged changes'
+			);
+			const prompts = JSON.stringify(
+				model.doGenerateCalls.map(({ prompt }) => prompt)
+			);
+			expect(prompts).toMatch('START-SENTINEL');
+			expect(prompts).toMatch('END-SENTINEL');
+			expect(prompts).not.toMatch('�');
+			expect(model.doGenerateCalls.length).toBeLessThanOrEqual(21);
+			await fixture.rm();
+		});
+
+		test('reports chunk-reduced diffs as representative', async () => {
+			const fileCount = 25;
 			const initialFiles = Object.fromEntries(
 				Array.from({ length: fileCount }, (_, index) => [
 					`files/${index}.txt`,
@@ -1023,33 +1171,112 @@ export default testSuite(({ describe }) => {
 			await git('add', ['.']);
 			await git('commit', ['-m', 'initial']);
 			for (let index = 0; index < fileCount; index += 1) {
-				await fixture.writeFile(`files/${index}.txt`, `after-${index}\n`);
+				await fixture.writeFile(
+					`files/${index}.txt`,
+					`after-${index}-${'x'.repeat(19_980)}\n`
+				);
 			}
 			await git('add', ['.']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
 				modelId: 'openai/gpt-oss-20b',
-				doGenerate: textGeneration('chore: update fixtures'),
+				doGenerate: async () =>
+					textGeneration('chore: summarize representative changes'),
 			});
-			let error: unknown;
 
-			try {
-				await generateCommitMessage({
-					model: asGenerationModel(model),
-					cwd: fixture.path,
-					files: Object.keys(initialFiles),
-					type: 'conventional',
-					locale: 'en',
-					maxLength: 72,
-					includeBody: false,
-					timeout: 5000,
-				});
-			} catch (caughtError) {
-				error = caughtError;
+			await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: Object.keys(initialFiles),
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(model.doGenerateCalls.length).toBe(21);
+			const finalCall = JSON.stringify(
+				model.doGenerateCalls[model.doGenerateCalls.length - 1]
+			);
+			expect(finalCall).toMatch('representative partial commit messages');
+			expect(finalCall).not.toMatch('covering the full change');
+			await fixture.rm();
+		});
+
+		test('accepts commits with two thousand staged files', async () => {
+			const fileCount = 2000;
+			const initialFiles = Object.fromEntries(
+				Array.from({ length: fileCount }, (_, index) => {
+					const path = index < 10
+						? `src/core-${index}.ts`
+						: `tests/case-${index}.test.ts`;
+					return [path, `before-${index}\n`];
+				})
+			);
+			const { fixture } = await createFixture(initialFiles);
+			const git = await createGit(fixture.path);
+			const paths = Object.keys(initialFiles);
+			for (let start = 0; start < paths.length; start += 200) {
+				await git('add', paths.slice(start, start + 200));
 			}
+			await git('commit', ['-m', 'initial']);
+			for (const [index, path] of paths.entries()) {
+				await fixture.writeFile(path, `after-${index}\n`);
+				if ((index + 1) % 200 === 0) {
+					await git('add', paths.slice(index - 199, index + 1));
+				}
+			}
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'future/tool-model',
+				doStream: [
+					toolCallStream('inspect-diff-1', 'inspectStagedChanges', {
+						groups: [
+							{
+								name: 'Sync implementation',
+								selectors: ['src/'],
+							},
+							{
+								name: 'Regression coverage',
+								selectors: ['tests/'],
+							},
+						],
+					}),
+					toolCallStream('submit-message-2', 'submitCommitMessage', {
+						subject: 'fix: improve core sync performance and update tests',
+						body: null,
+					}),
+				],
+			});
+			const result = await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: paths,
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 30_000,
+			});
 
-			expect((error as Error).message).toMatch('at most 100 staged files');
+			expect(result.message.subject).toBe(
+				'fix: improve core sync performance and update tests'
+			);
 			expect(model.doGenerateCalls.length).toBe(0);
+			expect(model.doStreamCalls.length).toBe(2);
+			const initialCall = JSON.stringify(model.doStreamCalls[0]);
+			expect(initialCall).toMatch('folder tree');
+			expect(initialCall).toMatch('src/ \(10 changed files\)');
+			expect(initialCall).toMatch('tests/ \(1,990 changed files');
+			const finalCall = JSON.stringify(model.doStreamCalls[1]);
+			expect(finalCall).toMatch('2,000 changed files');
+			expect(finalCall).toMatch('src/ \(10 changed files\)');
+			expect(finalCall).toMatch('tests/ \(1,990 changed files');
+			expect(finalCall).toMatch('src/core-0.ts');
+			expect(finalCall).toMatch('tests/case-1999.test.ts');
+			expect(finalCall).toMatch('[Sync implementation: 10]');
+			expect(finalCall).toMatch('[Regression coverage: 1,990]');
 			await fixture.rm();
 		});
 	});
