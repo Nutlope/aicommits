@@ -49,7 +49,6 @@ export const TogetherProvider: ProviderDef = {
 			.map((m: any) => m.id),
 	defaultModels: [
 		'zai-org/GLM-5.2',
-		'moonshotai/Kimi-K2.6',
 		'moonshotai/Kimi-K3',
 	],
 	defaultTimeout: 60_000,
