@@ -104,9 +104,7 @@ export default testSuite(({ describe }) => {
 			);
 			expect(TOGETHER_NON_AGENTIC_MODELS.size).toBe(8);
 			expect(TogetherProvider.defaultModels).toEqual([
-				'moonshotai/Kimi-K2.7-Code',
 				'zai-org/GLM-5.2',
-				'moonshotai/Kimi-K2.6',
 				'moonshotai/Kimi-K3',
 			]);
 		});
