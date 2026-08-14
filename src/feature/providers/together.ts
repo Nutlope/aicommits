@@ -48,7 +48,6 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'moonshotai/Kimi-K2.7-Code',
 		'zai-org/GLM-5.2',
 		'moonshotai/Kimi-K2.6',
 		'moonshotai/Kimi-K3',
