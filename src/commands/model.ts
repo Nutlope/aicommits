@@ -51,6 +51,11 @@ export default command(
 				return;
 			}
 
+			if (provider.name === 'codex' || provider.name === 'claude') {
+				outro(`${provider.displayName} uses the model configured in its CLI.`);
+				return;
+			}
+
 			// Select model using provider
 			const selectedModel = await selectModel(
 				provider.getBaseUrl(),

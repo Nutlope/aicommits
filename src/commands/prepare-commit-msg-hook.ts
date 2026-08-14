@@ -4,6 +4,10 @@ import { black, green, red, bgCyan } from 'kolorist';
 import { assertGitRepo, getStagedFiles } from '../utils/git.js';
 import { getConfig } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
+import { isClaudeProvider, isCodexProvider } from '../feature/providers/index.js';
+import { generateClaudeCommitMessage } from '../feature/claude.js';
+import { generateCodexCommitMessage } from '../feature/codex.js';
+import { execa } from 'execa';
 import {
 	formatCommitMessage,
 	generateCommitMessage,
@@ -62,7 +66,6 @@ export default () =>
 
 		// Use the unified model or provider default
 		const modelName = config.OPENAI_MODEL || providerInstance.getDefaultModel();
-		const model = providerInstance.getGenerationModel(modelName);
 		const { requiresBody } = getCommitTypePolicy(config.type);
 		const generationCount = requiresBody ? 1 : config.generate;
 
@@ -70,6 +73,50 @@ export default () =>
 		s?.start('The AI is analyzing your changes');
 		let messages: string[];
 		try {
+			if (isCodexProvider(providerInstance)) {
+				const { stdout: diff } = await execa(
+					'git',
+					['--literal-pathspecs', 'diff', '--cached', '--diff-algorithm=minimal', '--', ...stagedFiles],
+					{ cwd: gitRoot, timeout }
+				);
+				const results = await Promise.all(
+					Array.from({ length: generationCount }, () =>
+						generateCodexCommitMessage({
+							cwd: gitRoot,
+								diff,
+								type: config.type,
+								locale: config.locale,
+								maxLength: config['max-length'],
+								includeBody: requiresBody,
+								timeout,
+								customPrompt: config.prompt,
+							})
+					)
+				);
+				messages = results.map(formatCommitMessage);
+			} else if (isClaudeProvider(providerInstance)) {
+				const { stdout: diff } = await execa(
+					'git',
+					['--literal-pathspecs', 'diff', '--cached', '--diff-algorithm=minimal', '--', ...stagedFiles],
+					{ cwd: gitRoot, timeout }
+				);
+				const results = await Promise.all(
+					Array.from({ length: generationCount }, () =>
+						generateClaudeCommitMessage({
+							cwd: gitRoot,
+							diff,
+							type: config.type,
+							locale: config.locale,
+							maxLength: config['max-length'],
+							includeBody: requiresBody,
+							timeout,
+							customPrompt: config.prompt,
+						})
+					)
+				);
+				messages = results.map(formatCommitMessage);
+			} else {
+				const model = providerInstance.getGenerationModel(modelName);
 			const results = await Promise.all(
 				Array.from({ length: generationCount }, () =>
 					generateCommitMessage({
@@ -85,6 +132,7 @@ export default () =>
 				)
 			);
 			messages = results.map(({ message }) => formatCommitMessage(message));
+			}
 		} finally {
 			s?.stop('Changes analyzed');
 		}

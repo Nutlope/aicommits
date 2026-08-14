@@ -496,7 +496,7 @@ const validateSubject = (subject: string) => {
 	return normalizedSubject;
 };
 
-const parseOneShotMessage = (
+export const parseCommitMessage = (
 	text: string,
 	includeBody: boolean
 ): CommitMessage => {
@@ -625,7 +625,7 @@ export const generateCommitMessage = async ({
 			results.push(result);
 			try {
 				return {
-					message: parseOneShotMessage(
+					message: parseCommitMessage(
 						result.text,
 						oneShotIncludeBody
 					),
