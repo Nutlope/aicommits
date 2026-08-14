@@ -48,6 +48,19 @@ This will guide you through:
   - **Codex CLI** - Use your existing Codex CLI login and subscription. No API key required.
   - **Claude CLI** - Use your existing Claude Code login and subscription. No API key required.
 
+  ### Codex CLI and Claude CLI prerequisites
+
+  The selected CLI must be installed, authenticated, and available on your shell's `PATH` before running `aicommits`. Verify the command from the same terminal where you run `aicommits`:
+
+  ```sh
+  command -v codex
+  codex login status
+
+  command -v claude
+  ```
+
+  If a desktop app bundles the CLI but `command -v` cannot find it, add the app's CLI directory to your `PATH` or create a symlink in a directory already on your `PATH`.
+
   Together AI, OpenAI, xAI, and LM Studio models use the agentic generation
   flow. Tested Together models without compatible tool calls use the one-shot
   path; OpenAI, xAI, and LM Studio fall back when an endpoint rejects tools.
