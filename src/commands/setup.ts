@@ -105,14 +105,14 @@ export default command(
 				return;
 			}
 
-			// Select model interactively
-			const { selectModel } = await import('../feature/models.js');
-			const selectedModel = await selectModel(
-				provider.getBaseUrl(),
-				provider.getApiKey() || '',
-				undefined,
-				provider.getDefinition()
-			);
+			const selectedModel = provider.name === 'codex' || provider.name === 'claude'
+				? provider.getDefaultModel()
+				: await (await import('../feature/models.js')).selectModel(
+					provider.getBaseUrl(),
+					provider.getApiKey() || '',
+					undefined,
+					provider.getDefinition()
+				);
 
 			if (selectedModel) {
 				config.OPENAI_MODEL = selectedModel;

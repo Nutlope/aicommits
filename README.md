@@ -45,6 +45,21 @@ This will guide you through:
   - **Ollama** (local) - Run AI models locally with [Ollama](https://ollama.ai)
   - **LM Studio** (local) - No API key required. Runs on your computer via [LM Studio](https://lmstudio.ai/)
   - **Custom OpenAI-compatible endpoint** - Use any service that implements the OpenAI API
+  - **Codex CLI** - Use your existing Codex CLI login and subscription. No API key required.
+  - **Claude CLI** - Use your existing Claude Code login and subscription. No API key required.
+
+  ### Codex CLI and Claude CLI prerequisites
+
+  The selected CLI must be installed, authenticated, and available on your shell's `PATH` before running `aicommits`. Verify the command from the same terminal where you run `aicommits`:
+
+  ```sh
+  command -v codex
+  codex login status
+
+  command -v claude
+  ```
+
+  If a desktop app bundles the CLI but `command -v` cannot find it, add the app's CLI directory to your `PATH` or create a symlink in a directory already on your `PATH`.
 
   Together AI, OpenAI, xAI, and LM Studio models use the agentic generation
   flow. Tested Together models without compatible tool calls use the one-shot
@@ -62,7 +77,7 @@ This will guide you through:
 
   > **Note:** When using environment variables, ensure all related variables (e.g., `OPENAI_API_KEY` and `OPENAI_BASE_URL`) are set consistently to avoid configuration mismatches with the config file.
 
-  This will create a `.aicommits` file in your home directory.
+This will create a `.aicommits` file in your home directory. When you select Codex CLI or Claude CLI, `aicommits` uses the locally installed and logged-in command.
 
 ### Upgrading
 
@@ -330,7 +345,15 @@ Model to use for OpenAI-compatible providers.
 
 #### provider
 
-The selected AI provider. Set automatically during `aicommits setup`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `ollama`, `lmstudio`, `custom`.
+The selected AI provider. Set automatically during `aicommits setup`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `ollama`, `lmstudio`, `custom`, `codex`, `claude`.
+
+#### prompt
+
+Optional default instructions added to every generated commit message. Command-line `--prompt` values override this setting for one run.
+
+```sh
+aicommits config set prompt="Use a concise imperative subject and mention the affected user workflow."
+```
 
 #### locale
 

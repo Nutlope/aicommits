@@ -15,7 +15,9 @@ import {
 	getDetectedMessage,
 } from '../utils/git.js';
 import { getConfig, setConfigs } from '../utils/config-runtime.js';
-import { getProvider } from '../feature/providers/index.js';
+import { getProvider, isClaudeProvider, isCodexProvider } from '../feature/providers/index.js';
+import { generateClaudeCommitMessage } from '../feature/claude.js';
+import { generateCodexCommitMessage } from '../feature/codex.js';
 import {
 	formatCommitMessage,
 	generateCommitMessage,
@@ -81,6 +83,7 @@ export default async (
 		const config = await getConfig({
 			generate: generate?.toString(),
 			type: commitType?.toString(),
+			prompt: customPrompt,
 		});
 
 		const providerInstance = getProvider(config);
@@ -116,7 +119,6 @@ export default async (
 		const generationCount = requiresBody ? 1 : config.generate;
 
 		const attemptGeneration = async () => {
-			const model = providerInstance.getGenerationModel(config.model!);
 			const s = headless ? null : spinner();
 			if (s) {
 				s.start(
@@ -127,6 +129,52 @@ export default async (
 			}
 			const startTime = Date.now();
 			try {
+				if (isCodexProvider(providerInstance)) {
+					const { stdout: diff } = await execa(
+						'git',
+						['--literal-pathspecs', 'diff', '--cached', '--diff-algorithm=minimal', '--', ...stagedFiles],
+						{ cwd: gitRoot, timeout }
+					);
+					const results = await Promise.all(
+						Array.from({ length: generationCount }, () =>
+							generateCodexCommitMessage({
+								cwd: gitRoot,
+								diff,
+								type: config.type,
+								locale: config.locale,
+								maxLength: config['max-length'],
+								includeBody,
+								timeout,
+								customPrompt: config.prompt,
+							})
+						)
+					);
+					return Array.from(new Set(results.map(formatCommitMessage)));
+				}
+				if (isClaudeProvider(providerInstance)) {
+					const { stdout: diff } = await execa(
+						'git',
+						['--literal-pathspecs', 'diff', '--cached', '--diff-algorithm=minimal', '--', ...stagedFiles],
+						{ cwd: gitRoot, timeout }
+					);
+					const results = await Promise.all(
+						Array.from({ length: generationCount }, () =>
+							generateClaudeCommitMessage({
+								cwd: gitRoot,
+								diff,
+								type: config.type,
+								locale: config.locale,
+								maxLength: config['max-length'],
+								includeBody,
+								timeout,
+								customPrompt: config.prompt,
+							})
+						)
+					);
+					return Array.from(new Set(results.map(formatCommitMessage)));
+				}
+
+				const model = providerInstance.getGenerationModel(config.model!);
 				const results = await Promise.all(
 					Array.from({ length: generationCount }, () =>
 						generateCommitMessage({
@@ -138,7 +186,7 @@ export default async (
 							maxLength: config['max-length'],
 							includeBody,
 							timeout,
-							customPrompt,
+							customPrompt: config.prompt,
 						})
 					)
 				);

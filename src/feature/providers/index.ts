@@ -27,3 +27,9 @@ export function getProviderBaseUrl(providerName: string): string {
 export function getProviderDef(providerName: string): ProviderDef | undefined {
 	return providers.find((p) => p.name === providerName);
 }
+
+export const isCodexProvider = (provider: Provider): boolean =>
+	provider.name === 'codex';
+
+export const isClaudeProvider = (provider: Provider): boolean =>
+	provider.name === 'claude';

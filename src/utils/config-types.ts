@@ -46,6 +46,9 @@ const configParsers = {
 	OPENAI_MODEL(key?: string) {
 		return key || '';
 	},
+	prompt(prompt?: string) {
+		return prompt || '';
+	},
 	locale(locale?: string) {
 		if (!locale) {
 			return 'en';

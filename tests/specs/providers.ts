@@ -22,6 +22,14 @@ export default testSuite(({ describe }) => {
 			expect(createProvider('togetherai').getRequestTimeout()).toBe(60_000);
 		});
 
+		test('uses subscription CLI providers without API keys', () => {
+			for (const name of ['codex', 'claude']) {
+				const provider = createProvider(name);
+				expect(provider.validateConfig()).toEqual({ valid: true, errors: [] });
+				expect(provider.getRequestTimeout()).toBe(120_000);
+			}
+		});
+
 		test('highlights the current xAI models', () => {
 			expect(createProvider('xai').getHighlightedModels()).toEqual([
 				'grok-4.5',
