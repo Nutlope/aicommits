@@ -50,11 +50,11 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'zai-org/GLM-5.3-Flash',
 		'deepseek-ai/DeepSeek-V4-Flash-0731',
+		'zai-org/GLM-5.3-Flash',
 		'moonshotai/Kimi-K3',
 	],
-	fallbackModel: 'zai-org/GLM-5.3-Flash',
+	fallbackModel: 'deepseek-ai/DeepSeek-V4-Flash-0731',
 	defaultTimeout: 60_000,
 	requiresApiKey: true,
 	agenticGeneration: {

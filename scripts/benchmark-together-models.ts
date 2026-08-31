@@ -18,8 +18,8 @@ const TIMEOUT = Number(process.env.AICOMMITS_BENCHMARK_TIMEOUT || 60_000);
 const REPEATS = Number(process.env.AICOMMITS_BENCHMARK_REPEATS || 1);
 
 const defaultModels = [
-	'zai-org/GLM-5.3-Flash',
 	'deepseek-ai/DeepSeek-V4-Flash-0731',
+	'zai-org/GLM-5.3-Flash',
 	'moonshotai/Kimi-K3',
 ];
 

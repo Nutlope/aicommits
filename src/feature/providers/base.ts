@@ -154,9 +154,11 @@ export class Provider {
 	}
 
 	getFallbackModel(model: string): string | undefined {
-		return this.def.fallbackModel !== model
-			? this.def.fallbackModel
-			: undefined;
+		if (!this.def.fallbackModel) return;
+		if (this.def.fallbackModel !== model) {
+			return this.def.fallbackModel;
+		}
+		return this.def.defaultModels.find((candidate) => candidate !== model);
 	}
 
 	getHighlightedModels(): string[] {
