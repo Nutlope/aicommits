@@ -72,14 +72,21 @@ interface FetchModelsOptions {
 	baseUrl: string;
 	apiKey?: string;
 	cacheModels?: boolean;
+	modelsPath?: string;
 }
 
 // Fetch models from API
 export const fetchModels = async (
 	options: FetchModelsOptions,
 ): Promise<{ models: ModelObject[]; error?: string }> => {
-	const { baseUrl, apiKey = '', cacheModels = true } = options;
-	const cacheKey = getCacheKey(baseUrl);
+	const {
+		baseUrl,
+		apiKey = '',
+		cacheModels = true,
+		modelsPath = '/models',
+	} = options;
+	const modelsUrl = `${baseUrl}${modelsPath}`;
+	const cacheKey = getCacheKey(modelsUrl);
 	const now = Date.now();
 
 	if (cacheModels) {
@@ -90,7 +97,7 @@ export const fetchModels = async (
 	}
 
 	try {
-		const response = await fetch(`${baseUrl}/models`, {
+		const response = await fetch(modelsUrl, {
 			headers: {
 				Authorization: `Bearer ${apiKey}`,
 			},
@@ -129,6 +136,7 @@ const fetchAndFilterModels = async (
 		baseUrl,
 		apiKey,
 		cacheModels: providerDef?.cacheModels,
+		modelsPath: providerDef?.modelsPath,
 	});
 
 	if (result.error) {

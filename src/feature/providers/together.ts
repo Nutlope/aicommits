@@ -11,6 +11,7 @@ export const TOGETHER_NON_AGENTIC_MODELS = new Set([
 	'openai/gpt-oss-20b',
 	'pearl-ai/gemma-4-31b-it',
 	'Qwen/Qwen2.5-7B-Instruct-Turbo',
+	'moonshotai/Kimi-K3',
 ]);
 
 const TOGETHER_REASONING_ONLY_MODELS = new Set([
@@ -39,6 +40,7 @@ export const TogetherProvider: ProviderDef = {
 	displayName: 'Together AI (recommended)',
 	baseUrl: 'https://api.together.xyz/v1',
 	apiKeyFormat: 'tgp_',
+	modelsPath: '/models?serverless=true',
 	modelsFilter: (models) =>
 		models
 			.filter(
@@ -48,9 +50,10 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'zai-org/GLM-5.2',
+		'zai-org/GLM-5.3-Flash',
 		'moonshotai/Kimi-K3',
 	],
+	fallbackModel: 'zai-org/GLM-5.3-Flash',
 	defaultTimeout: 60_000,
 	requiresApiKey: true,
 	agenticGeneration: {

@@ -18,11 +18,11 @@ const TIMEOUT = Number(process.env.AICOMMITS_BENCHMARK_TIMEOUT || 60_000);
 const REPEATS = Number(process.env.AICOMMITS_BENCHMARK_REPEATS || 1);
 
 const defaultModels = [
-	'moonshotai/Kimi-K2.7-Code',
-	'zai-org/GLM-5.2',
-	'moonshotai/Kimi-K2.6',
+	'zai-org/GLM-5.3-Flash',
+	'zai-org/GLM-5.3',
 	'MiniMaxAI/MiniMax-M3',
 	'moonshotai/Kimi-K3',
+	'zai-org/GLM-5.2',
 	'google/gemma-4-31B-it',
 	'openai/gpt-oss-20b',
 	'Qwen/Qwen3.5-9B',
@@ -308,6 +308,18 @@ const main = async () => {
 	const provider = getProvider(config);
 	if (!provider || provider.name !== 'togetherai') {
 		throw new Error('Benchmark requires a configured Together AI provider.');
+	}
+	const catalog = await provider.getModels();
+	if (catalog.error) {
+		throw new Error(`Could not load Together serverless models: ${catalog.error}`);
+	}
+	const unavailableModels = models.filter(
+		(model) => !catalog.models.includes(model)
+	);
+	if (unavailableModels.length > 0) {
+		throw new Error(
+			`Models are not available on Together serverless: ${unavailableModels.join(', ')}`
+		);
 	}
 
 	const legacy = await loadLegacyRuntime();

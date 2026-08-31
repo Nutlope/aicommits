@@ -61,15 +61,11 @@ export default () =>
 		const timeout = providerInstance.getRequestTimeout(config.timeout);
 
 		// Use the unified model or provider default
-		const modelName = config.OPENAI_MODEL || providerInstance.getDefaultModel();
-		const model = providerInstance.getGenerationModel(modelName);
+		let modelName = config.OPENAI_MODEL || providerInstance.getDefaultModel();
 		const { requiresBody } = getCommitTypePolicy(config.type);
 		const generationCount = requiresBody ? 1 : config.generate;
-
-		const s = headless ? null : spinner();
-		s?.start('The AI is analyzing your changes');
-		let messages: string[];
-		try {
+		const attemptGeneration = async () => {
+			const model = providerInstance.getGenerationModel(modelName);
 			const results = await Promise.all(
 				Array.from({ length: generationCount }, () =>
 					generateCommitMessage({
@@ -84,7 +80,21 @@ export default () =>
 					})
 				)
 			);
-			messages = results.map(({ message }) => formatCommitMessage(message));
+			return results.map(({ message }) => formatCommitMessage(message));
+		};
+
+		const s = headless ? null : spinner();
+		s?.start('The AI is analyzing your changes');
+		let messages: string[];
+		try {
+			try {
+				messages = await attemptGeneration();
+			} catch (error) {
+				const fallbackModel = providerInstance.getFallbackModel(modelName);
+				if (!fallbackModel) throw error;
+				modelName = fallbackModel;
+				messages = await attemptGeneration();
+			}
 		} finally {
 			s?.stop('Changes analyzed');
 		}
