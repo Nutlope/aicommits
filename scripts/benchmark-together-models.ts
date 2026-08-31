@@ -19,15 +19,7 @@ const REPEATS = Number(process.env.AICOMMITS_BENCHMARK_REPEATS || 1);
 
 const defaultModels = [
 	'zai-org/GLM-5.3-Flash',
-	'zai-org/GLM-5.3',
-	'MiniMaxAI/MiniMax-M3',
 	'moonshotai/Kimi-K3',
-	'zai-org/GLM-5.2',
-	'google/gemma-4-31B-it',
-	'openai/gpt-oss-20b',
-	'Qwen/Qwen3.5-9B',
-	'meta-llama/Llama-3.3-70B-Instruct-Turbo',
-	'openai/gpt-oss-120b',
 ];
 
 const smallFixtures = [
