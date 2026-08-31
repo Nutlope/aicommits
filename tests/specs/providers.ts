@@ -55,6 +55,7 @@ export default testSuite(({ describe }) => {
 			const provider = createProvider('togetherai');
 			expect(provider.getHighlightedModels()).toEqual([
 				'zai-org/GLM-5.3-Flash',
+				'deepseek-ai/DeepSeek-V4-Flash-0731',
 				'moonshotai/Kimi-K3',
 			]);
 			expect(provider.getDefaultModel()).toBe('zai-org/GLM-5.3-Flash');

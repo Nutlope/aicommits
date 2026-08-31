@@ -19,6 +19,7 @@ const REPEATS = Number(process.env.AICOMMITS_BENCHMARK_REPEATS || 1);
 
 const defaultModels = [
 	'zai-org/GLM-5.3-Flash',
+	'deepseek-ai/DeepSeek-V4-Flash-0731',
 	'moonshotai/Kimi-K3',
 ];
 

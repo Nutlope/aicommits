@@ -51,6 +51,7 @@ export const TogetherProvider: ProviderDef = {
 			.map((m: any) => m.id),
 	defaultModels: [
 		'zai-org/GLM-5.3-Flash',
+		'deepseek-ai/DeepSeek-V4-Flash-0731',
 		'moonshotai/Kimi-K3',
 	],
 	fallbackModel: 'zai-org/GLM-5.3-Flash',
