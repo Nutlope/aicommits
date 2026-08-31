@@ -5,15 +5,19 @@ import {
 	createGit,
 	files,
 } from '../utils.js';
+import { isCalledFromGitHook } from '../../src/commands/hook.js';
 
 export default testSuite(({ describe }) => {
 	describe('Git hook', ({ test }) => {
-		if (!process.env.OPENAI_API_KEY) {
-			console.warn(
-				'⚠️  process.env.OPENAI_API_KEY is necessary to run these tests. Skipping...'
+		test('recognizes hook paths across platforms', () => {
+			expect(isCalledFromGitHook('/repo/.git/hooks/prepare-commit-msg')).toBe(
+				true
 			);
-			return;
-		}
+			expect(isCalledFromGitHook('C:\\repo\\hooks\\prepare-commit-msg')).toBe(
+				true
+			);
+			expect(isCalledFromGitHook('/repo/hooks/pre-commit')).toBe(false);
+		});
 
 		test('errors when not in Git repo', async () => {
 			const { fixture, aicommits } = await createFixture(files);
@@ -46,7 +50,37 @@ export default testSuite(({ describe }) => {
 			await fixture.rm();
 		});
 
+		test('installs and uninstalls from a linked worktree', async () => {
+			const { fixture, aicommits } = await createFixture(files);
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'initial', '--no-verify']);
+			const worktreePath = path.join(fixture.path, 'linked-worktree');
+			await git('worktree', ['add', '--detach', worktreePath]);
+
+			const { stdout: installOutput } = await aicommits(['hook', 'install'], {
+				cwd: worktreePath,
+			});
+			expect(installOutput).toMatch('Hook installed');
+			expect(await fixture.exists('.git/hooks/prepare-commit-msg')).toBe(true);
+
+			const { stdout: uninstallOutput } = await aicommits(
+				['hook', 'uninstall'],
+				{ cwd: worktreePath }
+			);
+			expect(uninstallOutput).toMatch('Hook uninstalled');
+			expect(await fixture.exists('.git/hooks/prepare-commit-msg')).toBe(false);
+
+			await fixture.rm();
+		});
+
 		test('Commits', async () => {
+			if (!process.env.OPENAI_API_KEY) {
+				console.warn(
+					'⚠️  process.env.OPENAI_API_KEY is necessary to run this test. Skipping...'
+				);
+				return;
+			}
 			const { fixture, aicommits } = await createFixture(files);
 			const git = await createGit(fixture.path);
 

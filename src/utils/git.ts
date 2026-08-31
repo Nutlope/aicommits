@@ -15,6 +15,20 @@ export const assertGitRepo = async () => {
 	return stdout;
 };
 
+export const getGitHooksPath = async () => {
+	const { stdout, failed } = await execa(
+		'git',
+		['rev-parse', '--path-format=absolute', '--git-path', 'hooks'],
+		{ reject: false }
+	);
+
+	if (failed) {
+		throw new KnownError('The current directory must be a Git repository!');
+	}
+
+	return stdout;
+};
+
 const excludeFromDiff = (path: string) => `:(exclude)${path}`;
 
 const lockFilePatterns = [

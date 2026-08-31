@@ -22,6 +22,56 @@ export default testSuite(({ describe }) => {
 			expect(createProvider('togetherai').getRequestTimeout()).toBe(60_000);
 		});
 
+		test('lists only Together serverless models', async () => {
+			const originalFetch = globalThis.fetch;
+			const provider = createProvider('togetherai');
+			const providerDefinition = provider.getDefinition();
+			const originalCacheModels = providerDefinition.cacheModels;
+			const fetchCalls: string[] = [];
+			providerDefinition.cacheModels = false;
+			globalThis.fetch = (async (input: string | URL | Request) => {
+				fetchCalls.push(String(input));
+				return new Response(
+					JSON.stringify([{ id: 'moonshotai/Kimi-K3', type: 'chat' }]),
+					{ status: 200 }
+				);
+			}) as typeof fetch;
+
+			try {
+				expect(await provider.getModels()).toEqual({
+					models: ['moonshotai/Kimi-K3'],
+				});
+			} finally {
+				globalThis.fetch = originalFetch;
+				providerDefinition.cacheModels = originalCacheModels;
+			}
+
+			expect(fetchCalls).toEqual([
+				'https://api.together.xyz/v1/models?serverless=true',
+			]);
+		});
+
+		test('highlights current fast and smart Together models', () => {
+			const provider = createProvider('togetherai');
+			expect(provider.getHighlightedModels()).toEqual([
+				'deepseek-ai/DeepSeek-V4-Flash-0731',
+				'zai-org/GLM-5.3-Flash',
+				'moonshotai/Kimi-K3',
+			]);
+			expect(provider.getDefaultModel()).toBe(
+				'deepseek-ai/DeepSeek-V4-Flash-0731'
+			);
+			expect(provider.getFallbackModel('moonshotai/Kimi-K3')).toBe(
+				'deepseek-ai/DeepSeek-V4-Flash-0731'
+			);
+			expect(provider.getFallbackModel('zai-org/GLM-5.3-Flash')).toBe(
+				'deepseek-ai/DeepSeek-V4-Flash-0731'
+			);
+			expect(
+				provider.getFallbackModel('deepseek-ai/DeepSeek-V4-Flash-0731')
+			).toBe('zai-org/GLM-5.3-Flash');
+		});
+
 		test('highlights the current xAI models', () => {
 			expect(createProvider('xai').getHighlightedModels()).toEqual([
 				'grok-4.5',
@@ -74,7 +124,7 @@ export default testSuite(({ describe }) => {
 		test('owns generation policy at the provider seam', () => {
 			expect(
 				createProvider('togetherai').getGenerationPolicy('moonshotai/Kimi-K3')
-			).toMatchObject({ mode: 'agentic', isLocal: false });
+			).toMatchObject({ mode: 'fallback', isLocal: false });
 			expect(
 				createProvider('togetherai').getGenerationPolicy(
 					'Qwen/Qwen2.5-7B-Instruct-Turbo'

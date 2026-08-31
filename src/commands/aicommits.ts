@@ -159,9 +159,12 @@ export default async (
 		try {
 			messages = await attemptGeneration();
 		} catch (error) {
-			if (!isModelUnavailableError(error)) throw error;
-			const fallbackModel = providerInstance.getDefaultModel();
-			if (!fallbackModel || fallbackModel === config.model) {
+			const modelUnavailable = isModelUnavailableError(error);
+			const fallbackModel =
+				providerInstance.getFallbackModel(config.model!) ||
+				(modelUnavailable ? providerInstance.getDefaultModel() : undefined);
+			if (!fallbackModel) throw error;
+			if (fallbackModel === config.model) {
 				throw new KnownError(
 					`Model "${config.model}" is not available or has been deprecated.`
 				);
@@ -170,12 +173,14 @@ export default async (
 			if (!headless) {
 				console.log(
 					yellow(
-						`⚠ Model "${config.model}" is unavailable. Switching to "${fallbackModel}".`
+						`⚠ Model "${config.model}" failed. Retrying with "${fallbackModel}".`
 					)
 				);
 			}
 			config.model = fallbackModel;
-			await setConfigs([['OPENAI_MODEL', fallbackModel]]);
+			if (modelUnavailable) {
+				await setConfigs([['OPENAI_MODEL', fallbackModel]]);
+			}
 			messages = await attemptGeneration();
 		}
 

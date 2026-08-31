@@ -23,8 +23,10 @@ export type ProviderDef = {
 	displayName: string;
 	baseUrl: string;
 	apiKeyFormat?: string;
+	modelsPath?: string;
 	modelsFilter?: (models: any[]) => string[];
 	defaultModels: string[];
+	fallbackModel?: string;
 	defaultTimeout?: number;
 	requiresApiKey: boolean;
 	headers?: Record<string, string>;
@@ -120,6 +122,7 @@ export class Provider {
 			baseUrl,
 			apiKey,
 			cacheModels: this.def.cacheModels,
+			modelsPath: this.def.modelsPath,
 		});
 		if (result.error) return { models: [], error: result.error };
 
@@ -148,6 +151,14 @@ export class Provider {
 
 	getDefaultModel(): string {
 		return this.def.defaultModels[0] || '';
+	}
+
+	getFallbackModel(model: string): string | undefined {
+		if (!this.def.fallbackModel) return;
+		if (this.def.fallbackModel !== model) {
+			return this.def.fallbackModel;
+		}
+		return this.def.defaultModels.find((candidate) => candidate !== model);
 	}
 
 	getHighlightedModels(): string[] {

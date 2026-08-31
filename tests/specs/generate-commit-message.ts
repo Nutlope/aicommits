@@ -93,6 +93,9 @@ export default testSuite(({ describe }) => {
 	describe('generateCommitMessage', ({ test }) => {
 		test('keeps unknown Together models agentic by default', () => {
 			expect(supportsTogetherAgenticGeneration('future/model')).toBe(true);
+			expect(supportsTogetherAgenticGeneration('moonshotai/Kimi-K3')).toBe(
+				false
+			);
 			expect(
 				supportsTogetherAgenticGeneration('openai/gpt-oss-20b')
 			).toBe(false);
@@ -102,9 +105,10 @@ export default testSuite(({ describe }) => {
 			expect(supportsTogetherAgenticGeneration('thinkingmachines/Inkling')).toBe(
 				true
 			);
-			expect(TOGETHER_NON_AGENTIC_MODELS.size).toBe(8);
+			expect(TOGETHER_NON_AGENTIC_MODELS.size).toBe(9);
 			expect(TogetherProvider.defaultModels).toEqual([
-				'zai-org/GLM-5.2',
+				'deepseek-ai/DeepSeek-V4-Flash-0731',
+				'zai-org/GLM-5.3-Flash',
 				'moonshotai/Kimi-K3',
 			]);
 		});
@@ -644,7 +648,7 @@ export default testSuite(({ describe }) => {
 			await git('add', ['file.txt']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'moonshotai/Kimi-K3',
+				modelId: 'future/tool-model',
 				doStream: [
 					toolCallStream('empty-message-1', 'submitCommitMessage', {
 						subject: '   ',
@@ -682,7 +686,7 @@ export default testSuite(({ describe }) => {
 			await git('add', ['file.txt']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'moonshotai/Kimi-K3',
+				modelId: 'future/tool-model',
 				doStream: [
 					toolCallStream('clipped-message-1', 'submitCommitMessage', {
 						subject: 'fix: update…\nextra prose',
