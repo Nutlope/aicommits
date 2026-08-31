@@ -3,18 +3,16 @@ import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { green, red } from 'kolorist';
 import { command } from 'cleye';
-import { assertGitRepo } from '../utils/git.js';
+import { getGitHooksPath } from '../utils/git.js';
 import { fileExists } from '../utils/fs.js';
 import { KnownError, handleCliError } from '../utils/error.js';
 
 const hookName = 'prepare-commit-msg';
-const symlinkPath = `.git/hooks/${hookName}`;
 
 const hookPath = fileURLToPath(new URL('cli.mjs', import.meta.url));
 
-export const isCalledFromGitHook = process.argv[1]
-	.replace(/\\/g, '/') // Replace Windows back slashes with forward slashes
-	.endsWith(`/${symlinkPath}`);
+export const isCalledFromGitHook = (scriptPath = process.argv[1]) =>
+	path.posix.basename(scriptPath.replace(/\\/g, '/')) === hookName;
 
 const isWindows = process.platform === 'win32';
 const windowsHook = `
@@ -33,17 +31,17 @@ export default command(
 	},
 	(argv) => {
 		(async () => {
-			const gitRepoPath = await assertGitRepo();
+			const gitHooksPath = await getGitHooksPath();
 			const { installUninstall: mode } = argv._;
 
-			const absoltueSymlinkPath = path.join(gitRepoPath, symlinkPath);
-			const hookExists = await fileExists(absoltueSymlinkPath);
+			const absoluteSymlinkPath = path.join(gitHooksPath, hookName);
+			const hookExists = await fileExists(absoluteSymlinkPath);
 			if (mode === 'install') {
 				if (hookExists) {
 					// If the symlink is broken, it will throw an error
 					// eslint-disable-next-line @typescript-eslint/no-empty-function
 					const realpath = await fs
-						.realpath(absoltueSymlinkPath)
+						.realpath(absoluteSymlinkPath)
 						.catch(() => {});
 					if (realpath === hookPath) {
 						console.warn('The hook is already installed');
@@ -54,13 +52,13 @@ export default command(
 					);
 				}
 
-				await fs.mkdir(path.dirname(absoltueSymlinkPath), { recursive: true });
+				await fs.mkdir(path.dirname(absoluteSymlinkPath), { recursive: true });
 
 				if (isWindows) {
-					await fs.writeFile(absoltueSymlinkPath, windowsHook);
+					await fs.writeFile(absoluteSymlinkPath, windowsHook);
 				} else {
-					await fs.symlink(hookPath, absoltueSymlinkPath, 'file');
-					await fs.chmod(absoltueSymlinkPath, 0o755);
+					await fs.symlink(hookPath, absoluteSymlinkPath, 'file');
+					await fs.chmod(absoluteSymlinkPath, 0o755);
 				}
 				console.log(`${green('✔')} Hook installed`);
 				return;
@@ -73,20 +71,20 @@ export default command(
 				}
 
 				if (isWindows) {
-					const scriptContent = await fs.readFile(absoltueSymlinkPath, 'utf8');
+					const scriptContent = await fs.readFile(absoluteSymlinkPath, 'utf8');
 					if (scriptContent !== windowsHook) {
 						console.warn('Hook is not installed');
 						return;
 					}
 				} else {
-					const realpath = await fs.realpath(absoltueSymlinkPath);
+					const realpath = await fs.realpath(absoluteSymlinkPath);
 					if (realpath !== hookPath) {
 						console.warn('Hook is not installed');
 						return;
 					}
 				}
 
-				await fs.rm(absoltueSymlinkPath);
+				await fs.rm(absoluteSymlinkPath);
 				console.log(`${green('✔')} Hook uninstalled`);
 				return;
 			}

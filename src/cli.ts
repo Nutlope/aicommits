@@ -117,7 +117,7 @@ cli(
 			process.exit(0);
 		}
 
-		if (isCalledFromGitHook) {
+		if (isCalledFromGitHook()) {
 			prepareCommitMessageHook();
 		} else {
 			aicommits(
