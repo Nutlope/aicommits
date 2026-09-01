@@ -97,15 +97,12 @@ export default testSuite(({ describe }) => {
 				false
 			);
 			expect(
-				supportsTogetherAgenticGeneration('openai/gpt-oss-20b')
-			).toBe(false);
-			expect(
 				supportsTogetherAgenticGeneration('Qwen/Qwen2.5-7B-Instruct-Turbo')
 			).toBe(false);
 			expect(supportsTogetherAgenticGeneration('thinkingmachines/Inkling')).toBe(
 				true
 			);
-			expect(TOGETHER_NON_AGENTIC_MODELS.size).toBe(9);
+			expect(TOGETHER_NON_AGENTIC_MODELS.size).toBe(8);
 			expect(TogetherProvider.defaultModels).toEqual([
 				'deepseek-ai/DeepSeek-V4-Flash-0731',
 				'zai-org/GLM-5.3-Flash',
@@ -886,7 +883,7 @@ export default testSuite(({ describe }) => {
 
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'openai/gpt-oss-20b',
+				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: textGeneration('fix: update fixture value'),
 			});
 
@@ -919,7 +916,7 @@ export default testSuite(({ describe }) => {
 			await git('add', ['file.txt']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'openai/gpt-oss-20b',
+				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: [
 					textGeneration(''),
 					textGeneration(''),
@@ -952,7 +949,7 @@ export default testSuite(({ describe }) => {
 			await git('add', ['file.txt']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'openai/gpt-oss-20b',
+				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: [
 					textGeneration('fix: update...'),
 					textGeneration('fix: update fixture value'),
@@ -1093,7 +1090,7 @@ export default testSuite(({ describe }) => {
 			await git('add', ['large.txt']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'openai/gpt-oss-20b',
+				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: async () =>
 					textGeneration('chore: summarize staged changes'),
 			});
@@ -1131,7 +1128,7 @@ export default testSuite(({ describe }) => {
 			await git('add', ['large.txt']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'openai/gpt-oss-20b',
+				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: async () =>
 					textGeneration('chore: summarize very large staged changes'),
 			});
@@ -1181,7 +1178,7 @@ export default testSuite(({ describe }) => {
 			await git('add', ['.']);
 			const model = new MockLanguageModelV4({
 				provider: 'togetherai.chat',
-				modelId: 'openai/gpt-oss-20b',
+				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: async () =>
 					textGeneration('chore: summarize representative changes'),
 			});
