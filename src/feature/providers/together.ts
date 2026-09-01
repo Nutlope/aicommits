@@ -8,7 +8,6 @@ export const TOGETHER_NON_AGENTIC_MODELS = new Set([
 	'google/gemma-3n-E4B-it',
 	'meta-llama/Llama-3.3-70B-Instruct-Turbo',
 	'openai/gpt-oss-120b',
-	'openai/gpt-oss-20b',
 	'pearl-ai/gemma-4-31b-it',
 	'Qwen/Qwen2.5-7B-Instruct-Turbo',
 	'moonshotai/Kimi-K3',
