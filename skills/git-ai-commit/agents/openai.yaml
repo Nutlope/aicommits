@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git AI Commit"
+  short_description: "Generate Git commit messages from staged changes."
+  default_prompt: "Use $git-ai-commit to generate an AI-assisted Git commit message for the staged changes, then ask before committing unless I explicitly authorize the commit."
