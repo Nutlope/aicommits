@@ -163,6 +163,7 @@ export default testSuite(({ describe }) => {
 			expect(model.doStreamCalls[0].toolChoice).toEqual({
 				type: 'required',
 			});
+			expect(model.doStreamCalls[0].maxOutputTokens).toBe(2048);
 			expect(model.doStreamCalls[0].reasoning).toBe('none');
 			expect(model.doStreamCalls[0].providerOptions).toEqual({
 				togetherai: { reasoning: { enabled: false } },
@@ -901,6 +902,7 @@ export default testSuite(({ describe }) => {
 			expect(result.message.subject).toBe('fix: update fixture value');
 			expect(model.doGenerateCalls.length).toBe(1);
 			expect(model.doStreamCalls.length).toBe(0);
+			expect(model.doGenerateCalls[0].maxOutputTokens).toBe(2048);
 			expect(model.doGenerateCalls[0].tools).toBeUndefined();
 			expect(model.doGenerateCalls[0].reasoning).toBeUndefined();
 			expect(model.doGenerateCalls[0].providerOptions).toBeUndefined();
