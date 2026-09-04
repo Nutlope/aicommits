@@ -38,6 +38,9 @@ const MAX_AGENT_DIFF_READS = MAX_AGENT_STEPS - 1;
 const MIN_AGENT_DIFF_READ_BYTES = 256;
 const AGENT_ATTEMPTS = 2;
 const ONE_SHOT_ATTEMPTS = 3;
+// Some reasoning models count their internal reasoning against this limit.
+// Leave enough room for the final subject and body after diff analysis.
+const MAX_COMMIT_MESSAGE_OUTPUT_TOKENS = 2048;
 
 export type CommitMessage = {
 	subject: string;
@@ -608,7 +611,7 @@ export const generateCommitMessage = async ({
 						]
 					),
 					prompt,
-					maxOutputTokens: 512,
+					maxOutputTokens: MAX_COMMIT_MESSAGE_OUTPUT_TOKENS,
 					timeout: budget.nextModelTimeout(),
 					...callOptions,
 				});
@@ -830,7 +833,7 @@ export const generateCommitMessage = async ({
 			hasToolCall('submitCommitMessage'),
 			stepCountIs(MAX_AGENT_STEPS),
 		],
-		maxOutputTokens: 512,
+		maxOutputTokens: MAX_COMMIT_MESSAGE_OUTPUT_TOKENS,
 		...callOptions,
 		prepareStep: ({ stepNumber }) => {
 			if (!isLocal && !hasCompleteDiff && stepNumber === 0) {
