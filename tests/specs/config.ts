@@ -40,6 +40,32 @@ export default testSuite(({ describe }) => {
 			expect(stdout).toBe('OPENAI_API_KEY=abc****');
 		});
 
+		await test('sets and displays provider options', async () => {
+			await aicommits([
+				'config',
+				'set',
+				'PROVIDER_OPTIONS={"custom":{"customOption":"value=1"}}',
+			]);
+
+			const { stdout } = await aicommits([
+				'config',
+				'get',
+				'PROVIDER_OPTIONS',
+			]);
+			expect(stdout).toBe(
+				'PROVIDER_OPTIONS={"custom":{"customOption":"value=1"}}'
+			);
+		});
+
+		test('rejects invalid provider options JSON', async () => {
+			const { stderr } = await aicommits(
+				['config', 'set', 'PROVIDER_OPTIONS={invalid'],
+				{ reject: false }
+			);
+
+			expect(stderr).toMatch('PROVIDER_OPTIONS: Must be valid JSON');
+		});
+
 		await test('reading unknown config', async () => {
 			await fs.appendFile(configPath, 'UNKNOWN=1');
 

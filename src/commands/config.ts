@@ -43,7 +43,9 @@ export default command(
 						const value = config[key as keyof typeof config];
 						const displayValue = sensitiveKeys.includes(key)
 							? `${String(value).substring(0, 4)}****`
-							: String(value);
+							: typeof value === 'object'
+								? JSON.stringify(value)
+								: String(value);
 						console.log(`${key}=${displayValue}`);
 					}
 				}
@@ -52,7 +54,18 @@ export default command(
 
 			if (mode === 'set') {
 				await setConfigs(
-					keyValues.map((keyValue) => keyValue.split('=') as [string, string])
+					keyValues.map((keyValue) => {
+						const separator = keyValue.indexOf('=');
+						if (separator === -1) {
+							throw new KnownError(
+								`Invalid config value: ${keyValue}. Expected KEY=value.`
+							);
+						}
+						return [
+							keyValue.slice(0, separator),
+							keyValue.slice(separator + 1),
+						] as [string, string];
+					})
 				);
 				return;
 			}

@@ -328,6 +328,20 @@ Custom OpenAI-compatible API endpoint URL.
 
 Model to use for OpenAI-compatible providers.
 
+#### PROVIDER_OPTIONS
+
+JSON object with provider-specific request options. This is useful for custom
+OpenAI-compatible endpoints or models that require fields not exposed as a
+first-class aicommits setting. The top-level keys must match the AI SDK provider
+name. Custom OpenAI-compatible endpoints use `custom`.
+
+```sh
+aicommits config set 'PROVIDER_OPTIONS={"custom":{"customOption":"value"}}'
+```
+
+Configured options are merged with aicommits defaults. Matching user values
+override defaults while other default options remain unchanged.
+
 #### provider
 
 The selected AI provider. Set automatically during `aicommits setup`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `ollama`, `lmstudio`, `custom`.

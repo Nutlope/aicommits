@@ -2,12 +2,14 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createTogetherAI } from '@ai-sdk/togetherai';
 import type {
-	JSONValue,
 	LanguageModel,
 	LanguageModelCallOptions,
 } from 'ai';
 import { fetchModels } from '../models.js';
-import type { ValidConfig } from '../../utils/config-types.js';
+import type {
+	ProviderOptions,
+	ValidConfig,
+} from '../../utils/config-types.js';
 
 const isLoopbackUrl = (baseUrl: string): boolean => {
 	try {
@@ -41,7 +43,7 @@ export type ProviderDef = {
 export type GenerationCallOptions = {
 	maxOutputTokens?: LanguageModelCallOptions['maxOutputTokens'];
 	reasoning?: LanguageModelCallOptions['reasoning'];
-	providerOptions?: Record<string, Record<string, JSONValue>>;
+	providerOptions?: ProviderOptions;
 };
 
 export type GenerationModel = {
@@ -218,13 +220,41 @@ export class Provider {
 			agenticGeneration && (agenticGeneration.supports?.(model) ?? true)
 		);
 
+		const callOptions = supportsAgenticGeneration
+			? agenticGeneration?.callOptions?.(model) ?? {}
+			: {};
+		const providerOptions = this.mergeProviderOptions(
+			callOptions.providerOptions
+		);
+
 		return {
 			mode: supportsAgenticGeneration ? 'agentic' : 'fallback',
 			isLocal: this.isLocal(),
-			callOptions: supportsAgenticGeneration
-				? agenticGeneration?.callOptions?.(model) ?? {}
-				: {},
+			callOptions:
+				Object.keys(providerOptions).length > 0
+					? { ...callOptions, providerOptions }
+					: callOptions,
 		};
+	}
+
+	private mergeProviderOptions(
+		defaultOptions: ProviderOptions | undefined
+	): ProviderOptions {
+		const configuredOptions = this.config.PROVIDER_OPTIONS ?? {};
+		const providerNames = new Set([
+			...Object.keys(defaultOptions ?? {}),
+			...Object.keys(configuredOptions),
+		]);
+
+		return Object.fromEntries(
+			[...providerNames].map((providerName) => [
+				providerName,
+				{
+					...defaultOptions?.[providerName],
+					...configuredOptions[providerName],
+				},
+			])
+		) as ProviderOptions;
 	}
 
 	validateConfig(): { valid: boolean; errors: string[] } {
