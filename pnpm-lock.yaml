@@ -201,6 +201,9 @@ importers:
       '@clack/prompts':
         specifier: ^0.11.0
         version: 0.11.0
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.1
+        version: 1.32.1(supports-color@7.2.0)(zod@4.6.7)
       '@openai/codex-sdk':
         specifier: 0.162.1
         version: 0.162.1
@@ -247,7 +250,7 @@ importers:
         specifier: ^0.7.0
         version: 0.7.0
       pkgroll:
-        specifier: ^2.20.1
+        specifier: ^2.28.1
         version: 2.28.1(typescript@5.9.3)
       semantic-release:
         specifier: 25.0.8

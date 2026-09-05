@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs/promises';
+import http from 'node:http';
 import { execa, execaNode, type Options } from 'execa';
 import {
 	createFixture as createFixtureBase,
@@ -28,6 +29,50 @@ const createAicommits = (fixture: FsFixture) => {
 			// Block tsx nodeOptions
 			nodeOptions: [],
 		});
+};
+
+export const startAgentServer = async (commitBody: string | null = null) => {
+	const requests: string[] = [];
+	const server = http.createServer(async (request, response) => {
+		let requestBody = '';
+		for await (const chunk of request) requestBody += chunk;
+		requests.push(requestBody);
+
+		const message = {
+			role: 'assistant',
+			content: commitBody
+				? `feat: add test data\n\n${commitBody}`
+				: 'feat: add test data',
+		};
+
+		response.writeHead(200, { 'content-type': 'application/json' });
+		response.end(
+			JSON.stringify({
+				id: `response-${requests.length}`,
+				object: 'chat.completion',
+				created: 0,
+				model: 'test-model',
+				choices: [
+					{
+						index: 0,
+						message,
+						finish_reason: 'tool_calls',
+					},
+				],
+				usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+			})
+		);
+	});
+
+	await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+	const address = server.address();
+	if (!address || typeof address === 'string') throw new Error('Server did not start');
+
+	return {
+		baseUrl: `http://127.0.0.1:${address.port}/v1`,
+		requests,
+		close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+	};
 };
 
 export const createGit = async (cwd: string) => {
