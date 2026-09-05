@@ -14,17 +14,12 @@ import {
 	getStagedFiles,
 	getDetectedMessage,
 } from '../utils/git.js';
-import { getConfig, setConfigs } from '../utils/config-runtime.js';
+import { getConfig } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
-import {
-	formatCommitMessage,
-	generateCommitMessage,
-} from '../feature/generate-commit-message.js';
-import { getCommitTypePolicy } from '../utils/config-types.js';
+import { generateCommitMessages } from '../feature/generate-commit-messages.js';
 import {
 	KnownError,
 	handleCommandError,
-	isModelUnavailableError,
 } from '../utils/error.js';
 
 import { getCommitMessage } from '../utils/commit-helpers.js';
@@ -83,8 +78,7 @@ export default async (
 			type: commitType?.toString(),
 		});
 
-		const providerInstance = getProvider(config);
-		if (!providerInstance) {
+		if (!getProvider(config)) {
 			if (!headless) {
 				console.log(`Welcome to aicommits! Let's set up your AI provider.`);
 				console.log('Run `aicommits setup` to configure your provider.');
@@ -97,96 +91,22 @@ export default async (
 			}
 		}
 
-		const timeout = providerInstance.getRequestTimeout(config.timeout);
-
-		// Validate provider config
-		const validation = providerInstance.validateConfig();
-		if (!validation.valid) {
-			throw new KnownError(
-				`Provider configuration issues: ${validation.errors.join(
-					', '
-				)}. Run \`aicommits setup\` to reconfigure.`
-			);
-		}
-
-		// Use the unified model setting or provider default
-		config.model = config.OPENAI_MODEL || providerInstance.getDefaultModel();
-		const { requiresBody } = getCommitTypePolicy(config.type);
-		const includeBody = includeDescription || requiresBody;
-		const generationCount = requiresBody ? 1 : config.generate;
-
-		const attemptGeneration = async () => {
-			const model = providerInstance.getGenerationModel(config.model!);
-			const s = headless ? null : spinner();
-			if (s) {
-				s.start(
-					`🔍 Analyzing changes in ${stagedFiles.length} file${
-						stagedFiles.length === 1 ? '' : 's'
-					}`
-				);
-			}
-			const startTime = Date.now();
-			try {
-				const results = await Promise.all(
-					Array.from({ length: generationCount }, () =>
-						generateCommitMessage({
-							model,
-							cwd: gitRoot,
-							files: stagedFiles,
-							type: config.type,
-							locale: config.locale,
-							maxLength: config['max-length'],
-							includeBody,
-							timeout,
-							customPrompt,
-						})
-					)
-				);
-				return Array.from(
-					new Set(results.map(({ message }) => formatCommitMessage(message)))
-				);
-			} finally {
-				if (s) {
-					const duration = Date.now() - startTime;
-					s.stop(
-						`✅ Changes analyzed in ${(duration / 1000).toFixed(1)}s`
-					);
-				}
-			}
-		};
-
-		let messages: string[];
-		try {
-			messages = await attemptGeneration();
-		} catch (error) {
-			const modelUnavailable = isModelUnavailableError(error);
-			const fallbackModel =
-				providerInstance.getFallbackModel(config.model!) ||
-				(modelUnavailable ? providerInstance.getDefaultModel() : undefined);
-			if (!fallbackModel) throw error;
-			if (fallbackModel === config.model) {
-				throw new KnownError(
-					`Model "${config.model}" is not available or has been deprecated.`
-				);
-			}
-
-			if (!headless) {
-				console.log(
-					yellow(
-						`⚠ Model "${config.model}" failed. Retrying with "${fallbackModel}".`
-					)
-				);
-			}
-			config.model = fallbackModel;
-			if (modelUnavailable) {
-				await setConfigs([['OPENAI_MODEL', fallbackModel]]);
-			}
-			messages = await attemptGeneration();
-		}
-
-		if (messages.length === 0) {
-			throw new KnownError('No commit messages were generated. Try again.');
-		}
+		const messages = await generateCommitMessages({
+			config,
+			gitRoot,
+			files: stagedFiles,
+			includeDescription,
+			customPrompt,
+			spinner: headless ? null : spinner(),
+			onModelFallback: headless
+				? undefined
+				: (previousModel, fallbackModel) =>
+						console.log(
+							yellow(
+								`⚠ Model "${previousModel}" failed. Retrying with "${fallbackModel}".`
+							)
+						),
+		});
 
 		// Headless mode: output to stdout and exit
 		if (headless) {

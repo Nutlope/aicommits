@@ -12,12 +12,21 @@ import modelCommand from './commands/model.js';
 import hookCommand, { isCalledFromGitHook } from './commands/hook.js';
 import prCommand from './commands/pr.js';
 import updateCommand from './commands/update.js';
+import mcpCommand from './commands/mcp.js';
 import { checkAndAutoUpdate } from './utils/auto-update.js';
 import { isHeadless } from './utils/headless.js';
 
+const rawArgv = process.argv.slice(2);
+const isMcpCommand = rawArgv[0] === 'mcp';
+
 // Auto-update check - runs in production to update under the hood
-// Skip during git hooks to avoid breaking commit flow
-if (!isCalledFromGitHook && !isHeadless() && version !== '0.0.0-semantic-release') {
+// Skip during git hooks and the MCP server to avoid breaking commit flow / stdio protocol
+if (
+	!isCalledFromGitHook &&
+	!isMcpCommand &&
+	!isHeadless() &&
+	version !== '0.0.0-semantic-release'
+) {
 	const distTag = version.includes('-') ? 'develop' : 'latest';
 
 	// Check for updates and auto-update if available
@@ -27,8 +36,6 @@ if (!isCalledFromGitHook && !isHeadless() && version !== '0.0.0-semantic-release
 		headless: false,
 	});
 }
-
-const rawArgv = process.argv.slice(2);
 
 cli(
 	{
@@ -103,7 +110,7 @@ cli(
 		},
 		},
 
-		commands: [configCommand, setupCommand, modelCommand, hookCommand, prCommand, updateCommand],
+		commands: [configCommand, setupCommand, modelCommand, hookCommand, prCommand, updateCommand, mcpCommand],
 
 		help: {
 			description,

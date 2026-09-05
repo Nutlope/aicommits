@@ -212,6 +212,37 @@ aicommits hook uninstall
 
 3. Save and close the editor to commit!
 
+### MCP server
+
+You can run _aicommits_ as a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server over stdio, letting AI agents and clients (Claude Code, Cursor, Codex CLI, …) generate commit messages with extra context about what you're working on — without committing anything themselves. It uses your existing `~/.aicommits` provider configuration, including local models.
+
+Add it to any MCP client:
+
+```json
+{
+	"mcpServers": {
+		"aicommits": { "command": "npx", "args": ["-y", "aicommits", "mcp"] }
+	}
+}
+```
+
+With Claude Code you can also run `claude mcp add aicommits -- npx -y aicommits mcp`. If aicommits is installed globally, `aicommits mcp` starts faster than the `npx` cold start.
+
+The server exposes a single tool:
+
+| Tool | Description |
+| --- | --- |
+| `generate_commit_message` | Generates commit message(s) from staged changes and returns them as text. Does not commit. |
+
+Parameters:
+
+| Parameter | Description |
+| --- | --- |
+| `context` | What you're working on and why. The agent passes this from your conversation, so commit messages capture intent — not just the diff. This is the MCP equivalent of the CLI's `--prompt` flag. |
+| `type` | Commit message format: `plain`, `conventional`, `conventional+body`, `gitmoji`, or `subject+body` (default: `plain`) |
+| `count` | Number of message variants, 1–5 (default: 1) |
+| `exclude` | Files to exclude from analysis |
+
 ### Environment Variables
 
 You can also configure aicommits using environment variables instead of the config file.
