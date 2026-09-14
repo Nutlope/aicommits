@@ -218,13 +218,54 @@ export class Provider {
 			agenticGeneration && (agenticGeneration.supports?.(model) ?? true)
 		);
 
+		const callOptions: GenerationCallOptions = {
+			...(supportsAgenticGeneration
+				? agenticGeneration?.callOptions?.(model) ?? {}
+				: {}),
+			...this.getConfiguredGenerationOptions(),
+		};
+
 		return {
 			mode: supportsAgenticGeneration ? 'agentic' : 'fallback',
 			isLocal: this.isLocal(),
-			callOptions: supportsAgenticGeneration
-				? agenticGeneration?.callOptions?.(model) ?? {}
-				: {},
+			callOptions,
 		};
+	}
+
+	/**
+	 * Build user-configurable generation options from the config file.
+	 *
+	 * - `max-output-tokens` overrides the hardcoded 512-token output cap. This is
+	 *   especially important for reasoning models (e.g. models that emit a
+	 *   `reasoning_content` phase), which can exhaust the output budget on
+	 *   reasoning alone and never produce an answer.
+	 * - `thinking=disabled` sends `thinking: { type: 'disabled' }` in the request
+	 *   body of OpenAI-compatible providers, turning off the model's reasoning
+	 *   phase for faster, cheaper responses. The official OpenAI and Together AI
+	 *   providers are excluded because they reject unknown body parameters and
+	 *   have their own reasoning handling.
+	 */
+	private getConfiguredGenerationOptions(): GenerationCallOptions {
+		const options: GenerationCallOptions = {};
+
+		const maxOutputTokens = this.config['max-output-tokens'];
+		if (maxOutputTokens !== undefined) {
+			options.maxOutputTokens = maxOutputTokens;
+		}
+
+		if (
+			this.config.thinking === 'disabled' &&
+			this.name !== 'openai' &&
+			this.name !== 'togetherai'
+		) {
+			const providerName = this.name;
+			options.providerOptions = {
+				...options.providerOptions,
+				[providerName]: { thinking: { type: 'disabled' } },
+			};
+		}
+
+		return options;
 	}
 
 	validateConfig(): { valid: boolean; errors: string[] } {

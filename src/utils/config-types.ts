@@ -112,6 +112,34 @@ const configParsers = {
 		);
 		return parsed;
 	},
+	'max-output-tokens'(maxOutputTokens?: string) {
+		if (!maxOutputTokens) {
+			return 512;
+		}
+		parseAssert(
+			'max-output-tokens',
+			/^\d+$/.test(maxOutputTokens),
+			'Must be an integer'
+		);
+		const parsed = Number(maxOutputTokens);
+		parseAssert(
+			'max-output-tokens',
+			parsed >= 1,
+			'Must be greater than 0'
+		);
+		return parsed;
+	},
+	thinking(thinking?: string) {
+		if (!thinking) {
+			return 'enabled';
+		}
+		parseAssert(
+			'thinking',
+			thinking === 'enabled' || thinking === 'disabled',
+			'Must be "enabled" or "disabled"'
+		);
+		return thinking;
+	},
 } as const;
 
 type ConfigKeys = keyof typeof configParsers;
