@@ -1,6 +1,11 @@
 import { expect, testSuite } from 'manten';
+import { generateText } from 'ai';
+import { createServer } from 'http';
 import { getProvider } from '../../src/feature/providers/index.js';
+import { Provider } from '../../src/feature/providers/base.js';
+import { OpenCodeGoProvider } from '../../src/feature/providers/opencodeGo.js';
 import type { ValidConfig } from '../../src/utils/config-types.js';
+import { getConfig } from '../../src/utils/config-runtime.js';
 
 const createProvider = (
 	provider: string,
@@ -113,6 +118,102 @@ export default testSuite(({ describe }) => {
 					OPENAI_BASE_URL: 'https://example.com/v1',
 				}).getRequestTimeout()
 			).toBe(10_000);
+		});
+
+		test('detects OpenCode Go from its API URL', async () => {
+			const config = await getConfig({
+				OPENAI_API_KEY: 'test-key',
+				OPENAI_BASE_URL: 'https://opencode.ai/zen/go/v1',
+			});
+			expect(config.provider).toBe('opencode-go');
+			expect(createProvider(config.provider!, config).getDefaultModel()).toBe(
+				'deepseek-v4-flash'
+			);
+		});
+
+		test('sends stable OpenCode Go session and user agent on each model API', async () => {
+			const requests: { url: string; headers: Headers }[] = [];
+			const server = createServer((request, response) => {
+				requests.push({
+					url: request.url || '',
+					headers: new Headers(
+						Object.entries(request.headers).filter(
+							(entry): entry is [string, string] =>
+								typeof entry[1] === 'string'
+						)
+					),
+				});
+				if (request.method === 'GET') {
+					response.writeHead(200, { 'Content-Type': 'application/json' });
+					response.end(JSON.stringify({ data: [{ id: 'deepseek-v4-flash' }] }));
+				} else {
+					response.writeHead(401, { 'Content-Type': 'application/json' });
+					response.end(JSON.stringify({ error: { message: 'test response' } }));
+				}
+			});
+			await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+			const address = server.address();
+			if (!address || typeof address === 'string') {
+				throw new Error('Could not start mock server');
+			}
+			const provider = new Provider(
+				{
+					...OpenCodeGoProvider,
+					baseUrl: `http://127.0.0.1:${address.port}/zen/go/v1`,
+					cacheModels: false,
+				},
+				{ OPENAI_API_KEY: 'test-key', provider: 'opencode-go' } as ValidConfig
+			);
+
+			try {
+				for (const model of [
+					'deepseek-v4-flash',
+					'gpt-5.6-luna',
+					'minimax-m3',
+				]) {
+					try {
+						await generateText({
+							model: provider.getLanguageModel(model),
+							prompt: 'Write a commit message',
+							maxRetries: 0,
+						});
+					} catch {
+						// The mock response only records the outbound request.
+					}
+				}
+				expect(await provider.getModels()).toEqual({
+					models: ['deepseek-v4-flash'],
+				});
+			} finally {
+				await new Promise<void>((resolve) => server.close(() => resolve()));
+			}
+
+			expect(requests.map((request) => request.url)).toEqual([
+				'/zen/go/v1/chat/completions',
+				'/zen/go/v1/responses',
+				'/zen/go/v1/messages',
+				'/zen/go/v1/models',
+			]);
+			const sessionId = requests[0].headers.get('x-opencode-session');
+			expect(sessionId).toMatch(/^[0-9a-f-]{36}$/);
+			for (const request of requests.slice(0, 3)) {
+				expect(request.headers.get('x-opencode-session')).toBe(sessionId);
+			}
+			for (const request of requests) {
+				expect(request.headers.get('user-agent')).toMatch(/^aicommits\//);
+			}
+			expect(requests[0].headers.get('authorization')).toBe(
+				'Bearer test-key'
+			);
+			expect(requests[1].headers.get('authorization')).toBe(
+				'Bearer test-key'
+			);
+			expect(requests[2].headers.get('x-api-key')).toBe('test-key');
+			expect(
+				createProvider('opencode-go', {
+					OPENAI_API_KEY: 'test-key',
+				}).getHeaders()?.['x-opencode-session']
+			).not.toBe(sessionId);
 		});
 
 		test('prefers a configured timeout over the provider default', () => {

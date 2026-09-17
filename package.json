@@ -32,6 +32,7 @@
 		"prepack": "pnpm build"
 	},
 	"devDependencies": {
+		"@ai-sdk/anthropic": "4.0.16",
 		"@ai-sdk/openai": "^4.0.16",
 		"@ai-sdk/openai-compatible": "^3.0.13",
 		"@ai-sdk/togetherai": "^3.0.14",

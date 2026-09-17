@@ -6,8 +6,6 @@ import { assertGitRepo } from '../utils/git.js';
 import { getConfig } from '../utils/config-runtime.js';
 import { getProvider } from '../feature/providers/index.js';
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { KnownError, handleCommandError } from '../utils/error.js';
 import { isInteractive } from '../utils/headless.js';
 
@@ -161,14 +159,10 @@ export default command(
 				throw new KnownError('No provider configured');
 			}
 
-			let baseUrl = configProvider.getBaseUrl();
-			if (!baseUrl || baseUrl === '') {
+			if (!configProvider.getBaseUrl()) {
 				throw new KnownError(
 					'Base URL not configured. Please run `aicommits setup` to configure your provider.'
 				);
-			}
-			if (!baseUrl.endsWith('/v1')) {
-				baseUrl += '/v1';
 			}
 			const apiKey = configProvider.getApiKey();
 			if (!apiKey) {
@@ -176,14 +170,7 @@ export default command(
 					'API key not configured. Please run `aicommits setup` to configure your provider.'
 				);
 			}
-			const aiProvider =
-				baseUrl === 'https://api.openai.com/v1'
-					? createOpenAI({ apiKey })
-					: createOpenAICompatible({
-							name: 'custom',
-							apiKey,
-							baseURL: baseUrl,
-					  });
+			const languageModel = configProvider.getLanguageModel(config.model);
 
 			const generating = spinner();
 			generating.start(
@@ -194,7 +181,7 @@ export default command(
 
 			// Generate PR title
 			const titleResult = await generateText({
-				model: aiProvider(config.model) as any,
+				model: languageModel,
 				system:
 					'Generate a concise PR title based on the following git diff. The title should be under 72 characters.',
 				prompt: diff,
@@ -205,7 +192,7 @@ export default command(
 
 			// Generate PR body
 			const bodyResult = await generateText({
-				model: aiProvider(config.model) as any,
+				model: languageModel,
 				system:
 					'Generate a concise PR description based on the following git diff. Format using Markdown with headings like ### Summary, ### Changes, ### Review Notes. Provide a high-level summary of the changes, what was implemented or fixed, and any specific details reviewers should consider. Avoid listing individual files.',
 				prompt: diff,

@@ -1,6 +1,8 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createTogetherAI } from '@ai-sdk/togetherai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { randomUUID } from 'crypto';
 import type {
 	JSONValue,
 	LanguageModel,
@@ -30,6 +32,7 @@ export type ProviderDef = {
 	defaultTimeout?: number;
 	requiresApiKey: boolean;
 	headers?: Record<string, string>;
+	sessionHeader?: string;
 	cacheModels?: boolean;
 	isLocal?: boolean;
 	agenticGeneration?: {
@@ -54,6 +57,7 @@ export type GenerationModel = {
 export class Provider {
 	protected config: ValidConfig;
 	protected def: ProviderDef;
+	private sessionId?: string;
 
 	constructor(def: ProviderDef, config: ValidConfig) {
 		this.def = def;
@@ -123,6 +127,7 @@ export class Provider {
 			apiKey,
 			cacheModels: this.def.cacheModels,
 			modelsPath: this.def.modelsPath,
+			headers: this.def.headers,
 		});
 		if (result.error) return { models: [], error: result.error };
 
@@ -178,12 +183,27 @@ export class Provider {
 	}
 
 	getHeaders(): Record<string, string> | undefined {
-		return this.def.headers;
+		if (!this.def.sessionHeader) return this.def.headers;
+		this.sessionId ??= randomUUID();
+		return {
+			...this.def.headers,
+			[this.def.sessionHeader]: this.sessionId,
+		};
 	}
 
 	getLanguageModel(model: string): LanguageModel {
 		const baseUrl = this.getBaseUrl();
 		const apiKey = this.getApiKey() || '';
+		const headers = this.getHeaders();
+		// The AI SDK replaces User-Agent after applying custom headers.
+		const customFetch =
+			this.name === 'opencode-go' && headers?.['User-Agent']
+				? (input: RequestInfo | URL, init?: RequestInit) => {
+						const request = new Request(input, init);
+						request.headers.set('User-Agent', headers['User-Agent']);
+						return globalThis.fetch(request);
+					  }
+				: undefined;
 		const provider = (() => {
 			if (this.name === 'openai') {
 				return createOpenAI({ apiKey });
@@ -193,11 +213,31 @@ export class Provider {
 				return createTogetherAI({ apiKey, baseURL: baseUrl });
 			}
 
+			if (this.name === 'opencode-go') {
+				if (/^(gpt-|grok-|muse-spark-)/.test(model)) {
+					return createOpenAI({
+						apiKey,
+						baseURL: baseUrl,
+						headers,
+						fetch: customFetch,
+					}).responses;
+				}
+				if (/^(minimax-|qwen3\.|union-alpha$)/.test(model)) {
+					return createAnthropic({
+						apiKey,
+						baseURL: baseUrl,
+						headers,
+						fetch: customFetch,
+					});
+				}
+			}
+
 			return createOpenAICompatible({
 				name: this.name,
 				apiKey,
 				baseURL: baseUrl,
-				headers: this.getHeaders(),
+				headers,
+			fetch: customFetch,
 			});
 		})();
 		return provider(model);

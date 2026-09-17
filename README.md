@@ -42,6 +42,7 @@ This will guide you through:
   - **Groq** - Get your API key from [Groq Console](https://console.groq.com/keys)
   - **xAI** - Get your API key from [xAI Console](https://console.x.ai/)
   - **OpenRouter** - Get your API key from [OpenRouter](https://openrouter.ai/keys)
+  - **OpenCode Go** - Use your [OpenCode Go](https://opencode.ai/docs/go/) API key
   - **Ollama** (local) - Run AI models locally with [Ollama](https://ollama.ai)
   - **LM Studio** (local) - No API key required. Runs on your computer via [LM Studio](https://lmstudio.ai/)
   - **Custom OpenAI-compatible endpoint** - Use any service that implements the OpenAI API
@@ -61,6 +62,16 @@ This will guide you through:
   ```
 
   > **Note:** When using environment variables, ensure all related variables (e.g., `OPENAI_API_KEY` and `OPENAI_BASE_URL`) are set consistently to avoid configuration mismatches with the config file.
+
+  For OpenCode Go, choose **OpenCode Go** in `aicommits setup`, or configure it directly:
+
+  ```sh
+  aicommits config set OPENAI_API_KEY="your_opencode_go_key" OPENAI_BASE_URL="https://opencode.ai/zen/go/v1" OPENAI_MODEL="deepseek-v4-flash"
+  ```
+
+  OpenCode Go requires a subscription. aicommits sends a session ID and its own
+  user agent on requests, and routes models to the documented Chat Completions,
+  Responses, and Messages API endpoints.
 
   This will create a `.aicommits` file in your home directory.
 
@@ -330,7 +341,7 @@ Model to use for OpenAI-compatible providers.
 
 #### provider
 
-The selected AI provider. Set automatically during `aicommits setup`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `ollama`, `lmstudio`, `custom`.
+The selected AI provider. Detected from `OPENAI_BASE_URL`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `opencode-go`, `ollama`, `lmstudio`, `custom`.
 
 #### locale
 
