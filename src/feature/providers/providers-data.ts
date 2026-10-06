@@ -5,6 +5,7 @@ import { OpenAiCustom } from './openaiCustom.js';
 import { OpenRouterProvider } from './openrouter.js';
 import { LMStudioProvider } from './lmstudio.js';
 import { GroqProvider } from './groq.js';
+import { AtlasCloudProvider } from './atlascloud.js';
 import { XAiProvider } from './xai.js';
 
 export const providers = [
@@ -12,6 +13,7 @@ export const providers = [
 	OpenAiProvider,
 	GroqProvider,
 	XAiProvider,
+	AtlasCloudProvider,
 	OllamaProvider,
 	LMStudioProvider,
 	OpenRouterProvider,
