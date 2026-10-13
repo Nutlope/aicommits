@@ -6,12 +6,14 @@ import { OpenRouterProvider } from './openrouter.js';
 import { LMStudioProvider } from './lmstudio.js';
 import { GroqProvider } from './groq.js';
 import { XAiProvider } from './xai.js';
+import { CheaperInferenceProvider } from './cheaperinference.js';
 
 export const providers = [
 	TogetherProvider,
 	OpenAiProvider,
 	GroqProvider,
 	XAiProvider,
+	CheaperInferenceProvider,
 	OllamaProvider,
 	LMStudioProvider,
 	OpenRouterProvider,
