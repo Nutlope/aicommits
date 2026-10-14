@@ -54,21 +54,21 @@ export default testSuite(({ describe }) => {
 		test('highlights current fast and smart Together models', () => {
 			const provider = createProvider('togetherai');
 			expect(provider.getHighlightedModels()).toEqual([
-				'deepseek-ai/DeepSeek-V4-Flash-0731',
+				'deepseek-ai/DeepSeek-V4.1-Flash',
 				'zai-org/GLM-5.3-Flash',
 				'moonshotai/Kimi-K3',
 			]);
 			expect(provider.getDefaultModel()).toBe(
-				'deepseek-ai/DeepSeek-V4-Flash-0731'
+				'deepseek-ai/DeepSeek-V4.1-Flash'
 			);
 			expect(provider.getFallbackModel('moonshotai/Kimi-K3')).toBe(
-				'deepseek-ai/DeepSeek-V4-Flash-0731'
+				'deepseek-ai/DeepSeek-V4.1-Flash'
 			);
 			expect(provider.getFallbackModel('zai-org/GLM-5.3-Flash')).toBe(
-				'deepseek-ai/DeepSeek-V4-Flash-0731'
+				'deepseek-ai/DeepSeek-V4.1-Flash'
 			);
 			expect(
-				provider.getFallbackModel('deepseek-ai/DeepSeek-V4-Flash-0731')
+				provider.getFallbackModel('deepseek-ai/DeepSeek-V4.1-Flash')
 			).toBe('zai-org/GLM-5.3-Flash');
 		});
 

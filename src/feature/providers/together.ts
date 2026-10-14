@@ -6,7 +6,6 @@ export const TOGETHER_NON_AGENTIC_MODELS = new Set([
 	'arize-ai/qwen-2-1.5b-instruct',
 	'deepcogito/cogito-v2-1-671b',
 	'google/gemma-3n-E4B-it',
-	'meta-llama/Llama-3.3-70B-Instruct-Turbo',
 	'openai/gpt-oss-120b',
 	'pearl-ai/gemma-4-31b-it',
 	'Qwen/Qwen2.5-7B-Instruct-Turbo',
@@ -49,11 +48,11 @@ export const TogetherProvider: ProviderDef = {
 			)
 			.map((m: any) => m.id),
 	defaultModels: [
-		'deepseek-ai/DeepSeek-V4-Flash-0731',
+		'deepseek-ai/DeepSeek-V4.1-Flash',
 		'zai-org/GLM-5.3-Flash',
 		'moonshotai/Kimi-K3',
 	],
-	fallbackModel: 'deepseek-ai/DeepSeek-V4-Flash-0731',
+	fallbackModel: 'deepseek-ai/DeepSeek-V4.1-Flash',
 	defaultTimeout: 60_000,
 	requiresApiKey: true,
 	agenticGeneration: {
