@@ -104,7 +104,7 @@ export default testSuite(({ describe }) => {
 			);
 			expect(TOGETHER_NON_AGENTIC_MODELS.size).toBe(8);
 			expect(TogetherProvider.defaultModels).toEqual([
-				'deepseek-ai/DeepSeek-V4-Flash-0731',
+				'deepseek-ai/DeepSeek-V4.1-Flash',
 				'zai-org/GLM-5.3-Flash',
 				'moonshotai/Kimi-K3',
 			]);
