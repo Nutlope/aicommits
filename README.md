@@ -29,16 +29,21 @@
 
 This will guide you through:
 
+- Detecting subscriptions you already have on this machine (Claude, Codex, OpenCode Go)
 - Selecting your AI provider (sets the `provider` config)
-- Configuring your API key
+- Configuring your API key, when the provider needs one
 - **Automatically fetching and selecting from available models** (when supported)
 - **Choosing your preferred commit message format** (`plain`, `conventional`,
   `conventional+body`, `gitmoji`, or `subject+body`)
 
   Supported providers include:
 
+  - **Claude Agent** - Uses your Claude Pro, Max, Team or Enterprise login. No API key. Powered by Claude.
+  - **Codex** - Uses your ChatGPT login through the Codex CLI. No API key.
+  - **OpenCode Go** - Uses your [OpenCode Go](https://opencode.ai/docs/go/) plan
   - **TogetherAI** (recommended) - Get your API key from [TogetherAI](https://api.together.ai/)
   - **OpenAI** - Get your API key from [OpenAI API Keys page](https://platform.openai.com/account/api-keys)
+  - **Anthropic** - Get your API key from [Claude Console](https://console.anthropic.com/settings/keys)
   - **Groq** - Get your API key from [Groq Console](https://console.groq.com/keys)
   - **xAI** - Get your API key from [xAI Console](https://console.x.ai/)
   - **OpenRouter** - Get your API key from [OpenRouter](https://openrouter.ai/keys)
@@ -63,6 +68,24 @@ This will guide you through:
   > **Note:** When using environment variables, ensure all related variables (e.g., `OPENAI_API_KEY` and `OPENAI_BASE_URL`) are set consistently to avoid configuration mismatches with the config file.
 
   This will create a `.aicommits` file in your home directory.
+
+### Use a subscription you already have
+
+If you are logged in to Claude Code or Codex, or have an OpenCode Go key,
+`aicommits setup` lists that subscription first and skips the API key step.
+The first run of `aicommits` without a config also offers it.
+
+| Provider | Requirement | How aicommits uses it |
+| --- | --- | --- |
+| Claude Agent | `claude` CLI installed and logged in with `claude auth login` | Runs your installed `claude` through the Claude Agent SDK, with no tools and no saved session |
+| Codex | `codex` CLI installed and logged in with `codex login` using ChatGPT | Runs your installed `codex` through the Codex SDK, read-only and with the shell tool disabled |
+| OpenCode Go | An OpenCode Go or Go Plus plan | Reads `OPENCODE_API_KEY` or the key the OpenCode CLI saved, and calls the OpenCode Go API |
+
+aicommits never reads or copies your Claude or Codex credentials. Logging in
+always happens in the vendor's own CLI, and setup can start that login for you.
+Usage counts against your plan's limits, the same as using the CLI yourself.
+Detection only runs in an interactive terminal, never in Git hooks or CI. Turn
+it off with `aicommits config set subscription-detection=off`.
 
 ### Upgrading
 
@@ -330,7 +353,25 @@ Model to use for OpenAI-compatible providers.
 
 #### provider
 
-The selected AI provider. Set automatically during `aicommits setup`. Valid values: `openai`, `togetherai`, `groq`, `xai`, `openrouter`, `ollama`, `lmstudio`, `custom`.
+The selected AI provider. Set automatically during `aicommits setup`. Valid values: `claude-agent`, `codex`, `opencode-go`, `togetherai`, `openai`, `anthropic`, `groq`, `xai`, `ollama`, `lmstudio`, `openrouter`, `custom`.
+
+Configs from earlier versions without `provider` keep working: the provider is
+inferred from `OPENAI_BASE_URL`.
+
+#### subscription-detection
+
+Default: `on`
+
+Whether `aicommits setup` and the first run look for Claude, Codex and OpenCode
+Go subscriptions on this machine.
+
+#### claude-path
+
+Path to the `claude` CLI when it is not on your `PATH`.
+
+#### codex-path
+
+Path to the `codex` CLI when it is not on your `PATH`.
 
 #### locale
 

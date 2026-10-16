@@ -28,7 +28,8 @@ import {
 } from '../utils/error.js';
 
 import { getCommitMessage } from '../utils/commit-helpers.js';
-import { isHeadless } from '../utils/headless.js';
+import { isHeadless, isInteractive } from '../utils/headless.js';
+import { offerDetectedSubscription } from '../feature/subscriptions/index.js';
 
 export default async (
 	generate: number | undefined,
@@ -78,15 +79,31 @@ export default async (
 			}
 		}
 
-		const config = await getConfig({
+		let config = await getConfig({
 			generate: generate?.toString(),
 			type: commitType?.toString(),
 		});
 
-		const providerInstance = getProvider(config);
+		let providerInstance = getProvider(config);
+		if (!providerInstance && isInteractive() && config['subscription-detection']) {
+			console.log(`Welcome to aicommits! Let's set up your AI provider.`);
+			const chosen = await offerDetectedSubscription(config);
+			if (chosen) {
+				await setConfigs([['provider', chosen]]);
+				config = await getConfig({
+					generate: generate?.toString(),
+					type: commitType?.toString(),
+				});
+				providerInstance = getProvider(config);
+				if (providerInstance) {
+					console.log(
+						`${green('✔')} Using ${providerInstance.displayName}. Change it any time with \`aicommits setup\`.`
+					);
+				}
+			}
+		}
 		if (!providerInstance) {
 			if (!headless) {
-				console.log(`Welcome to aicommits! Let's set up your AI provider.`);
 				console.log('Run `aicommits setup` to configure your provider.');
 				outro('Setup required. Please run: aicommits setup');
 				return;

@@ -1,4 +1,5 @@
 import { KnownError } from './error.js';
+import { providers } from '../feature/providers/providers-data.js';
 
 const commitTypes = [
 	'plain',
@@ -36,6 +37,17 @@ const parseAssert = (name: string, condition: boolean, message: string) => {
 	}
 };
 
+const parseSwitch = (name: string, value: string | undefined, fallback: boolean) => {
+	if (!value) return fallback;
+	const normalized = value.toLowerCase();
+	parseAssert(
+		name,
+		['on', 'off', 'true', 'false'].includes(normalized),
+		'Must be on or off'
+	);
+	return normalized === 'on' || normalized === 'true';
+};
+
 const configParsers = {
 	OPENAI_API_KEY(key?: string) {
 		return key;
@@ -45,6 +57,28 @@ const configParsers = {
 	},
 	OPENAI_MODEL(key?: string) {
 		return key || '';
+	},
+	provider(name?: string) {
+		if (!name) {
+			return undefined;
+		}
+		parseAssert(
+			'provider',
+			providers.some((provider) => provider.name === name),
+			`Unknown provider. Valid values: ${providers
+				.map((provider) => provider.name)
+				.join(', ')}`
+		);
+		return name;
+	},
+	'subscription-detection'(value?: string) {
+		return parseSwitch('subscription-detection', value, true);
+	},
+	'claude-path'(path?: string) {
+		return path || undefined;
+	},
+	'codex-path'(path?: string) {
+		return path || undefined;
 	},
 	locale(locale?: string) {
 		if (!locale) {
