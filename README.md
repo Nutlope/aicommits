@@ -38,10 +38,10 @@ This will guide you through:
 
   Supported providers include:
 
+  - **TogetherAI** (recommended) - Get your API key from [TogetherAI](https://api.together.ai/)
   - **Claude Agent** - Uses your Claude Pro, Max, Team or Enterprise login. No API key. Powered by Claude.
   - **Codex** - Uses your ChatGPT login through the Codex CLI. No API key.
   - **OpenCode Go** - Uses your [OpenCode Go](https://opencode.ai/docs/go/) plan
-  - **TogetherAI** (recommended) - Get your API key from [TogetherAI](https://api.together.ai/)
   - **OpenAI** - Get your API key from [OpenAI API Keys page](https://platform.openai.com/account/api-keys)
   - **Anthropic** - Get your API key from [Claude Console](https://console.anthropic.com/settings/keys)
   - **Groq** - Get your API key from [Groq Console](https://console.groq.com/keys)

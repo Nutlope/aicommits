@@ -60,7 +60,7 @@ export default command(
 
 			const choice = await select({
 				message: 'Choose your AI provider:',
-				options: buildProviderOptions(report, config.provider),
+				options: buildProviderOptions(report),
 				initialValue: config.provider,
 			});
 			if (isCancel(choice)) {

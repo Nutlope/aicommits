@@ -72,10 +72,7 @@ export const providerLabel = (name: string, report: DetectionReport) => {
 };
 
 /** Options for the provider picker: detected subscriptions first, with status hints. */
-export const buildProviderOptions = (
-	report: DetectionReport,
-	current?: string
-) => {
+export const buildProviderOptions = (report: DetectionReport) => {
 	const detected: { value: string; label: string; hint?: string }[] = [];
 	const rest: { value: string; label: string; hint?: string }[] = [];
 	for (const provider of providers) {
@@ -110,12 +107,11 @@ export const buildProviderOptions = (
 				: installHint[provider.subscription],
 		});
 	}
-	const options = [...detected, ...rest];
-	if (current) {
-		const index = options.findIndex((option) => option.value === current);
-		if (index > 0) options.unshift(...options.splice(index, 1));
-	}
-	return options;
+	// Together stays the first, recommended option. Detected subscriptions come
+	// right after it. The current provider is preselected, not moved.
+	const together = rest.findIndex((option) => option.value === 'togetherai');
+	const recommended = together >= 0 ? rest.splice(together, 1) : [];
+	return [...recommended, ...detected, ...rest];
 };
 
 /**

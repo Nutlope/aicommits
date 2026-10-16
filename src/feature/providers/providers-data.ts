@@ -12,10 +12,10 @@ import { OpenCodeGoProvider } from './opencode-go.js';
 import { AnthropicProvider } from './anthropic.js';
 
 export const providers = [
+	TogetherProvider,
 	ClaudeAgentProvider,
 	CodexProvider,
 	OpenCodeGoProvider,
-	TogetherProvider,
 	OpenAiProvider,
 	AnthropicProvider,
 	GroqProvider,
