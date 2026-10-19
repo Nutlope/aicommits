@@ -1,15 +1,24 @@
 <div align="center">
-  <div>
-    <img src=".github/screenshot.png" alt="AI Commits"/>
-    <img src="./aic.png" width="50" alt="AI Commits"/>
-    <h1 align="center">AI Commits</h1>
-  </div>
+  <img src=".github/assets/hero.png" alt="aicommits v5: commit messages written by the AI you already pay for"/>
   <p>A CLI that writes your git commit messages for you with AI. Never write a commit message again.</p>
   <a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/v/aicommits" alt="Current version"></a>
   <a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/dt/aicommits" alt="Downloads"></a>
 </div>
 
 ---
+
+<img src=".github/assets/commit.png" alt="aicommits analyzing three staged files and proposing a conventional commit message with a body"/>
+
+## What's new in v5
+
+- **Use the subscription you already have.** Generate commit messages with your Claude plan, your ChatGPT plan through Codex, or your OpenCode Go plan. No API key needed.
+- **Setup finds it for you.** `aicommits setup` detects a logged-in `claude` or `codex` CLI and an OpenCode key, and lists them first. If a CLI is installed but logged out, setup can start the vendor's own login.
+- **Safe by design.** aicommits never reads or copies your Claude or Codex credentials. Subscription runs have no tools, no shell access and no saved sessions.
+- **Works everywhere aicommits does.** The Git hook, headless mode, the VS Code extension and `aicommits pr` all work with every provider.
+- **More providers.** OpenCode Go and Anthropic join Together AI, OpenAI, Groq, xAI, OpenRouter, Ollama, LM Studio and any OpenAI-compatible endpoint.
+- **Fresh defaults.** Together AI stays the recommended API provider, now on DeepSeek V4.1 Flash.
+
+<img src=".github/assets/setup.png" alt="aicommits setup detecting Claude, Codex and OpenCode Go subscriptions and listing them in the provider menu"/>
 
 ## Setup
 

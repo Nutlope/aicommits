@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>aicommits hero</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+	:root { --w: 1280px; --h: 640px; }
+
+	.hero {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 26px;
+	}
+
+	.mark {
+		width: 96px;
+		height: 96px;
+		border-radius: 24px;
+		background: #1c1c1f;
+		border: 1px solid #2e2e34;
+		box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+		display: grid;
+		place-items: center;
+		align-content: center;
+		gap: 6px;
+		color: #fff;
+	}
+	.mark .letters { font-weight: 700; font-size: 34px; letter-spacing: -0.02em; line-height: 1; }
+	.mark .glyphs { display: flex; align-items: center; gap: 16px; }
+	.mark .chev {
+		width: 11px; height: 11px;
+		border-left: 3px solid #fff; border-bottom: 3px solid #fff;
+		transform: rotate(45deg);
+		margin-left: 4px;
+	}
+	.mark .ball { width: 13px; height: 13px; border-radius: 50%; background: #fff; }
+
+	.title-row { display: flex; align-items: center; gap: 16px; }
+	h1 {
+		font-size: 76px;
+		font-weight: 700;
+		letter-spacing: -0.045em;
+		line-height: 1;
+	}
+	.version {
+		font-family: var(--mono);
+		font-size: 22px;
+		font-weight: 600;
+		color: var(--ink);
+		background: linear-gradient(120deg, #fdba74, #f472b6 55%, #93b4ff);
+		padding: 6px 12px;
+		border-radius: 10px;
+		transform: translateY(-4px);
+	}
+
+	.tagline {
+		font-size: 30px;
+		font-weight: 500;
+		letter-spacing: -0.015em;
+		color: var(--text);
+		max-width: 900px;
+		line-height: 1.25;
+	}
+	.tagline em { font-style: normal; color: var(--muted); font-size: 22px; font-weight: 400; display: inline-block; margin-top: 10px; }
+
+	.cmd {
+		font-family: var(--mono);
+		font-size: 18px;
+		color: var(--muted);
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--panel-edge);
+		border-radius: 10px;
+		padding: 10px 18px;
+	}
+	.cmd .p { color: var(--faint); margin-right: 10px; }
+	.cmd .c { color: var(--text); }
+
+	.subs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 980px; }
+	.sub {
+		display: inline-flex;
+		align-items: center;
+		gap: 9px;
+		font-size: 17px;
+		font-weight: 500;
+		padding: 9px 15px;
+		border-radius: 999px;
+		border: 1px solid var(--panel-edge);
+		background: rgba(18, 18, 20, 0.8);
+		color: var(--text);
+	}
+	.sub .led { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+	.sub .tag { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+	.sub.key .led { background: var(--muted); box-shadow: none; }
+</style>
+</head>
+<body>
+<div class="stage">
+	<div class="hero">
+		<div class="mark" aria-hidden="true">
+			<div class="letters">AIC</div>
+			<div class="glyphs"><span class="chev"></span><span class="ball"></span></div>
+		</div>
+		<div class="title-row">
+			<h1>aicommits</h1>
+			<span class="version">v5</span>
+		</div>
+		<p class="tagline">Commit messages written by the AI you already pay for.<br><em>Use your Claude, ChatGPT or OpenCode Go plan. No API key needed.</em></p>
+		<div class="subs">
+			<span class="sub"><span class="led"></span>Claude <span class="tag">subscription</span></span>
+			<span class="sub"><span class="led"></span>ChatGPT · Codex <span class="tag">subscription</span></span>
+			<span class="sub"><span class="led"></span>OpenCode Go <span class="tag">subscription</span></span>
+			<span class="sub key"><span class="led"></span>Together AI <span class="tag">recommended</span></span>
+			<span class="sub key"><span class="led"></span>OpenAI · Anthropic · Groq · xAI · Ollama · more</span>
+		</div>
+		<div class="cmd"><span class="p">$</span><span class="c">npm i -g aicommits &amp;&amp; aicommits setup</span></div>
+	</div>
+</div>
+</body>
+</html>
