@@ -8,6 +8,7 @@ describe('aicommits', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/error.js'));
 	runTestSuite(import('./specs/commit-helpers.js'));
 	runTestSuite(import('./specs/config.js'));
+	runTestSuite(import('./specs/config-upgrade.js'));
 	runTestSuite(import('./specs/git-hook.js'));
 	runTestSuite(import('./specs/release.js'));
 });

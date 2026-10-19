@@ -37,7 +37,13 @@ const parseAssert = (name: string, condition: boolean, message: string) => {
 	}
 };
 
-const parseSwitch = (name: string, value: string | undefined, fallback: boolean) => {
+// The ini parser turns `true` and `false` into booleans, so accept both forms.
+const parseSwitch = (
+	name: string,
+	value: string | boolean | undefined,
+	fallback: boolean
+) => {
+	if (typeof value === 'boolean') return value;
 	if (!value) return fallback;
 	const normalized = value.toLowerCase();
 	parseAssert(
@@ -71,7 +77,7 @@ const configParsers = {
 		);
 		return name;
 	},
-	'subscription-detection'(value?: string) {
+	'subscription-detection'(value?: string | boolean) {
 		return parseSwitch('subscription-detection', value, true);
 	},
 	'claude-path'(path?: string) {
