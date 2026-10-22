@@ -27,9 +27,9 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.2.0
         with:
-          # pnpm 10+ reads overrides from pnpm-workspace.yaml (required for handlebars pin)
-          version: 10
+          # version from package.json packageManager (pnpm 12)
           run_install: true
+
 
 
       - name: Release

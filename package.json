@@ -15,6 +15,7 @@
 	},
 	"author": "Hassan El Mghari (@nutlope)",
 	"type": "module",
+	"packageManager": "pnpm@12.14.0",
 	"files": [
 		"dist"
 	],
