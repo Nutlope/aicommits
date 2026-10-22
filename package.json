@@ -15,6 +15,7 @@
 	},
 	"author": "Hassan El Mghari (@nutlope)",
 	"type": "module",
+	"packageManager": "pnpm@12.14.0",
 	"files": [
 		"dist"
 	],
@@ -79,23 +80,6 @@
 			"@semantic-release/npm",
 			"@semantic-release/github"
 		]
-	},
-	"pnpm": {
-		"overrides": {
-			"@anthropic-ai/claude-agent-sdk-linux-x64": "-",
-			"@anthropic-ai/claude-agent-sdk-win32-x64": "-",
-			"@anthropic-ai/claude-agent-sdk-darwin-x64": "-",
-			"@anthropic-ai/claude-agent-sdk-linux-arm64": "-",
-			"@anthropic-ai/claude-agent-sdk-win32-arm64": "-",
-			"@anthropic-ai/claude-agent-sdk-darwin-arm64": "-",
-			"@anthropic-ai/claude-agent-sdk-linux-x64-musl": "-",
-			"@anthropic-ai/claude-agent-sdk-linux-arm64-musl": "-",
-			"@openai/codex-linux-x64": "-",
-			"@openai/codex-win32-x64": "-",
-			"@openai/codex-darwin-x64": "-",
-			"@openai/codex-linux-arm64": "-",
-			"@openai/codex-win32-arm64": "-",
-			"@openai/codex-darwin-arm64": "-"
-		}
 	}
 }
+
