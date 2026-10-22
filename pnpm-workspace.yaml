@@ -6,5 +6,6 @@ allowBuilds:
 
 # conventional-changelog-writer (via semantic-release) pins handlebars ^4.7.7,
 # which resolves to vulnerable 4.7.9 (GHSA-8r5x-fm3f-whwj, GHSA-p8wg-vrv2-v86f).
+# Kept here (not package.json) — pnpm 10+ only reads overrides from this file.
 overrides:
   handlebars: '>=4.7.10'
