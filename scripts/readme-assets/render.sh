@@ -30,6 +30,6 @@ render() {
 	echo "rendered .github/assets/$name.png"
 }
 
-render hero 1280 640
+render hero 1280 680
 render commit 1280 700
-render setup 1280 720
+render setup 1280 740

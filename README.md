@@ -1,13 +1,11 @@
 <div align="center">
-  <img src=".github/assets/hero.png" alt="aicommits v5: commit messages written by the AI you already pay for"/>
+  <img src=".github/assets/hero.png" alt="aicommits v5: commit messages written by the AI you already pay for — Anthropic Claude, OpenAI Codex, OpenCode Go, and Together AI"/>
   <p>A CLI that writes your git commit messages for you with AI. Never write a commit message again.</p>
   <a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/v/aicommits" alt="Current version"></a>
   <a href="https://www.npmjs.com/package/aicommits"><img src="https://img.shields.io/npm/dt/aicommits" alt="Downloads"></a>
 </div>
 
 ---
-
-<img src=".github/assets/commit.png" alt="aicommits analyzing three staged files and proposing a conventional commit message with a body"/>
 
 ## What's new in v5
 
@@ -17,8 +15,6 @@
 - **Works everywhere aicommits does.** The Git hook, headless mode, the VS Code extension and `aicommits pr` all work with every provider.
 - **More providers.** OpenCode Go and Anthropic join Together AI, OpenAI, Groq, xAI, OpenRouter, Ollama, LM Studio and any OpenAI-compatible endpoint.
 - **Fresh defaults.** Together AI stays the recommended API provider, now on DeepSeek V4.1 Flash.
-
-<img src=".github/assets/setup.png" alt="aicommits setup detecting Claude, Codex and OpenCode Go subscriptions and listing them in the provider menu"/>
 
 ## Setup
 
@@ -36,6 +32,8 @@
    aicommits setup
    ```
 
+<img src=".github/assets/setup.png" alt="aicommits setup detecting Claude, Codex and OpenCode Go subscriptions and listing them in the provider menu"/>
+
 This will guide you through:
 
 - Detecting subscriptions you already have on this machine (Claude, Codex, OpenCode Go)
@@ -44,6 +42,8 @@ This will guide you through:
 - **Automatically fetching and selecting from available models** (when supported)
 - **Choosing your preferred commit message format** (`plain`, `conventional`,
   `conventional+body`, `gitmoji`, or `subject+body`)
+
+<img src=".github/assets/commit.png" alt="aicommits analyzing three staged files and proposing a conventional commit message with a body"/>
 
   Supported providers include:
 

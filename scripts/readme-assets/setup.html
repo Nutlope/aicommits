@@ -5,14 +5,75 @@
 <title>aicommits setup</title>
 <link rel="stylesheet" href="shared.css">
 <style>
-	:root { --w: 1280px; --h: 720px; --term-w: 1060px; }
+	:root { --w: 1280px; --h: 740px; --term-w: 1040px; }
+
+	.wrap {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 22px;
+	}
+
+	.rail {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 10px;
+		border-radius: 999px;
+		background: rgba(18, 18, 22, 0.7);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		backdrop-filter: blur(10px);
+		box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+	}
+	.rail .label {
+		font-family: var(--mono);
+		font-size: 12px;
+		color: var(--muted);
+		padding: 0 8px 0 6px;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+	.rail .chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 7px 12px 7px 8px;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(255, 255, 255, 0.06);
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--text);
+	}
+	.rail .chip img {
+		width: 16px;
+		height: 16px;
+		display: block;
+	}
+	.rail .chip .dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--green);
+		box-shadow: 0 0 8px var(--green);
+	}
 </style>
 </head>
 <body>
 <div class="stage">
-<div class="term">
-<div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">~/acme-app — aicommits setup</span></div>
-<div class="term-body"><span class="prompt">acme-app</span> <span class="branch">git:(<b>main</b>)</span> aicommits setup
+<div class="wrap">
+	<div class="rail" aria-label="Detected providers">
+		<span class="label">Detected</span>
+		<span class="chip"><img src="logos/anthropic.svg" alt="" style="filter: invert(1);"><span class="dot"></span>Claude</span>
+		<span class="chip"><img src="logos/openai.svg" alt="" style="filter: invert(1);"><span class="dot"></span>Codex</span>
+		<span class="chip"><img src="logos/opencode.svg" alt="" style="filter: invert(1);"><span class="dot"></span>OpenCode Go</span>
+		<span class="chip"><img src="logos/together.svg" alt="">Together AI</span>
+	</div>
+	<div class="term">
+		<div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">~/acme-app — aicommits setup</span></div>
+		<div class="term-body"><span class="prompt">acme-app</span> <span class="branch">git:(<b>main</b>)</span> aicommits setup
 <span class="bar">┌</span>   <span class="chip-inline"> aicommits setup </span>
 <span class="bar">│</span>
 <span class="done">◇</span>  Found 3 subscriptions: Claude Agent · Max plan, Codex · ChatGPT plan, OpenCode Go
@@ -31,6 +92,7 @@
 <span class="active">│</span>  <span class="dim">○ OpenRouter</span>
 <span class="active">│</span>  <span class="dim">○ Custom (OpenAI-compatible)</span>
 <span class="active">└</span></div>
+	</div>
 </div>
 </div>
 </body>
