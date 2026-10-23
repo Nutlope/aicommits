@@ -1,13 +1,31 @@
+import { randomUUID } from 'node:crypto';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createTogetherAI } from '@ai-sdk/togetherai';
-import type {
-	JSONValue,
-	LanguageModel,
-	LanguageModelCallOptions,
+import { createAnthropic } from '@ai-sdk/anthropic';
+import {
+	generateText,
+	type JSONValue,
+	type LanguageModel,
+	type LanguageModelCallOptions,
 } from 'ai';
 import { fetchModels } from '../models.js';
 import type { ValidConfig } from '../../utils/config-types.js';
+import { KnownError } from '../../utils/error.js';
+import type { SubscriptionId } from '../subscriptions/detect.js';
+import {
+	commitMessageSchema,
+	generateWithAgentSdk,
+	plainTextSchema,
+} from '../subscriptions/agent-sdk.js';
+import {
+	OPENCODE_USER_AGENT,
+	resolveOpenCodeKey,
+} from '../subscriptions/opencode.js';
+import {
+	OPENCODE_GO_MESSAGES_MODELS,
+	OPENCODE_GO_RESPONSES_MODELS,
+} from './opencode-go.js';
 
 const isLoopbackUrl = (baseUrl: string): boolean => {
 	try {
@@ -18,13 +36,24 @@ const isLoopbackUrl = (baseUrl: string): boolean => {
 	}
 };
 
+export type ProviderKind = 'http' | 'agent-sdk';
+
 export type ProviderDef = {
 	name: string;
 	displayName: string;
+	/** `http` talks to an OpenAI-compatible endpoint through the AI SDK. `agent-sdk` drives a vendor agent SDK. */
+	kind?: ProviderKind;
+	/** Subscription this provider reuses, used for detection and labels. */
+	subscription?: SubscriptionId | 'opencode';
+	/** Short hint shown next to the provider in setup. */
+	hint?: string;
 	baseUrl: string;
 	apiKeyFormat?: string;
 	modelsPath?: string;
+	modelsHeaders?: (apiKey: string) => Record<string, string>;
 	modelsFilter?: (models: any[]) => string[];
+	/** Fixed model list for providers without a models endpoint. */
+	staticModels?: string[];
 	defaultModels: string[];
 	fallbackModel?: string;
 	defaultTimeout?: number;
@@ -44,8 +73,24 @@ export type GenerationCallOptions = {
 	providerOptions?: Record<string, Record<string, JSONValue>>;
 };
 
+export type AgentGenerateInput = {
+	system: string;
+	prompt: string;
+	includeBody: boolean;
+	cwd: string;
+	timeout: number;
+};
+
+export type AgentGenerateOutput = {
+	message: { subject: string; body?: string };
+	usage?: { inputTokens?: number; outputTokens?: number };
+};
+
 export type GenerationModel = {
-	languageModel: LanguageModel;
+	/** Present for `http` providers. */
+	languageModel?: LanguageModel;
+	/** Present for `agent-sdk` providers: one structured call through the vendor SDK. */
+	agent?: (input: AgentGenerateInput) => Promise<AgentGenerateOutput>;
 	mode: 'agentic' | 'fallback';
 	isLocal: boolean;
 	callOptions: GenerationCallOptions;
@@ -54,6 +99,7 @@ export type GenerationModel = {
 export class Provider {
 	protected config: ValidConfig;
 	protected def: ProviderDef;
+	private sessionId?: string;
 
 	constructor(def: ProviderDef, config: ValidConfig) {
 		this.def = def;
@@ -66,6 +112,10 @@ export class Provider {
 
 	get displayName(): string {
 		return this.def.displayName;
+	}
+
+	get kind(): ProviderKind {
+		return this.def.kind ?? 'http';
 	}
 
 	getDefinition(): ProviderDef {
@@ -116,6 +166,9 @@ export class Provider {
 	}
 
 	async getModels(): Promise<{ models: string[]; error?: string }> {
+		if (this.def.staticModels) {
+			return { models: this.def.staticModels };
+		}
 		const baseUrl = this.getBaseUrl();
 		const apiKey = this.getApiKey() || '';
 		const result = await fetchModels({
@@ -123,6 +176,7 @@ export class Provider {
 			apiKey,
 			cacheModels: this.def.cacheModels,
 			modelsPath: this.def.modelsPath,
+			headers: this.getModelsHeaders(),
 		});
 		if (result.error) return { models: [], error: result.error };
 
@@ -138,8 +192,20 @@ export class Provider {
 		return { models };
 	}
 
+	getModelsHeaders(): Record<string, string> | undefined {
+		const apiKey = this.getApiKey() || '';
+		return {
+			...this.getHeaders(),
+			...this.def.modelsHeaders?.(apiKey),
+		};
+	}
+
 	getApiKey(): string | undefined {
-		return this.def.requiresApiKey ? this.config.OPENAI_API_KEY : undefined;
+		if (!this.def.requiresApiKey) return undefined;
+		if (this.name === 'opencode-go') {
+			return this.config.OPENAI_API_KEY || resolveOpenCodeKey()?.key;
+		}
+		return this.config.OPENAI_API_KEY;
 	}
 
 	getBaseUrl(): string {
@@ -178,12 +244,38 @@ export class Provider {
 	}
 
 	getHeaders(): Record<string, string> | undefined {
-		return this.def.headers;
+		if (this.name !== 'opencode-go') return this.def.headers;
+		// OpenCode Go asks clients for their own user agent and a stable
+		// session id per conversation. One aicommits run is one conversation.
+		this.sessionId ??= randomUUID();
+		return {
+			...this.def.headers,
+			'User-Agent': OPENCODE_USER_AGENT,
+			'x-opencode-session': this.sessionId,
+			'x-opencode-client': 'aicommits',
+		};
+	}
+
+	/** Path to the CLI binary an `agent-sdk` provider drives. */
+	getAgentBinary(): string | undefined {
+		if (this.def.subscription === 'claude') {
+			return this.config['claude-path'] || 'claude';
+		}
+		if (this.def.subscription === 'codex') {
+			return this.config['codex-path'] || 'codex';
+		}
+		return undefined;
 	}
 
 	getLanguageModel(model: string): LanguageModel {
+		if (this.kind !== 'http') {
+			throw new KnownError(
+				`${this.displayName} does not expose a raw language model.`
+			);
+		}
 		const baseUrl = this.getBaseUrl();
 		const apiKey = this.getApiKey() || '';
+		const headers = this.getHeaders();
 		const provider = (() => {
 			if (this.name === 'openai') {
 				return createOpenAI({ apiKey });
@@ -193,26 +285,147 @@ export class Provider {
 				return createTogetherAI({ apiKey, baseURL: baseUrl });
 			}
 
+			if (this.name === 'anthropic') {
+				return createAnthropic({ apiKey });
+			}
+
+			if (this.name === 'opencode-go') {
+				const userAgent = headers?.['User-Agent'];
+				// The AI SDK sets its own User-Agent after custom headers, so
+				// restore ours on the outgoing request.
+				const fetchWithUserAgent = (
+					input: RequestInfo | URL,
+					init?: RequestInit
+				) => {
+					const request = new Request(input, init);
+					if (userAgent) request.headers.set('User-Agent', userAgent);
+					return globalThis.fetch(request);
+				};
+				if (OPENCODE_GO_RESPONSES_MODELS.test(model)) {
+					return createOpenAI({
+						apiKey,
+						baseURL: baseUrl,
+						headers,
+						fetch: fetchWithUserAgent,
+					}).responses;
+				}
+				if (OPENCODE_GO_MESSAGES_MODELS.test(model)) {
+					return createAnthropic({
+						apiKey,
+						baseURL: baseUrl,
+						headers,
+						fetch: fetchWithUserAgent,
+					});
+				}
+				return createOpenAICompatible({
+					name: this.name,
+					apiKey,
+					baseURL: baseUrl,
+					headers,
+					fetch: fetchWithUserAgent,
+				});
+			}
+
 			return createOpenAICompatible({
 				name: this.name,
 				apiKey,
 				baseURL: baseUrl,
-				headers: this.getHeaders(),
+				headers,
 			});
 		})();
 		return provider(model);
 	}
 
 	getGenerationModel(model: string): GenerationModel {
+		if (this.kind === 'agent-sdk') {
+			return {
+				agent: (input) => this.generateWithAgent(model, input),
+				mode: 'fallback',
+				isLocal: false,
+				callOptions: {},
+			};
+		}
 		return {
 			languageModel: this.getLanguageModel(model),
 			...this.getGenerationPolicy(model),
 		};
 	}
 
+	private async generateWithAgent(
+		model: string,
+		{ system, prompt, includeBody, cwd, timeout }: AgentGenerateInput
+	): Promise<AgentGenerateOutput> {
+		const subscription = this.def.subscription;
+		if (subscription !== 'claude' && subscription !== 'codex') {
+			throw new KnownError(`${this.displayName} is not an agent provider.`);
+		}
+		const result = await generateWithAgentSdk(subscription, {
+			prompt,
+			system,
+			schema: commitMessageSchema(includeBody),
+			model,
+			cwd,
+			binary: this.getAgentBinary(),
+			timeout,
+		});
+		const output = (result.output ?? {}) as {
+			subject?: unknown;
+			body?: unknown;
+		};
+		return {
+			message: {
+				subject: typeof output.subject === 'string' ? output.subject : '',
+				body:
+					includeBody && typeof output.body === 'string' && output.body.trim()
+						? output.body.trim()
+						: undefined,
+			},
+			usage: result.usage,
+		};
+	}
+
+	/** One plain-text completion, used by `aicommits pr`. */
+	async generateText({
+		model,
+		system,
+		prompt,
+		cwd,
+		timeout,
+	}: {
+		model: string;
+		system: string;
+		prompt: string;
+		cwd: string;
+		timeout: number;
+	}): Promise<string> {
+		if (this.kind === 'agent-sdk') {
+			const subscription = this.def.subscription as SubscriptionId;
+			const result = await generateWithAgentSdk(subscription, {
+				prompt,
+				system,
+				schema: plainTextSchema,
+				model,
+				cwd,
+				binary: this.getAgentBinary(),
+				timeout,
+			});
+			const output = result.output as { text?: unknown };
+			return typeof output?.text === 'string' ? output.text : result.text;
+		}
+		const { text } = await generateText({
+			model: this.getLanguageModel(model),
+			system,
+			prompt,
+			maxRetries: 2,
+			timeout,
+			...this.getGenerationPolicy(model).callOptions,
+		});
+		return text;
+	}
+
 	getGenerationPolicy(
 		model: string
-	): Omit<GenerationModel, 'languageModel'> {
+	): Omit<GenerationModel, 'languageModel' | 'agent'> {
 		const agenticGeneration = this.def.agenticGeneration;
 		const supportsAgenticGeneration = Boolean(
 			agenticGeneration && (agenticGeneration.supports?.(model) ?? true)
@@ -230,7 +443,11 @@ export class Provider {
 	validateConfig(): { valid: boolean; errors: string[] } {
 		const errors: string[] = [];
 		if (this.def.requiresApiKey && !this.getApiKey()) {
-			errors.push(`${this.displayName} API key is required`);
+			errors.push(
+				this.name === 'opencode-go'
+					? 'OpenCode Go API key is required (set OPENCODE_API_KEY, log in with the OpenCode CLI, or run `aicommits setup`)'
+					: `${this.displayName} API key is required`
+			);
 		}
 		if (this.name === 'custom' && !this.getBaseUrl()) {
 			errors.push('Custom endpoint is required');

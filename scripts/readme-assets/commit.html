@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>aicommits commit</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+	:root { --w: 1280px; --h: 700px; --term-w: 1060px; }
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="term">
+<div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">~/acme-app — aicommits</span></div>
+<div class="term-body"><span class="prompt">acme-app</span> <span class="branch">git:(<b>main</b>)</span> <span class="x">✗</span> git add .
+<span class="prompt">acme-app</span> <span class="branch">git:(<b>main</b>)</span> <span class="x">✗</span> aicommits
+<span class="bar">┌</span>   <span class="chip-inline"> aicommits </span>
+<span class="bar">│</span>
+<span class="done">◇</span>  📁 Detected 3 staged files:
+<span class="bar">│</span>       <span class="muted">src/lib/rate-limit.ts</span>
+<span class="bar">│</span>       <span class="muted">src/app/api/chat/route.ts</span>
+<span class="bar">│</span>       <span class="muted">tests/rate-limit.test.ts</span>
+<span class="bar">│</span>
+<span class="done">◇</span>  ✅ Changes analyzed in 4.2s
+
+<span class="bold">feat(api): rate-limit chat requests per user</span>
+
+<span class="bold">Add a sliding-window limiter keyed by user id and apply it to the chat</span>
+<span class="bold">route, returning 429 with a Retry-After header when the limit is hit.</span>
+
+<span class="active">◆</span>  Use this commit message?
+<span class="active">│</span>  <span class="done">●</span> Yes
+<span class="active">│</span>  <span class="dim">○ No</span>
+<span class="active">│</span>  <span class="dim">○ Edit</span>
+<span class="active">└</span></div>
+</div>
+</div>
+</body>
+</html>

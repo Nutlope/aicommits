@@ -452,6 +452,24 @@ const readStagedDiffSelection = async (
 	}
 };
 
+const usageFromCounts = (usage?: {
+	inputTokens?: number;
+	outputTokens?: number;
+}): LanguageModelUsage => ({
+	inputTokens: usage?.inputTokens,
+	inputTokenDetails: {
+		noCacheTokens: undefined,
+		cacheReadTokens: undefined,
+		cacheWriteTokens: undefined,
+	},
+	outputTokens: usage?.outputTokens,
+	outputTokenDetails: { textTokens: undefined, reasoningTokens: undefined },
+	totalTokens:
+		usage?.inputTokens !== undefined && usage?.outputTokens !== undefined
+			? usage.inputTokens + usage.outputTokens
+			: undefined,
+});
+
 const sumTokenCounts = (counts: Array<number | undefined>) =>
 	counts.every((count) => count === undefined)
 		? undefined
@@ -526,8 +544,11 @@ export const generateCommitMessage = async ({
 	timeout,
 	customPrompt,
 }: GenerateCommitMessageOptions) => {
-	const { languageModel, mode, isLocal, callOptions } = model;
-	const useAgent = mode === 'agentic';
+	const { languageModel, agent: agentGenerate, mode, isLocal, callOptions } = model;
+	if (!languageModel && !agentGenerate) {
+		throw new KnownError('No model is available for commit generation.');
+	}
+	const useAgent = mode === 'agentic' && Boolean(languageModel);
 	const maxDiffCharacters = isLocal
 		? MAX_LOCAL_DIFF_CHARACTERS
 		: MAX_DIFF_CHARACTERS;
@@ -593,10 +614,47 @@ export const generateCommitMessage = async ({
 	) => {
 		const results = [];
 		for (let attempt = 1; attempt <= ONE_SHOT_ATTEMPTS; attempt += 1) {
+			if (agentGenerate) {
+				const agentResult = await agentGenerate({
+					system: buildCommitInstructions(
+						{
+							type,
+							locale,
+							maxLength,
+							includeBody: oneShotIncludeBody,
+							customPrompt,
+						},
+						[taskInstruction]
+					),
+					prompt,
+					includeBody: oneShotIncludeBody,
+					cwd,
+					timeout: budget.nextModelTimeout(),
+				});
+				try {
+					const subject = validateSubject(agentResult.message.subject);
+					const body = oneShotIncludeBody
+						? agentResult.message.body?.trim()
+						: undefined;
+					if (oneShotIncludeBody && !body) {
+						throw new Error(
+							'The model did not generate a commit message description.'
+						);
+					}
+					return {
+						message: { subject, ...(body ? { body } : {}) },
+						usage: usageFromCounts(agentResult.usage),
+						steps: 1,
+					};
+				} catch (error) {
+					if (attempt === ONE_SHOT_ATTEMPTS) throw error;
+					continue;
+				}
+			}
 			let result;
 			try {
 				result = await generateText({
-					model: languageModel,
+					model: languageModel!,
 					system: buildCommitInstructions(
 						{
 							type,
@@ -706,7 +764,7 @@ export const generateCommitMessage = async ({
 		};
 	};
 
-	if (!useAgent) {
+	if (!useAgent || !languageModel) {
 		return runCoveredFallback();
 	}
 

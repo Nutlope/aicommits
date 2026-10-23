@@ -4,8 +4,25 @@ packages:
 allowBuilds:
   esbuild: true
 
-# conventional-changelog-writer (via semantic-release) pins handlebars ^4.7.7,
-# which resolves to vulnerable 4.7.9 (GHSA-8r5x-fm3f-whwj, GHSA-p8wg-vrv2-v86f).
-# Kept here (not package.json) — pnpm 10+ only reads overrides from this file.
+# Overrides live here (pnpm 10+ ignores package.json pnpm.overrides).
 overrides:
+  # conventional-changelog-writer pins handlebars ^4.7.7 → vulnerable 4.7.9
+  # (GHSA-8r5x-fm3f-whwj, GHSA-p8wg-vrv2-v86f).
   handlebars: '>=4.7.10'
+  # Vendor agent SDKs are bundled as JavaScript; aicommits drives the CLI the
+  # user already installed, so the platform binary packages (~230 MB Claude,
+  # ~330 MB Codex) are never needed.
+  '@anthropic-ai/claude-agent-sdk-linux-x64': '-'
+  '@anthropic-ai/claude-agent-sdk-win32-x64': '-'
+  '@anthropic-ai/claude-agent-sdk-darwin-x64': '-'
+  '@anthropic-ai/claude-agent-sdk-linux-arm64': '-'
+  '@anthropic-ai/claude-agent-sdk-win32-arm64': '-'
+  '@anthropic-ai/claude-agent-sdk-darwin-arm64': '-'
+  '@anthropic-ai/claude-agent-sdk-linux-x64-musl': '-'
+  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl': '-'
+  '@openai/codex-linux-x64': '-'
+  '@openai/codex-win32-x64': '-'
+  '@openai/codex-darwin-x64': '-'
+  '@openai/codex-linux-arm64': '-'
+  '@openai/codex-win32-arm64': '-'
+  '@openai/codex-darwin-arm64': '-'
