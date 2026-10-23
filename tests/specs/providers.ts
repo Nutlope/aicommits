@@ -58,22 +58,22 @@ export default testSuite(({ describe }) => {
 		test('highlights current fast and smart Together models', () => {
 			const provider = createProvider('togetherai');
 			expect(provider.getHighlightedModels()).toEqual([
-				'deepseek-ai/DeepSeek-V4.1-Flash',
-				'zai-org/GLM-5.3-Flash',
-				'moonshotai/Kimi-K3',
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017',
+				'zai-org/GLM-5.3',
+				'reflection/Beam-1.0-501B-A23B',
 			]);
 			expect(provider.getDefaultModel()).toBe(
-				'deepseek-ai/DeepSeek-V4.1-Flash'
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017'
 			);
-			expect(provider.getFallbackModel('moonshotai/Kimi-K3')).toBe(
-				'deepseek-ai/DeepSeek-V4.1-Flash'
+			expect(provider.getFallbackModel('reflection/Beam-1.0-501B-A23B')).toBe(
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017'
 			);
-			expect(provider.getFallbackModel('zai-org/GLM-5.3-Flash')).toBe(
-				'deepseek-ai/DeepSeek-V4.1-Flash'
+			expect(provider.getFallbackModel('zai-org/GLM-5.3')).toBe(
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017'
 			);
 			expect(
-				provider.getFallbackModel('deepseek-ai/DeepSeek-V4.1-Flash')
-			).toBe('zai-org/GLM-5.3-Flash');
+				provider.getFallbackModel('deepseek-ai/DeepSeek-V4.1-Flash-1017')
+			).toBe('zai-org/GLM-5.3');
 		});
 
 		test('highlights the current xAI models', () => {

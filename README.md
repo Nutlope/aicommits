@@ -14,7 +14,7 @@
 - **Safe by design.** aicommits never reads or copies your Claude or Codex credentials. Subscription runs have no tools, no shell access and no saved sessions.
 - **Works everywhere aicommits does.** The Git hook, headless mode, the VS Code extension and `aicommits pr` all work with every provider.
 - **More providers.** OpenCode Go and Anthropic join Together AI, OpenAI, Groq, xAI, OpenRouter, Ollama, LM Studio and any OpenAI-compatible endpoint.
-- **Fresh defaults.** Together AI stays the recommended API provider, now on DeepSeek V4.1 Flash.
+- **Fresh defaults.** Together AI stays the recommended API provider, now on DeepSeek V4.1 Flash 1017, with GLM-5.3 and Beam as highlights.
 
 ## Setup
 

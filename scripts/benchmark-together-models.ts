@@ -18,9 +18,9 @@ const TIMEOUT = Number(process.env.AICOMMITS_BENCHMARK_TIMEOUT || 60_000);
 const REPEATS = Number(process.env.AICOMMITS_BENCHMARK_REPEATS || 1);
 
 const defaultModels = [
-	'deepseek-ai/DeepSeek-V4.1-Flash',
-	'zai-org/GLM-5.3-Flash',
-	'moonshotai/Kimi-K3',
+	'deepseek-ai/DeepSeek-V4.1-Flash-1017',
+	'zai-org/GLM-5.3',
+	'reflection/Beam-1.0-501B-A23B',
 ];
 
 const smallFixtures = [
