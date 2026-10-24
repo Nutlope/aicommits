@@ -1,4 +1,5 @@
 import { KnownError } from './error.js';
+import type { JSONValue } from 'ai';
 
 const commitTypes = [
 	'plain',
@@ -36,6 +37,67 @@ const parseAssert = (name: string, condition: boolean, message: string) => {
 	}
 };
 
+export type ProviderOptions = Record<string, Record<string, JSONValue>>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isJsonValue = (value: unknown): value is JSONValue => {
+	if (
+		value === null ||
+		typeof value === 'string' ||
+		typeof value === 'number' ||
+		typeof value === 'boolean'
+	) {
+		return true;
+	}
+
+	if (Array.isArray(value)) {
+		return value.every(isJsonValue);
+	}
+
+	return isRecord(value) && Object.values(value).every(isJsonValue);
+};
+
+const parseProviderOptions = (value?: unknown): ProviderOptions => {
+	if (value === undefined || value === '') {
+		return {};
+	}
+
+	let parsed: unknown = value;
+	if (typeof value === 'string') {
+		try {
+			parsed = JSON.parse(value);
+		} catch {
+			throw new KnownError(
+				'Invalid config property PROVIDER_OPTIONS: Must be valid JSON.'
+			);
+		}
+	}
+
+	parseAssert(
+		'PROVIDER_OPTIONS',
+		isRecord(parsed),
+		'Must be an object keyed by provider name.'
+	);
+	const parsedOptions = parsed as Record<string, unknown>;
+
+	for (const [providerName, options] of Object.entries(parsedOptions)) {
+		parseAssert(
+			'PROVIDER_OPTIONS',
+			isRecord(options),
+			`Provider "${providerName}" options must be an object.`
+		);
+		parseAssert(
+			'PROVIDER_OPTIONS',
+			isJsonValue(options),
+			`Provider "${providerName}" options must contain JSON values.`
+		);
+	}
+
+	return parsedOptions as ProviderOptions;
+};
+
 const configParsers = {
 	OPENAI_API_KEY(key?: string) {
 		return key;
@@ -45,6 +107,9 @@ const configParsers = {
 	},
 	OPENAI_MODEL(key?: string) {
 		return key || '';
+	},
+	PROVIDER_OPTIONS(value?: unknown) {
+		return parseProviderOptions(value);
 	},
 	locale(locale?: string) {
 		if (!locale) {
@@ -117,7 +182,7 @@ const configParsers = {
 type ConfigKeys = keyof typeof configParsers;
 
 type RawConfig = {
-	[key in ConfigKeys]?: string;
+	[key in ConfigKeys]?: unknown;
 };
 
 export type ValidConfig = {

@@ -40,6 +40,14 @@ const detectProvider = (
 
 const getConfigPath = () => path.join(os.homedir(), '.aicommits');
 
+const parseConfigValue = (key: ConfigKeys, value: unknown) => {
+	if (key === 'PROVIDER_OPTIONS') {
+		return configParsers.PROVIDER_OPTIONS(value);
+	}
+
+	return configParsers[key](value as string | undefined);
+};
+
 const readConfigFile = async (): Promise<RawConfig> => {
 	const configExists = await fileExists(getConfigPath());
 	if (!configExists) {
@@ -66,15 +74,14 @@ export const getConfig = async (
 	const effectiveEnvConfig = envConfig ?? {};
 
 	for (const key of Object.keys(configParsers) as ConfigKeys[]) {
-		const parser = configParsers[key];
 		const value = cliConfig?.[key] ?? effectiveEnvConfig?.[key] ?? config[key];
 
 		if (suppressErrors) {
 			try {
-				parsedConfig[key] = parser(value);
+				parsedConfig[key] = parseConfigValue(key, value);
 			} catch {}
 		} else {
-			parsedConfig[key] = parser(value);
+			parsedConfig[key] = parseConfigValue(key, value);
 		}
 	}
 
