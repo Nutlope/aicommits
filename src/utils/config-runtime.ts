@@ -18,6 +18,11 @@ const getDefaultBaseUrl = (): string => {
 	return openaiProvider?.baseUrl || '';
 };
 
+/**
+ * Legacy detection for configs written before `provider` was persisted:
+ * infer the provider from the base URL, or default to OpenAI when only an
+ * API key is present.
+ */
 const detectProvider = (
 	baseUrl?: string,
 	apiKey?: string
@@ -25,8 +30,9 @@ const detectProvider = (
 	if (baseUrl) {
 		const matchingProvider = providers.find(
 			(p) =>
-				p.baseUrl === baseUrl ||
-				(p.name === 'ollama' && baseUrl.startsWith(p.baseUrl.slice(0, -3)))
+				p.baseUrl &&
+				(p.baseUrl === baseUrl ||
+					(p.name === 'ollama' && baseUrl.startsWith(p.baseUrl.slice(0, -3))))
 		);
 		if (matchingProvider) {
 			return matchingProvider.name;
@@ -78,18 +84,17 @@ export const getConfig = async (
 		}
 	}
 
-	// Detect provider from OPENAI_BASE_URL or default to OpenAI if only API key is set
-	let provider: string | undefined;
+	const storedProvider = parsedConfig.provider as string | undefined;
 	let baseUrl = parsedConfig.OPENAI_BASE_URL as string | undefined;
 	const apiKey = parsedConfig.OPENAI_API_KEY as string | undefined;
 
 	// If only API key is provided without base URL, default to OpenAI
-	if (!baseUrl && apiKey) {
+	if (!storedProvider && !baseUrl && apiKey) {
 		baseUrl = getDefaultBaseUrl();
 		parsedConfig.OPENAI_BASE_URL = baseUrl;
 	}
 
-	provider = detectProvider(baseUrl, apiKey);
+	const provider = storedProvider ?? detectProvider(baseUrl, apiKey);
 
 	return { ...parsedConfig, model: parsedConfig.OPENAI_MODEL, provider } as ValidConfig;
 };

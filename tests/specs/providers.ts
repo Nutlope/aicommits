@@ -1,5 +1,9 @@
+import { createServer } from 'node:http';
 import { expect, testSuite } from 'manten';
+import { generateText } from 'ai';
 import { getProvider } from '../../src/feature/providers/index.js';
+import { Provider } from '../../src/feature/providers/base.js';
+import { OpenCodeGoProvider } from '../../src/feature/providers/opencode-go.js';
 import type { ValidConfig } from '../../src/utils/config-types.js';
 
 const createProvider = (
@@ -54,22 +58,22 @@ export default testSuite(({ describe }) => {
 		test('highlights current fast and smart Together models', () => {
 			const provider = createProvider('togetherai');
 			expect(provider.getHighlightedModels()).toEqual([
-				'deepseek-ai/DeepSeek-V4-Flash-0731',
-				'zai-org/GLM-5.3-Flash',
-				'moonshotai/Kimi-K3',
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017',
+				'zai-org/GLM-5.3',
+				'reflection/Beam-1.0-501B-A23B',
 			]);
 			expect(provider.getDefaultModel()).toBe(
-				'deepseek-ai/DeepSeek-V4-Flash-0731'
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017'
 			);
-			expect(provider.getFallbackModel('moonshotai/Kimi-K3')).toBe(
-				'deepseek-ai/DeepSeek-V4-Flash-0731'
+			expect(provider.getFallbackModel('reflection/Beam-1.0-501B-A23B')).toBe(
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017'
 			);
-			expect(provider.getFallbackModel('zai-org/GLM-5.3-Flash')).toBe(
-				'deepseek-ai/DeepSeek-V4-Flash-0731'
+			expect(provider.getFallbackModel('zai-org/GLM-5.3')).toBe(
+				'deepseek-ai/DeepSeek-V4.1-Flash-1017'
 			);
 			expect(
-				provider.getFallbackModel('deepseek-ai/DeepSeek-V4-Flash-0731')
-			).toBe('zai-org/GLM-5.3-Flash');
+				provider.getFallbackModel('deepseek-ai/DeepSeek-V4.1-Flash-1017')
+			).toBe('zai-org/GLM-5.3');
 		});
 
 		test('highlights the current xAI models', () => {
@@ -113,6 +117,76 @@ export default testSuite(({ describe }) => {
 					OPENAI_BASE_URL: 'https://example.com/v1',
 				}).getRequestTimeout()
 			).toBe(10_000);
+		});
+
+		test('routes OpenCode Go models with its required headers', async () => {
+			const requests: { url: string; headers: Record<string, unknown> }[] = [];
+			const server = createServer((request, response) => {
+				requests.push({ url: request.url || '', headers: request.headers });
+				if (request.method === 'GET') {
+					response.writeHead(200, { 'Content-Type': 'application/json' });
+					response.end(JSON.stringify({ data: [{ id: 'glm-5.3-flash' }] }));
+					return;
+				}
+				response.writeHead(401, { 'Content-Type': 'application/json' });
+				response.end(
+					JSON.stringify({ type: 'error', error: { type: 'AuthError', message: 'test' } })
+				);
+			});
+			await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+			const address = server.address();
+			if (!address || typeof address === 'string') throw new Error('No server address');
+			const provider = new Provider(
+				{
+					...OpenCodeGoProvider,
+					baseUrl: `http://127.0.0.1:${address.port}/zen/go/v1`,
+					cacheModels: false,
+				},
+				{ provider: 'opencode-go', OPENAI_API_KEY: 'sk-test' } as ValidConfig
+			);
+
+			try {
+				for (const model of ['glm-5.3-flash', 'gpt-6-luna', 'minimax-m3']) {
+					await generateText({
+						model: provider.getLanguageModel(model),
+						prompt: 'Write a commit message',
+						maxRetries: 0,
+					}).catch(() => {});
+				}
+				expect(await provider.getModels()).toEqual({ models: ['glm-5.3-flash'] });
+			} finally {
+				await new Promise<void>((resolve) => server.close(() => resolve()));
+			}
+
+			expect(requests.map(({ url }) => url)).toEqual([
+				'/zen/go/v1/chat/completions',
+				'/zen/go/v1/responses',
+				'/zen/go/v1/messages',
+				'/zen/go/v1/models',
+			]);
+			const sessionId = requests[0].headers['x-opencode-session'];
+			expect(sessionId).toMatch(/^[0-9a-f-]{36}$/);
+			for (const { headers } of requests) {
+				expect(headers['x-opencode-session']).toBe(sessionId);
+				expect(headers['x-opencode-client']).toBe('aicommits');
+				expect(headers['user-agent']).toMatch(/^aicommits\//);
+			}
+			expect(requests[0].headers.authorization).toBe('Bearer sk-test');
+			expect(requests[1].headers.authorization).toBe('Bearer sk-test');
+			expect(requests[2].headers['x-api-key']).toBe('sk-test');
+		});
+
+		test('reads the OpenCode key from OPENCODE_API_KEY when none is configured', () => {
+			const original = process.env.OPENCODE_API_KEY;
+			process.env.OPENCODE_API_KEY = 'sk-from-env';
+			try {
+				const provider = createProvider('opencode-go');
+				expect(provider.getApiKey()).toBe('sk-from-env');
+				expect(provider.validateConfig().valid).toBe(true);
+			} finally {
+				if (original === undefined) delete process.env.OPENCODE_API_KEY;
+				else process.env.OPENCODE_API_KEY = original;
+			}
 		});
 
 		test('prefers a configured timeout over the provider default', () => {
