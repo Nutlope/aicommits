@@ -121,6 +121,70 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
+		await describe('max-output-tokens', ({ test }) => {
+			test('must be an integer', async () => {
+				const { stderr } = await aicommits(
+					['config', 'set', 'max-output-tokens=abc'],
+					{
+						reject: false,
+					}
+				);
+
+				expect(stderr).toMatch('Must be an integer');
+			});
+
+			test('must be greater than 0', async () => {
+				const { stderr } = await aicommits(
+					['config', 'set', 'max-output-tokens=0'],
+					{
+						reject: false,
+					}
+				);
+
+				expect(stderr).toMatch(/must be greater than 0/i);
+			});
+
+			test('updates config', async () => {
+				const maxOutputTokens = 'max-output-tokens=4096';
+				await aicommits(['config', 'set', maxOutputTokens]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(maxOutputTokens);
+
+				const get = await aicommits(['config', 'get', 'max-output-tokens']);
+				expect(get.stdout).toBe(maxOutputTokens);
+			});
+		});
+
+		await describe('thinking', ({ test }) => {
+			test('rejects invalid value', async () => {
+				const { stderr } = await aicommits(
+					['config', 'set', 'thinking=maybe'],
+					{
+						reject: false,
+					}
+				);
+
+				expect(stderr).toMatch('Must be "enabled" or "disabled"');
+			});
+
+			test('defaults to enabled', async () => {
+				const get = await aicommits(['config', 'get', 'thinking']);
+				expect(get.stdout).toBe('thinking=enabled');
+			});
+
+			test('updates config', async () => {
+				const thinking = 'thinking=disabled';
+				await aicommits(['config', 'set', thinking]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(thinking);
+
+				const get = await aicommits(['config', 'get', 'thinking']);
+				expect(get.stdout).toBe(thinking);
+			});
+		});
+
 		await fixture.rm();
 	});
 });

@@ -431,13 +431,50 @@ export class Provider {
 			agenticGeneration && (agenticGeneration.supports?.(model) ?? true)
 		);
 
+		const callOptions: GenerationCallOptions = {
+			...(supportsAgenticGeneration
+				? agenticGeneration?.callOptions?.(model) ?? {}
+				: {}),
+			...this.getConfiguredGenerationOptions(),
+		};
+
 		return {
 			mode: supportsAgenticGeneration ? 'agentic' : 'fallback',
 			isLocal: this.isLocal(),
-			callOptions: supportsAgenticGeneration
-				? agenticGeneration?.callOptions?.(model) ?? {}
-				: {},
+			callOptions,
 		};
+	}
+
+	/**
+	 * User-configurable generation options from `.aicommits`.
+	 *
+	 * - `max-output-tokens` overrides the default output token cap. Reasoning
+	 *   models can exhaust a small budget on thinking and return no message.
+	 * - `thinking=disabled` sends `thinking: { type: 'disabled' }` for
+	 *   OpenAI-compatible providers that support it. Official OpenAI and
+	 *   Together AI are excluded (unknown body params / own reasoning APIs).
+	 */
+	private getConfiguredGenerationOptions(): GenerationCallOptions {
+		const options: GenerationCallOptions = {};
+
+		const maxOutputTokens = this.config['max-output-tokens'];
+		if (maxOutputTokens !== undefined) {
+			options.maxOutputTokens = maxOutputTokens;
+		}
+
+		if (
+			this.config.thinking === 'disabled' &&
+			this.name !== 'openai' &&
+			this.name !== 'togetherai' &&
+			this.kind === 'http'
+		) {
+			options.providerOptions = {
+				...options.providerOptions,
+				[this.name]: { thinking: { type: 'disabled' } },
+			};
+		}
+
+		return options;
 	}
 
 	validateConfig(): { valid: boolean; errors: string[] } {

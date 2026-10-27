@@ -73,6 +73,33 @@ type CommitInstructionOptions = Pick<
 	'type' | 'locale' | 'maxLength' | 'includeBody' | 'customPrompt'
 >;
 
+/** Resolve a locale code to a language label models follow more reliably than bare ISO codes. */
+export const describeCommitLocale = (locale: string) => {
+	const normalized = locale.trim().toLowerCase().replace(/_/g, '-');
+	const language = normalized.split('-')[0] || normalized;
+	const names: Record<string, string> = {
+		en: 'English',
+		cs: 'Czech',
+		de: 'German',
+		es: 'Spanish',
+		fr: 'French',
+		it: 'Italian',
+		ja: 'Japanese',
+		ko: 'Korean',
+		nl: 'Dutch',
+		pl: 'Polish',
+		pt: 'Portuguese',
+		ru: 'Russian',
+		sk: 'Slovak',
+		sv: 'Swedish',
+		tr: 'Turkish',
+		uk: 'Ukrainian',
+		zh: 'Chinese',
+	};
+	const name = names[language];
+	return name ? `${name} (locale code: ${locale})` : `locale code ${locale}`;
+};
+
 const buildCommitInstructions = (
 	{
 		type,
@@ -84,11 +111,20 @@ const buildCommitInstructions = (
 	pathInstructions: Array<string | undefined>
 ) => {
 	const { format } = getCommitTypePolicy(type);
+	const localeLabel = describeCommitLocale(locale);
+	const localeIsEnglish = /^en([-_]|$)/i.test(locale.trim());
 	return [
 		'Write an accurate Git commit message for the staged changes.',
 		...pathInstructions,
 		'Mention the important behavior change, not file names.',
-		`Write in ${locale}. Format: ${formatInstructions[format]}.`,
+		localeIsEnglish
+			? `Write the commit message in English. Format: ${formatInstructions[format]}.`
+			: [
+					`Write the entire commit message in ${localeLabel}.`,
+					'Do not write the subject or body in English.',
+					'Keep conventional-commit type prefixes (feat, fix, …) and gitmoji in ASCII when those formats apply; translate only the description text.',
+					`Format: ${formatInstructions[format]}.`,
+				].join(' '),
 		format === 'conventional'
 			? [
 					'Use fix for corrected behavior and feat only for a new user-facing capability.',

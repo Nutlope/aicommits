@@ -93,7 +93,7 @@ const configParsers = {
 		parseAssert('locale', !!locale, 'Cannot be empty');
 		parseAssert(
 			'locale',
-			/^[a-z-]+$/i.test(locale),
+			/^[a-z]+(?:[-_][a-z0-9]+)*$/i.test(locale),
 			'Must be a valid locale (letters and dashes/underscores).'
 		);
 		return locale;
@@ -151,6 +151,36 @@ const configParsers = {
 			'Must be greater than 20 characters'
 		);
 		return parsed;
+	},
+	'max-output-tokens'(maxOutputTokens?: string) {
+		if (!maxOutputTokens) {
+			// Unset: leave the model call at the provider/SDK default so
+			// provider-specific callOptions (e.g. higher caps) still apply.
+			return undefined;
+		}
+		parseAssert(
+			'max-output-tokens',
+			/^\d+$/.test(maxOutputTokens),
+			'Must be an integer'
+		);
+		const parsed = Number(maxOutputTokens);
+		parseAssert(
+			'max-output-tokens',
+			parsed >= 1,
+			'Must be greater than 0'
+		);
+		return parsed;
+	},
+	thinking(thinking?: string) {
+		if (!thinking) {
+			return 'enabled';
+		}
+		parseAssert(
+			'thinking',
+			thinking === 'enabled' || thinking === 'disabled',
+			'Must be "enabled" or "disabled"'
+		);
+		return thinking as 'enabled' | 'disabled';
 	},
 } as const;
 

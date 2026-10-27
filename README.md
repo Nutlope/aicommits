@@ -388,6 +388,10 @@ Default: `en`
 
 The locale to use for the generated commit messages. Consult the list of codes in: https://wikipedia.org/wiki/List_of_ISO_639-1_codes.
 
+```sh
+aicommits config set locale=cs
+```
+
 #### generate
 
 Default: `1`
@@ -416,6 +420,36 @@ Default: `72`
 
 ```sh
 aicommits config set max-length=100
+```
+
+#### max-output-tokens
+
+The maximum number of tokens the model may generate for a commit message.
+
+Default: unset (provider/SDK default)
+
+> **Why you might need this:** reasoning models can exhaust a small output
+> budget on thinking alone and never produce a commit message. If you see
+> "The model did not generate a commit message." with a reasoning model, set
+> this higher (for example `4096`).
+
+```sh
+aicommits config set max-output-tokens=4096
+```
+
+#### thinking
+
+Whether the model's reasoning (thinking) phase is enabled.
+
+Default: `enabled`
+
+Set to `disabled` to send `thinking: { type: 'disabled' }` in the request body
+for OpenAI-compatible providers that support it (faster/cheaper). Official
+OpenAI and Together AI are excluded because they reject unknown body parameters
+or handle reasoning separately.
+
+```sh
+aicommits config set thinking=disabled
 ```
 
 #### type
