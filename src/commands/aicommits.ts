@@ -156,6 +156,7 @@ export default async (
 							includeBody,
 							timeout,
 							customPrompt,
+							history: config.history,
 						})
 					)
 				);
