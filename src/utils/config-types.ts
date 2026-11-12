@@ -171,6 +171,15 @@ const configParsers = {
 		);
 		return parsed;
 	},
+	history(count?: string) {
+		if (!count) {
+			return 0;
+		}
+		parseAssert('history', /^\d+$/.test(count), 'Must be an integer');
+		const parsed = Number(count);
+		parseAssert('history', parsed <= 50, 'Must be less or equal to 50');
+		return parsed;
+	},
 	thinking(thinking?: string) {
 		if (!thinking) {
 			return 'enabled';

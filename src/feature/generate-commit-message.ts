@@ -60,6 +60,8 @@ export type GenerateCommitMessageOptions = {
 	includeBody: boolean;
 	timeout: number;
 	customPrompt?: string;
+	/** Number of recent commit subjects to show the model as a style reference. */
+	history?: number;
 };
 
 const formatInstructions = {
@@ -71,7 +73,41 @@ const formatInstructions = {
 type CommitInstructionOptions = Pick<
 	GenerateCommitMessageOptions,
 	'type' | 'locale' | 'maxLength' | 'includeBody' | 'customPrompt'
->;
+> & {
+	recentSubjects?: string[];
+};
+
+const MAX_HISTORY_SUBJECT_CHARACTERS = 200;
+
+/** Read the subjects of the most recent non-merge commits, newest first. */
+export const getRecentCommitSubjects = async (
+	cwd: string,
+	count: number,
+	timeout?: number
+) => {
+	if (count <= 0) return [];
+	const { stdout, failed } = await execa(
+		'git',
+		['log', `--max-count=${count}`, '--no-merges', '--format=%s'],
+		{ cwd, timeout, reject: false }
+	);
+	// A repository without commits has no history to learn from.
+	if (failed) return [];
+	return stdout
+		.split('\n')
+		.map((subject) => subject.trim())
+		.filter(Boolean)
+		.map((subject) => subject.slice(0, MAX_HISTORY_SUBJECT_CHARACTERS));
+};
+
+const formatHistoryInstruction = (subjects: string[] | undefined) =>
+	subjects?.length
+		? [
+				'Recent commit subjects from this repository, newest first:',
+				...subjects.map((subject) => `- ${subject}`),
+				'Match their style (wording, casing, tense, scopes, and prefixes) where it fits the required format, but describe only the staged changes.',
+			].join('\n')
+		: undefined;
 
 /** Resolve a locale code to a language label models follow more reliably than bare ISO codes. */
 export const describeCommitLocale = (locale: string) => {
@@ -107,6 +143,7 @@ const buildCommitInstructions = (
 		maxLength,
 		includeBody,
 		customPrompt,
+		recentSubjects,
 	}: CommitInstructionOptions,
 	pathInstructions: Array<string | undefined>
 ) => {
@@ -137,6 +174,7 @@ const buildCommitInstructions = (
 			? 'Return a concise, non-empty body after a blank line.'
 			: 'Return no body.',
 		'Complete the subject; never end it with an ellipsis.',
+		formatHistoryInstruction(recentSubjects),
 		customPrompt,
 	]
 		.filter(Boolean)
@@ -579,6 +617,7 @@ export const generateCommitMessage = async ({
 	includeBody,
 	timeout,
 	customPrompt,
+	history = 0,
 }: GenerateCommitMessageOptions) => {
 	const { languageModel, agent: agentGenerate, mode, isLocal, callOptions } = model;
 	if (!languageModel && !agentGenerate) {
@@ -592,6 +631,11 @@ export const generateCommitMessage = async ({
 	const maxDiffBytes = maxDiffCharacters;
 	const maxSelectedDiffBytes = maxDiffBytes * MAX_DIFF_CHUNKS;
 	const budget = createGenerationBudget(timeout);
+	const recentSubjects = await getRecentCommitSubjects(
+		cwd,
+		history,
+		budget.remainingTime()
+	);
 	const stagedFiles = new Set(files);
 	const changedFileTree = formatChangedFileTree(files);
 	const getStagedDiff = async (
@@ -659,6 +703,7 @@ export const generateCommitMessage = async ({
 							maxLength,
 							includeBody: oneShotIncludeBody,
 							customPrompt,
+							recentSubjects,
 						},
 						[taskInstruction]
 					),
@@ -698,6 +743,7 @@ export const generateCommitMessage = async ({
 							maxLength,
 							includeBody: oneShotIncludeBody,
 							customPrompt,
+							recentSubjects,
 						},
 						[
 							'Return only the commit message. Put the subject on the first line.',
@@ -913,7 +959,14 @@ export const generateCommitMessage = async ({
 	const agent = new ToolLoopAgent({
 		model: languageModel,
 		instructions: buildCommitInstructions(
-			{ type, locale, maxLength, includeBody, customPrompt },
+			{
+				type,
+				locale,
+				maxLength,
+				includeBody,
+				customPrompt,
+				recentSubjects,
+			},
 			[
 				'Use the available context and tools, then call submitCommitMessage. Never answer with prose.',
 				hasCompleteDiff

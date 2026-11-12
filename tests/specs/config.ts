@@ -156,8 +156,42 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
-		await describe('thinking', ({ test }) => {
-			test('rejects invalid value', async () => {
+		await describe('history', async ({ test }) => {
+			await test('defaults to 0', async () => {
+				const get = await aicommits(['config', 'get', 'history']);
+				expect(get.stdout).toBe('history=0');
+			});
+
+			await test('must be an integer', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'history=abc'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch('Must be an integer');
+			});
+
+			await test('must be at most 50', async () => {
+				const { stderr } = await aicommits(['config', 'set', 'history=51'], {
+					reject: false,
+				});
+
+				expect(stderr).toMatch(/must be less or equal to 50/i);
+			});
+
+			await test('updates config', async () => {
+				const history = 'history=10';
+				await aicommits(['config', 'set', history]);
+
+				const configFile = await fs.readFile(configPath, 'utf8');
+				expect(configFile).toMatch(history);
+
+				const get = await aicommits(['config', 'get', 'history']);
+				expect(get.stdout).toBe(history);
+			});
+		});
+
+		await describe('thinking', async ({ test }) => {
+			await test('rejects invalid value', async () => {
 				const { stderr } = await aicommits(
 					['config', 'set', 'thinking=maybe'],
 					{
@@ -168,12 +202,12 @@ export default testSuite(({ describe }) => {
 				expect(stderr).toMatch('Must be "enabled" or "disabled"');
 			});
 
-			test('defaults to enabled', async () => {
+			await test('defaults to enabled', async () => {
 				const get = await aicommits(['config', 'get', 'thinking']);
 				expect(get.stdout).toBe('thinking=enabled');
 			});
 
-			test('updates config', async () => {
+			await test('updates config', async () => {
 				const thinking = 'thinking=disabled';
 				await aicommits(['config', 'set', thinking]);
 

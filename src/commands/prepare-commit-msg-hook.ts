@@ -77,6 +77,7 @@ export default () =>
 						maxLength: config['max-length'],
 						includeBody: requiresBody,
 						timeout,
+						history: config.history,
 					})
 				)
 			);

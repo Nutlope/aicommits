@@ -8,7 +8,10 @@ import {
 } from '../../src/feature/providers/together.js';
 import { getProvider } from '../../src/feature/providers/index.js';
 import type { GenerationModel } from '../../src/feature/providers/base.js';
-import { generateCommitMessage } from '../../src/feature/generate-commit-message.js';
+import {
+	generateCommitMessage,
+	getRecentCommitSubjects,
+} from '../../src/feature/generate-commit-message.js';
 import type { ValidConfig } from '../../src/utils/config-types.js';
 import { createFixture, createGit } from '../utils.js';
 
@@ -176,6 +179,122 @@ export default testSuite(({ describe }) => {
 				'Never mark a commit as breaking unless the staged changes clearly break'
 			);
 
+			await fixture.rm();
+		});
+
+		test('includes recent commit subjects as a style reference when history is set', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'one\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'Oldest subject outside the window']);
+			for (const [content, subject] of [
+				['two\n', 'Add the second line'],
+				['three\n', 'Tweak the third line'],
+			]) {
+				await fixture.writeFile('file.txt', content);
+				await git('add', ['file.txt']);
+				await git('commit', ['-m', subject]);
+			}
+			await fixture.writeFile('file.txt', 'four\n');
+			await git('add', ['file.txt']);
+
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'moonshotai/Kimi-K2.7-Code',
+				doStream: toolCallStream(
+					'submit-message-1',
+					'submitCommitMessage',
+					{ subject: 'Replace the fourth line', body: null }
+				),
+			});
+
+			const result = await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'plain',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+				history: 2,
+			});
+
+			expect(result.message.subject).toBe('Replace the fourth line');
+			const prompt = JSON.stringify(model.doStreamCalls[0].prompt);
+			expect(prompt).toMatch(
+				'Recent commit subjects from this repository, newest first:\\n- Tweak the third line\\n- Add the second line'
+			);
+			expect(prompt).not.toMatch('Oldest subject outside the window');
+			await fixture.rm();
+		});
+
+		test('includes recent commit subjects in one-shot generation', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			await git('commit', ['-m', 'docs: describe the fixture']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
+				doGenerate: textGeneration('fix: update fixture value'),
+			});
+
+			await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'conventional',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+				history: 10,
+			});
+
+			expect(JSON.stringify(model.doGenerateCalls[0].prompt)).toMatch(
+				'- docs: describe the fixture'
+			);
+			await fixture.rm();
+		});
+
+		test('omits commit history by default and in repositories without commits', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'before\n' });
+			const git = await createGit(fixture.path);
+			await git('add', ['.']);
+			const subjects = await getRecentCommitSubjects(fixture.path, 5);
+			expect(subjects).toEqual([]);
+
+			await git('commit', ['-m', 'initial']);
+			await fixture.writeFile('file.txt', 'after\n');
+			await git('add', ['file.txt']);
+			const model = new MockLanguageModelV4({
+				provider: 'togetherai.chat',
+				modelId: 'moonshotai/Kimi-K2.7-Code',
+				doStream: toolCallStream(
+					'submit-message-1',
+					'submitCommitMessage',
+					{ subject: 'Update the fixture', body: null }
+				),
+			});
+
+			await generateCommitMessage({
+				model: asGenerationModel(model),
+				cwd: fixture.path,
+				files: ['file.txt'],
+				type: 'plain',
+				locale: 'en',
+				maxLength: 72,
+				includeBody: false,
+				timeout: 5000,
+			});
+
+			expect(JSON.stringify(model.doStreamCalls[0].prompt)).not.toMatch(
+				'Recent commit subjects'
+			);
+			expect(await getRecentCommitSubjects(fixture.path, 0)).toEqual([]);
 			await fixture.rm();
 		});
 

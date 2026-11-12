@@ -437,6 +437,21 @@ Default: unset (provider/SDK default)
 aicommits config set max-output-tokens=4096
 ```
 
+#### history
+
+Default: `0` (disabled)
+
+The number of recent commit subjects (excluding merges) to show the model as a
+style reference, so generated messages follow the conventions already used in
+the repository. Accepts `0` to `50`.
+
+Note, this adds the subjects to every request. If earlier commits were also
+generated, the model will mirror their style.
+
+```sh
+aicommits config set history=10
+```
+
 #### thinking
 
 Whether the model's reasoning (thinking) phase is enabled.
