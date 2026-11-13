@@ -91,6 +91,196 @@ const asGenerationModel = (languageModel: LanguageModel): GenerationModel => {
 
 export default testSuite(({ describe }) => {
 	describe('generateCommitMessage', ({ test }) => {
+		test('preserves fenced content inside a custom one-shot message', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'test\n' });
+			try {
+				const git = await createGit(fixture.path);
+				await git('add', ['file.txt']);
+				const body = 'Example:\n\n```ts\nconst changed = true;\n```';
+				const result = await generateCommitMessage({
+					model: {
+						mode: 'fallback', isLocal: false, callOptions: {},
+						languageModel: new MockLanguageModelV4({
+							doGenerate: textGeneration(`feat: document sample\n\n${body}`),
+						}),
+					},
+					cwd: fixture.path, files: ['file.txt'],
+					type: 'custom', locale: 'en', maxLength: 72,
+					includeBody: false, timeout: 5000,
+					customPrompt: 'Include a fenced TypeScript example in the body.',
+				});
+				expect(result.message.body).toBe(body);
+			} finally {
+				await fixture.rm();
+			}
+		});
+
+		test('includes reported usage from invalid agent SDK responses before a successful retry', async () => {
+			const { fixture } = await createFixture({ 'file.txt': 'test\n' });
+			try {
+				const git = await createGit(fixture.path);
+				await git('add', ['file.txt']);
+				let attempts = 0;
+				const result = await generateCommitMessage({
+					model: {
+						mode: 'fallback', isLocal: false, callOptions: {},
+						agent: async () => ({
+							message: { subject: ++attempts === 1 ? '' : 'feat: add test data' },
+							usage: { inputTokens: 10, outputTokens: 5 },
+						}),
+					},
+					cwd: fixture.path,
+					files: ['file.txt'],
+					type: 'plain', locale: 'en', maxLength: 72,
+					includeBody: false, timeout: 5000,
+				});
+				expect(result.message.subject).toBe('feat: add test data');
+				expect(result.usage.inputTokens).toBe(20);
+				expect(result.usage.outputTokens).toBe(10);
+				expect(result.usage.totalTokens).toBe(30);
+			} finally {
+				await fixture.rm();
+			}
+		});
+
+		for (const mode of ['fallback', 'agent-sdk'] as const) {
+			test(`preserves detailed chunk summaries before applying the custom prompt (${mode})`, async () => {
+				const { fixture } = await createFixture({
+					'large.txt': `${'changed behavior\n'.repeat(2500)}`,
+				});
+				try {
+					const git = await createGit(fixture.path);
+					await git('add', ['.']);
+					const calls: Array<{ system: string; prompt: string; includeBody?: boolean | 'optional' }> = [];
+					const customPrompt = 'CUSTOM FORMAT: group each purpose with its own title and details.';
+					const subject = 'feat: read prompt files';
+					const body = '- CLI overrides the saved prompt file\n- Saved relative paths resolve from the home directory';
+					const model: GenerationModel = {
+						mode: 'fallback', isLocal: false, callOptions: {},
+						...(mode === 'agent-sdk' ? {
+							agent: async (input) => {
+								calls.push(input);
+								return { message: { subject, body } };
+							},
+						} : {
+							languageModel: new MockLanguageModelV4({
+								doGenerate: async ({ prompt }) => {
+									calls.push({
+										system: String(prompt.find((message) => message.role === 'system')?.content),
+										prompt: JSON.stringify(prompt.filter((message) => message.role !== 'system')),
+									});
+									return textGeneration(`${subject}\n\n${body}`);
+								},
+							}),
+						}),
+					};
+					await generateCommitMessage({
+						model, cwd: fixture.path, files: ['large.txt'],
+						type: 'custom', locale: 'en', maxLength: 72,
+						includeBody: false, customPrompt, timeout: 5000,
+					});
+					expect(calls.length).toBeGreaterThan(2);
+					const finalCall = calls[calls.length - 1];
+					expect(finalCall.prompt).toMatch('CLI overrides the saved prompt file');
+					expect(finalCall.prompt).toMatch('Saved relative paths resolve from the home directory');
+					expect(finalCall.system).toMatch(customPrompt);
+					for (const call of calls.slice(0, -1)) {
+						expect(call.system).not.toMatch(customPrompt);
+						if (mode === 'agent-sdk') expect(call.includeBody).toBe(true);
+					}
+				} finally {
+					await fixture.rm();
+				}
+			});
+		}
+
+		for (const mode of ['agentic', 'fallback', 'agent-sdk'] as const) {
+			for (const includeBody of [false, true]) {
+				for (const withBody of [false, true]) {
+					test(`custom ${mode} preserves prompt-defined output with description=${includeBody} and body=${withBody}`, async () => {
+						const { fixture } = await createFixture({ 'file.txt': 'after\n' });
+						try {
+							const git = await createGit(fixture.path);
+							await git('add', ['file.txt']);
+							const subject = 'feat: update greeting';
+							const body = withBody
+								? '- Add a greeting\n\nfix: handle empty names\n- Use a default name'
+								: '';
+							const model = new MockLanguageModelV4({
+								doStream: toolCallStream('submit-custom', 'submitCommitMessage', {
+									subject,
+									body,
+								}),
+								doGenerate: textGeneration(body ? `${subject}\n\n${body}` : subject),
+							});
+							const checkInstructions = (system: string) => {
+								expect(system).not.toMatch('Return no body.');
+								expect(system).not.toMatch('Return a concise, non-empty body');
+								expect(system).not.toMatch('Write the commit message in English');
+								expect(system).not.toMatch('around 72 characters');
+								expect(system).not.toMatch('not file names');
+								expect(system).not.toMatch('never end it with an ellipsis');
+							};
+							const generationModel: GenerationModel = {
+								mode: mode === 'agentic' ? 'agentic' : 'fallback',
+								isLocal: false,
+								callOptions: {},
+								...(mode === 'agent-sdk'
+									? {
+											agent: async (input) => {
+												checkInstructions(input.system);
+												expect(input.includeBody).toBe('optional');
+												return { message: { subject, body } };
+											},
+										}
+									: { languageModel: model }),
+							};
+							const result = await generateCommitMessage({
+								model: generationModel,
+								cwd: fixture.path,
+								files: ['file.txt'],
+								type: 'custom',
+								locale: 'en',
+								maxLength: 72,
+								includeBody,
+								customPrompt: withBody
+									? 'Group independent changes with their own titles and details.'
+									: 'Write only a title.',
+								timeout: 5000,
+							});
+							expect(result.message).toEqual(
+								withBody
+									? {
+											subject: 'feat: update greeting',
+											body: '- Add a greeting\n\nfix: handle empty names\n- Use a default name',
+										}
+									: { subject: 'feat: update greeting' }
+							);
+							if (mode !== 'agent-sdk') {
+								const calls = mode === 'agentic'
+									? model.doStreamCalls
+									: model.doGenerateCalls;
+								expect(calls.length).toBe(1);
+								checkInstructions(JSON.stringify(calls[0].prompt));
+							}
+						} finally {
+							await fixture.rm();
+						}
+					});
+				}
+			}
+		}
+
+		for (const prompt of [undefined, '', ' \n\t']) {
+			test(`rejects custom mode without non-empty instructions (${JSON.stringify(prompt)})`, async () => {
+				await expect(generateCommitMessage({
+					model: { mode: 'fallback', isLocal: false, callOptions: {}, agent: async () => { throw new Error('AI must not be called'); } },
+					cwd: '.', files: [], type: 'custom', locale: 'en', maxLength: 72,
+					includeBody: false, timeout: 5000, customPrompt: prompt,
+				})).rejects.toThrow('Custom format requires a non-empty prompt');
+			});
+		}
+
 		test('keeps unknown Together models agentic by default', () => {
 			expect(supportsTogetherAgenticGeneration('future/model')).toBe(true);
 			expect(supportsTogetherAgenticGeneration('moonshotai/Kimi-K3')).toBe(
@@ -141,6 +331,7 @@ export default testSuite(({ describe }) => {
 				),
 			});
 
+			const progress: { stage: string }[] = [];
 			const result = await generateCommitMessage({
 				model: asGenerationModel(model),
 				cwd: fixture.path,
@@ -150,12 +341,17 @@ export default testSuite(({ describe }) => {
 				maxLength: 72,
 				includeBody: false,
 				timeout: 5000,
+				onProgress: (event) => progress.push(event),
 			});
 
 			expect(result.message).toEqual({
 				subject: 'feat: update staged greeting',
 			});
 			expect(result.steps).toBe(1);
+			expect(progress[0].stage).toBe('reading-diff');
+			expect(progress.some(({ stage }) => stage === 'waiting')).toBe(true);
+			expect(progress.some(({ stage }) => stage === 'receiving')).toBe(true);
+			expect(progress[progress.length - 1]?.stage).toBe('validating');
 
 			const finalPrompt = JSON.stringify(model.doStreamCalls[0].prompt);
 			expect(finalPrompt).toMatch('staged greeting');
@@ -1094,7 +1290,7 @@ export default testSuite(({ describe }) => {
 				provider: 'togetherai.chat',
 				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: async () =>
-					textGeneration('chore: summarize staged changes'),
+					textGeneration('chore: summarize staged changes\n\n- Preserve the changed fixture content'),
 			});
 
 			await generateCommitMessage({
@@ -1132,7 +1328,7 @@ export default testSuite(({ describe }) => {
 				provider: 'togetherai.chat',
 				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: async () =>
-					textGeneration('chore: summarize very large staged changes'),
+					textGeneration('chore: summarize very large staged changes\n\n- Preserve the changed fixture content'),
 			});
 
 			const result = await generateCommitMessage({
@@ -1182,7 +1378,7 @@ export default testSuite(({ describe }) => {
 				provider: 'togetherai.chat',
 				modelId: 'Qwen/Qwen2.5-7B-Instruct-Turbo',
 				doGenerate: async () =>
-					textGeneration('chore: summarize representative changes'),
+					textGeneration('chore: summarize representative changes\n\n- Preserve the changed fixture content'),
 			});
 
 			await generateCommitMessage({

@@ -1,4 +1,4 @@
-import { Codex } from '@openai/codex-sdk';
+import { Codex, type Usage } from '@openai/codex-sdk';
 import { KnownError } from '../../utils/error.js';
 import type {
 	AgentGenerateOptions,
@@ -15,6 +15,7 @@ export const generateWithCodex = async ({
 	cwd,
 	binary,
 	timeout,
+	onProgress,
 }: AgentGenerateOptions): Promise<AgentGenerateResult> => {
 	const startedAt = Date.now();
 	const codex = new Codex({
@@ -37,12 +38,32 @@ export const generateWithCodex = async ({
 
 	const abortController = new AbortController();
 	const timer = setTimeout(() => abortController.abort(), timeout);
-	let turn;
+	let finalResponse = '';
+	let usage: Usage | undefined;
 	try {
-		turn = await thread.run(`${system}\n\n${prompt}`, {
+		const { events } = await thread.runStreamed(`${system}\n\n${prompt}`, {
 			outputSchema: schema,
 			signal: abortController.signal,
 		});
+		for await (const event of events) {
+			if (event.type === 'turn.failed') throw new Error(event.error.message);
+			if (event.type === 'error') throw new Error(event.message);
+			if (event.type === 'turn.completed') usage = event.usage;
+			if (
+				event.type === 'item.started' ||
+				event.type === 'item.updated' ||
+				event.type === 'item.completed'
+			) {
+				if (event.item.type === 'agent_message') {
+					if (event.item.text) onProgress?.({ stage: 'receiving' });
+					if (event.type === 'item.completed') finalResponse = event.item.text;
+				} else if (event.item.type === 'reasoning') {
+					onProgress?.({ stage: 'thinking' });
+				} else {
+					onProgress?.({ stage: 'tool' });
+				}
+			}
+		}
 	} catch (error) {
 		if (abortController.signal.aborted) {
 			throw new KnownError(`Codex timed out after ${timeout}ms.`);
@@ -60,17 +81,17 @@ export const generateWithCodex = async ({
 
 	let output: unknown;
 	try {
-		output = JSON.parse(turn.finalResponse);
+		output = JSON.parse(finalResponse);
 	} catch {
 		throw new KnownError('Codex returned no structured output.');
 	}
 	return {
 		output,
-		text: turn.finalResponse,
+		text: finalResponse,
 		durationMs: Date.now() - startedAt,
 		usage: {
-			inputTokens: turn.usage?.input_tokens,
-			outputTokens: turn.usage?.output_tokens,
+			inputTokens: usage?.input_tokens,
+			outputTokens: usage?.output_tokens,
 		},
 	};
 };

@@ -1,5 +1,6 @@
 import {
 	ToolLoopAgent,
+	ToolChoiceViolationError,
 	generateText,
 	hasToolCall,
 	stepCountIs,
@@ -13,7 +14,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { z } from 'zod';
-import type { GenerationModel } from './providers/base.js';
+import type { OnGenerationProgress } from './generation-progress.js';
+import type { AgentGenerateInput, GenerationModel } from './providers/base.js';
 import {
 	getCommitTypePolicy,
 	type CommitType,
@@ -60,6 +62,7 @@ export type GenerateCommitMessageOptions = {
 	includeBody: boolean;
 	timeout: number;
 	customPrompt?: string;
+	onProgress?: OnGenerationProgress;
 };
 
 const formatInstructions = {
@@ -70,8 +73,8 @@ const formatInstructions = {
 
 type CommitInstructionOptions = Pick<
 	GenerateCommitMessageOptions,
-	'type' | 'locale' | 'maxLength' | 'includeBody' | 'customPrompt'
->;
+	'type' | 'locale' | 'maxLength' | 'customPrompt'
+> & Pick<AgentGenerateInput, 'includeBody'>;
 
 /** Resolve a locale code to a language label models follow more reliably than bare ISO codes. */
 export const describeCommitLocale = (locale: string) => {
@@ -111,6 +114,13 @@ const buildCommitInstructions = (
 	pathInstructions: Array<string | undefined>
 ) => {
 	const { format } = getCommitTypePolicy(type);
+	if (format === 'custom') {
+		return [
+			'Write an accurate Git commit message for the staged changes.',
+			...pathInstructions,
+			customPrompt,
+		].filter(Boolean).join('\n');
+	}
 	const localeLabel = describeCommitLocale(locale);
 	const localeIsEnglish = /^en([-_]|$)/i.test(locale.trim());
 	return [
@@ -555,15 +565,15 @@ const validateSubject = (subject: string) => {
 
 const parseOneShotMessage = (
 	text: string,
-	includeBody: boolean
+	includeBody: AgentGenerateInput['includeBody']
 ): CommitMessage => {
-	const lines = text
-		.replace(/```(?:\w+)?/g, '')
-		.trim()
-		.split('\n');
+	const content = includeBody === 'optional'
+		? text
+		: text.replace(/```(?:\w+)?/g, '');
+	const lines = content.trim().split('\n');
 	const subject = validateSubject(lines.shift() || '');
 	const body = includeBody ? lines.join('\n').trim() : '';
-	if (includeBody && !body) {
+	if (includeBody === true && !body) {
 		throw new Error('The model did not generate a commit message description.');
 	}
 	return { subject, ...(body ? { body } : {}) };
@@ -576,10 +586,16 @@ export const generateCommitMessage = async ({
 	type,
 	locale,
 	maxLength,
-	includeBody,
+	includeBody: requestedIncludeBody,
 	timeout,
 	customPrompt,
+	onProgress,
 }: GenerateCommitMessageOptions) => {
+	if (type === 'custom' && !customPrompt?.trim()) {
+		throw new KnownError('Custom format requires a non-empty prompt. Set prompt-file or use --prompt / --prompt-file.');
+	}
+	// Custom prompts decide whether a body is needed, independently of --description.
+	const includeBody = type === 'custom' ? 'optional' : requestedIncludeBody;
 	const { languageModel, agent: agentGenerate, mode, isLocal, callOptions } = model;
 	if (!languageModel && !agentGenerate) {
 		throw new KnownError('No model is available for commit generation.');
@@ -642,17 +658,21 @@ export const generateCommitMessage = async ({
 			await rm(temporaryDirectory, { recursive: true, force: true });
 		}
 	};
+	onProgress?.({ stage: 'reading-diff' });
 	const stagedDiff = await getStagedDiff(files, maxSelectedDiffBytes);
 	const runOneShot = async (
 		prompt: string,
-		oneShotIncludeBody = includeBody,
-		taskInstruction?: string
+		oneShotIncludeBody: AgentGenerateInput['includeBody'] = includeBody,
+		taskInstruction?: string,
+		systemOverride?: string
 	) => {
 		const results = [];
+		const agentUsages: LanguageModelUsage[] = [];
 		for (let attempt = 1; attempt <= ONE_SHOT_ATTEMPTS; attempt += 1) {
 			if (agentGenerate) {
+				onProgress?.({ stage: 'waiting' });
 				const agentResult = await agentGenerate({
-					system: buildCommitInstructions(
+					system: systemOverride ?? buildCommitInstructions(
 						{
 							type,
 							locale,
@@ -666,20 +686,23 @@ export const generateCommitMessage = async ({
 					includeBody: oneShotIncludeBody,
 					cwd,
 					timeout: budget.nextModelTimeout(),
+					onProgress,
 				});
+				agentUsages.push(usageFromCounts(agentResult.usage));
+				onProgress?.({ stage: 'validating' });
 				try {
 					const subject = validateSubject(agentResult.message.subject);
 					const body = oneShotIncludeBody
 						? agentResult.message.body?.trim()
 						: undefined;
-					if (oneShotIncludeBody && !body) {
+					if (oneShotIncludeBody === true && !body) {
 						throw new Error(
 							'The model did not generate a commit message description.'
 						);
 					}
 					return {
 						message: { subject, ...(body ? { body } : {}) },
-						usage: usageFromCounts(agentResult.usage),
+						usage: combineUsage(agentUsages),
 						steps: 1,
 					};
 				} catch (error) {
@@ -689,9 +712,10 @@ export const generateCommitMessage = async ({
 			}
 			let result;
 			try {
+				onProgress?.({ stage: 'waiting-complete' });
 				result = await generateText({
 					model: languageModel!,
-					system: buildCommitInstructions(
+					system: systemOverride ?? buildCommitInstructions(
 						{
 							type,
 							locale,
@@ -719,6 +743,7 @@ export const generateCommitMessage = async ({
 				}
 				throw error;
 			}
+			onProgress?.({ stage: 'validating' });
 			results.push(result);
 			try {
 				return {
@@ -753,10 +778,17 @@ export const generateCommitMessage = async ({
 			chunkResults.push(
 				await runOneShot(
 					diffChunk,
-					false,
-					stagedDiff.complete
-						? 'Summarize only this complete segment of the staged diff.'
-						: 'Summarize only this representative excerpt of the staged diff.'
+					true,
+					undefined,
+					[
+						stagedDiff.complete
+							? 'Summarize only this complete segment of the staged diff.'
+							: 'Summarize only this representative excerpt of the staged diff.',
+						'This is intermediate evidence for a later commit message, not the final commit message.',
+						'Use a short summary on the first line and a non-empty body listing the concrete changes.',
+						'Preserve independent behavior changes, fixes, option precedence, defaults, and compatibility rules visible in this segment.',
+						'Do not reduce the segment to a title or infer changes from missing context.',
+					].join('\n')
 				)
 			);
 		}
@@ -779,9 +811,8 @@ export const generateCommitMessage = async ({
 			[
 				changedFileTree,
 				chunkResults
-					.map(({ message }) => message.subject)
-					.map((subject) => `- ${subject}`)
-					.join('\n'),
+					.map(({ message }) => formatCommitMessage(message))
+					.join('\n\n'),
 			].join('\n\n'),
 			includeBody,
 			diffSummary.complete
@@ -829,6 +860,7 @@ export const generateCommitMessage = async ({
 				.max(MAX_INSPECTION_GROUPS),
 		}),
 		execute: async ({ groups }) => {
+			onProgress?.({ stage: 'tool' });
 			agentDiffReads += 1;
 			if (inspectedStagedChanges) {
 				return '[Staged changes already inspected]';
@@ -874,6 +906,7 @@ export const generateCommitMessage = async ({
 		description: 'Read the staged Git diff for one or more staged files.',
 		inputSchema: z.object({ paths: z.array(z.string()).min(1) }),
 		execute: async ({ paths }) => {
+			onProgress?.({ stage: 'tool' });
 			agentDiffReads += 1;
 			if (agentDiffReads > MAX_AGENT_DIFF_READS) {
 				return '[Diff read call budget exhausted]';
@@ -904,7 +937,7 @@ export const generateCommitMessage = async ({
 							'Subject must not end with an ellipsis.'
 						)
 				),
-			body: includeBody
+			body: includeBody === true
 				? z.string().trim().min(1)
 				: z.string().nullable().optional(),
 		}),
@@ -930,6 +963,7 @@ export const generateCommitMessage = async ({
 		maxOutputTokens: MAX_COMMIT_MESSAGE_OUTPUT_TOKENS,
 		...callOptions,
 		prepareStep: ({ stepNumber }) => {
+			onProgress?.({ stage: 'waiting' });
 			if (!isLocal && !hasCompleteDiff && stepNumber === 0) {
 				return {
 					toolChoice: {
@@ -969,6 +1003,29 @@ export const generateCommitMessage = async ({
 		});
 		let staticToolCalls: Awaited<typeof result.staticToolCalls>;
 		try {
+			// Consume actual stream events; never infer output from elapsed time.
+			for await (const part of result.fullStream) {
+				if (part.type === 'error') {
+					// Local models may ignore required tools. Preserve their retry and
+					// one-shot fallback instead of failing during progress consumption.
+					if (isLocal && ToolChoiceViolationError.isInstance(part.error)) continue;
+					throw part.error;
+				}
+				if (part.type === 'start-step') {
+					onProgress?.({ stage: 'waiting' });
+				} else if (part.type === 'reasoning-delta') {
+					onProgress?.({ stage: 'thinking' });
+				} else if (part.type === 'tool-call') {
+					onProgress?.({
+						stage: part.toolName === 'submitCommitMessage' ? 'receiving' : 'tool',
+					});
+				} else if (
+					part.type === 'text-delta' ||
+					part.type === 'tool-input-delta'
+				) {
+					onProgress?.({ stage: 'receiving' });
+				}
+			}
 			staticToolCalls = await result.staticToolCalls;
 		} catch (error) {
 			throw agentStreamError ?? error;
@@ -1013,6 +1070,7 @@ export const generateCommitMessage = async ({
 		throw new Error('The model did not submit a commit message.');
 	}
 
+	onProgress?.({ stage: 'validating' });
 	const subject = normalizeSubject(submission.input.subject);
 	const body = includeBody ? submission.input.body?.trim() : undefined;
 

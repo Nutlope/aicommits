@@ -1,5 +1,6 @@
 import { execa } from 'execa';
 import { KnownError } from './error.js';
+import { parseStagedFiles } from './staged-files.js';
 
 export const assertGitRepo = async () => {
 	const { stdout, failed } = await execa(
@@ -49,14 +50,17 @@ const isLockFile = (file: string) => {
 	});
 };
 
-export const getStagedFiles = async (excludeFiles?: string[]) => {
+export const getStagedFileChanges = async (excludeFiles?: string[]) => {
 	const diffCached = ['diff', '--cached', '--diff-algorithm=minimal'];
 	const customExcludes = excludeFiles ? excludeFiles.map(excludeFromDiff) : [];
 
 	// First, get all staged files without any excludes
 	const { stdout: allFilesOutput } = await execa('git', [
 		...diffCached,
-		'--name-only',
+		'--name-status',
+		'-z',
+		'--find-renames',
+		'--',
 		...customExcludes,
 	]);
 
@@ -64,15 +68,19 @@ export const getStagedFiles = async (excludeFiles?: string[]) => {
 		return;
 	}
 
-	const allFiles = allFilesOutput.split('\n').filter(Boolean);
+	const allFiles = parseStagedFiles(allFilesOutput);
 
 	// Check if all staged files are lock files
-	const hasNonLockFiles = allFiles.some(file => !isLockFile(file));
+	const hasNonLockFiles = allFiles.some(file => !isLockFile(file.path));
 
 	return hasNonLockFiles
-		? allFiles.filter((file) => !isLockFile(file))
+		? allFiles.filter((file) => !isLockFile(file.path))
 		: allFiles;
 };
+
+// Preserve the path-only API used by commit hooks and AI generation.
+export const getStagedFiles = async (excludeFiles?: string[]) =>
+	(await getStagedFileChanges(excludeFiles))?.map(({ path }) => path);
 
 export const getDetectedMessage = (files: string[]) =>
 	`Detected ${files.length.toLocaleString()} staged file${
