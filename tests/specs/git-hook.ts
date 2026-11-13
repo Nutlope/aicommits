@@ -9,6 +9,54 @@ import { isCalledFromGitHook } from '../../src/commands/hook.js';
 
 export default testSuite(({ describe }) => {
 	describe('Git hook', ({ test }) => {
+		for (const noEdit of [false, true]) {
+			test(`keeps every line of custom candidates commented (${noEdit ? 'no editor' : 'editor'})`, async () => {
+				const message = {
+					subject: 'feat: add greetings',
+					body: '- Add a greeting\n\nfix: handle empty names\n- Use a default name',
+				};
+				// Use Node as a local Codex protocol fixture; no login or HTTP server.
+				const { fixture, aicommits } = await createFixture({
+					'.aicommits': [
+						'provider=codex',
+						`codex-path=${process.execPath}`,
+						'type=custom',
+						'generate=2',
+						'prompt-file=commit.md',
+					].join('\n'),
+					'commit.md': 'Group each feature with its own title and details.',
+					'data.json': '{}\n',
+					exec: [
+						'process.stdin.resume();',
+						'process.stdin.on("end", () => {',
+						`const events = ${JSON.stringify([
+							{ type: 'thread.started', thread_id: 'fixture' },
+							{ type: 'turn.started' },
+							{ type: 'item.completed', item: { id: 'message', type: 'agent_message', text: JSON.stringify(message) } },
+							{ type: 'turn.completed', usage: { input_tokens: 10, cached_input_tokens: 0, output_tokens: 5 } },
+						])};`,
+						'for (const event of events) console.log(JSON.stringify(event));',
+						'});',
+					].join('\n'),
+				});
+				try {
+					const git = await createGit(fixture.path);
+					await git('add', ['data.json']);
+					await aicommits(['hook', 'install']);
+					const result = await git('commit', [
+						'--cleanup=strip', ...(noEdit ? ['--no-edit'] : []),
+					], {
+						reject: false,
+						env: { HOME: fixture.path, USERPROFILE: fixture.path, GIT_EDITOR: 'true', CI: '1' },
+					});
+					expect(result.exitCode).toBe(1);
+					expect(result.stderr).toMatch('empty commit message');
+				} finally {
+					await fixture.rm();
+				}
+			});
+		}
+
 		test('recognizes hook paths across platforms', () => {
 			expect(isCalledFromGitHook('/repo/.git/hooks/prepare-commit-msg')).toBe(
 				true

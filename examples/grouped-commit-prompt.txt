@@ -1,0 +1,5 @@
+Write one accurate, concise Git commit message in English from the staged diff.
+
+Group related changes by purpose, with a Conventional Commit title for each group. Add brief bullet points only when the title needs more detail.
+
+Return only the commit message as plain text, with blank lines between groups and no overall title or code fences.

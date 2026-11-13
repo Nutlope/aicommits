@@ -8,18 +8,22 @@ import {
 	select,
 	confirm,
 	isCancel,
+	log,
 } from '@clack/prompts';
 import {
 	assertGitRepo,
-	getStagedFiles,
+	getStagedFileChanges,
 	getDetectedMessage,
 } from '../utils/git.js';
+import { formatStagedFile, formatStagedStatusSummary } from '../utils/staged-files.js';
 import { getConfig, setConfigs } from '../utils/config-runtime.js';
+import { resolveCommitPrompt } from '../utils/prompt-file.js';
 import { getProvider } from '../feature/providers/index.js';
 import {
 	formatCommitMessage,
 	generateCommitMessage,
 } from '../feature/generate-commit-message.js';
+import { startGenerationProgress } from '../feature/generation-progress.js';
 import { getCommitTypePolicy } from '../utils/config-types.js';
 import {
 	KnownError,
@@ -41,7 +45,8 @@ export default async (
 	noVerify: boolean,
 	includeDescription: boolean,
 	customPrompt: string | undefined,
-	rawArgv: string[]
+	rawArgv: string[],
+	promptFile?: string
 ) =>
 	(async () => {
 		const headless = isHeadless();
@@ -56,27 +61,26 @@ export default async (
 			await execa('git', ['add', '--update']);
 		}
 
-		const stagedFiles = await getStagedFiles(excludeFiles);
+		const stagedChanges = await getStagedFileChanges(excludeFiles);
 
-		if (!stagedFiles) {
+		if (!stagedChanges) {
 			throw new KnownError(
 				'No staged changes found. Stage your changes manually, or automatically stage all changes with the `--all` flag.'
 			);
 		}
+		const stagedFiles = stagedChanges.map(({ path }) => path);
 
 		if (!headless) {
 			const detectingFiles = spinner();
-			if (stagedFiles.length <= 10) {
-				detectingFiles.start('Detecting staged files');
-				detectingFiles.stop(
-					`📁 ${getDetectedMessage(stagedFiles)}:\n${stagedFiles
-						.map((file) => `     ${file}`)
-						.join('\n')}`
-				);
-			} else {
-				detectingFiles.start('Detecting staged files');
-				detectingFiles.stop(`📁 ${getDetectedMessage(stagedFiles)}`);
+			const detectedMessage = `${getDetectedMessage(stagedFiles)} [${formatStagedStatusSummary(stagedChanges)}]`;
+			const visibleFiles = stagedChanges.slice(0, 10);
+			const fileLines = visibleFiles.map((file) => `     ${formatStagedFile(file)}`);
+			const remainingCount = stagedChanges.length - visibleFiles.length;
+			if (remainingCount > 0) {
+				fileLines.push(`     ... and ${remainingCount} more file${remainingCount > 1 ? 's' : ''}`);
 			}
+			detectingFiles.start('Detecting staged files');
+			detectingFiles.stop(`📁 ${detectedMessage}:\n${fileLines.join('\n')}`);
 		}
 
 		let config = await getConfig({
@@ -131,22 +135,37 @@ export default async (
 		const { requiresBody } = getCommitTypePolicy(config.type);
 		const includeBody = includeDescription || requiresBody;
 		const generationCount = requiresBody ? 1 : config.generate;
+		const prompt = await resolveCommitPrompt(config, promptFile, customPrompt);
+		const promptStrategy = config.type === 'custom'
+			? 'custom'
+			: prompt?.trim()
+				? `built-in (${config.type}) + additional`
+				: `built-in (${config.type})`;
+		const promptSource = customPrompt !== undefined
+			? '--prompt'
+			: promptFile !== undefined
+				? `--prompt-file: ${JSON.stringify(promptFile)}`
+				: config['prompt-file'] !== undefined
+					? `config: ${JSON.stringify(config['prompt-file'])}`
+					: undefined;
 
 		const attemptGeneration = async () => {
 			const model = providerInstance.getGenerationModel(config.model!);
-			const s = headless ? null : spinner();
-			if (s) {
-				s.start(
-					`🔍 Analyzing changes in ${stagedFiles.length} file${
-						stagedFiles.length === 1 ? '' : 's'
-					}`
-				);
+			if (!headless) {
+				log.info(`Model: ${config.model} | Prompt: ${promptStrategy}${promptSource ? ` [${promptSource}]` : ''}`);
 			}
-			const startTime = Date.now();
+			const progress = headless ? null : startGenerationProgress(
+				spinner(),
+				{
+					provider: providerInstance.displayName,
+					count: generationCount,
+				}
+			);
+			let succeeded = false;
 			try {
 				const results = await Promise.all(
-					Array.from({ length: generationCount }, () =>
-						generateCommitMessage({
+					Array.from({ length: generationCount }, async (_, index) => {
+						const result = await generateCommitMessage({
 							model,
 							cwd: gitRoot,
 							files: stagedFiles,
@@ -155,20 +174,21 @@ export default async (
 							maxLength: config['max-length'],
 							includeBody,
 							timeout,
-							customPrompt,
-						})
-					)
+							customPrompt: prompt,
+							onProgress: progress
+								? (event) => progress.update(index, event)
+								: undefined,
+						});
+						progress?.complete(index, result.usage);
+						return result;
+					})
 				);
+				succeeded = true;
 				return Array.from(
 					new Set(results.map(({ message }) => formatCommitMessage(message)))
 				);
 			} finally {
-				if (s) {
-					const duration = Date.now() - startTime;
-					s.stop(
-						`✅ Changes analyzed in ${(duration / 1000).toFixed(1)}s`
-					);
-				}
+				progress?.stop(succeeded);
 			}
 		};
 

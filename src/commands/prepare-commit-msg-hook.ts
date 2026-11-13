@@ -3,6 +3,7 @@ import { intro, outro, spinner } from '@clack/prompts';
 import { black, green, red, bgCyan } from 'kolorist';
 import { assertGitRepo, getStagedFiles } from '../utils/git.js';
 import { getConfig } from '../utils/config-runtime.js';
+import { resolveCommitPrompt } from '../utils/prompt-file.js';
 import { getProvider } from '../feature/providers/index.js';
 import {
 	formatCommitMessage,
@@ -64,6 +65,7 @@ export default () =>
 		let modelName = config.OPENAI_MODEL || providerInstance.getDefaultModel();
 		const { requiresBody } = getCommitTypePolicy(config.type);
 		const generationCount = requiresBody ? 1 : config.generate;
+		const customPrompt = await resolveCommitPrompt(config);
 		const attemptGeneration = async () => {
 			const model = providerInstance.getGenerationModel(modelName);
 			const results = await Promise.all(
@@ -76,6 +78,7 @@ export default () =>
 						locale: config.locale,
 						maxLength: config['max-length'],
 						includeBody: requiresBody,
+						customPrompt,
 						timeout,
 					})
 				)
@@ -123,7 +126,7 @@ export default () =>
 					'# Select one of the following messages by uncommenting:\n';
 			}
 			instructions += `\n${messages
-				.map((message) => `# ${message}`)
+				.map((message) => message.split('\n').map((line) => `# ${line}`).join('\n'))
 				.join('\n')}`;
 		} else {
 			if (supportsComments) {

@@ -204,6 +204,7 @@ export default command(
 				message: 'Choose commit message format:',
 				options: [
 					{ value: 'plain', label: 'Plain - Simple format without structure' },
+					{ value: 'custom', label: 'Custom - Format and grouping defined by your prompt' },
 					{ value: 'conventional', label: 'Conventional - Standard conventional commits' },
 					{ value: 'conventional+body', label: 'Conventional + body - Conventional commit subject and body' },
 					{ value: 'gitmoji', label: 'Gitmoji - Using emojis for commit types' },

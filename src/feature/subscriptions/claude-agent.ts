@@ -1,3 +1,4 @@
+import type { OnGenerationProgress } from '../generation-progress.js';
 import { query, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import pkg from '../../../package.json';
 import { KnownError } from '../../utils/error.js';
@@ -12,6 +13,7 @@ export type AgentGenerateOptions = {
 	/** Path to the user's installed CLI. */
 	binary?: string;
 	timeout: number;
+	onProgress?: OnGenerationProgress;
 };
 
 export type AgentGenerateResult = {
@@ -34,6 +36,7 @@ export const generateWithClaudeAgent = async ({
 	cwd,
 	binary,
 	timeout,
+	onProgress,
 }: AgentGenerateOptions): Promise<AgentGenerateResult> => {
 	const startedAt = Date.now();
 	const abortController = new AbortController();
@@ -50,6 +53,7 @@ export const generateWithClaudeAgent = async ({
 				outputFormat: { type: 'json_schema', schema },
 				maxTurns: 2,
 				persistSession: false,
+				includePartialMessages: Boolean(onProgress),
 				permissionPrompts: 'none',
 				...(isHaiku(model)
 					? { thinking: { type: 'disabled' as const } }
@@ -63,6 +67,18 @@ export const generateWithClaudeAgent = async ({
 				...(binary ? { pathToClaudeCodeExecutable: binary } : {}),
 			},
 		})) {
+			if (message.type === 'stream_event') {
+				const event = message.event;
+				if (event.type === 'message_start') {
+					onProgress?.({ stage: 'receiving' });
+				} else if (event.type === 'content_block_delta') {
+					onProgress?.({
+						stage: event.delta.type === 'thinking_delta' ? 'thinking' : 'receiving',
+					});
+				}
+			} else if (message.type === 'assistant') {
+				onProgress?.({ stage: 'receiving' });
+			}
 			if (message.type === 'result') result = message;
 		}
 	} catch (error) {

@@ -61,7 +61,7 @@ cli(
 			type: {
 				type: String,
 				description:
-					'Git commit message format (default: plain). Supports plain, conventional, conventional+body, gitmoji, and subject+body',
+					'Git commit message format (default: plain). Supports plain, custom, conventional, conventional+body, gitmoji, and subject+body',
 				alias: 't',
 			},
 			yes: {
@@ -87,14 +87,19 @@ cli(
 			},
 			description: {
 				type: Boolean,
-				description: 'Include a commit message description',
+				description: 'Include a commit message description (ignored for type=custom)',
 				default: false,
 			},
 			prompt: {
 				type: String,
 				description:
-					'Custom prompt to guide the LLM behavior (e.g., specific language, style instructions)',
+					'Custom prompt for this run only (not saved; replaces the default prompt file)',
 				alias: 'p',
+			},
+			promptFile: {
+				type: String,
+				description:
+					'Read custom instructions from a UTF-8 text or Markdown file (overrides prompt-file config)',
 			},
 		version: {
 			type: Boolean,
@@ -120,6 +125,19 @@ cli(
 		if (isCalledFromGitHook()) {
 			prepareCommitMessageHook();
 		} else {
+			const commitArgv: string[] = [];
+			for (let index = 0; index < rawArgv.length; index += 1) {
+				const argument = rawArgv[index];
+				if (argument === '--') {
+					commitArgv.push(...rawArgv.slice(index));
+					break;
+				}
+				if (argument === '--prompt-file') {
+					index += 1;
+				} else if (!argument.startsWith('--prompt-file=') && argument !== '--description') {
+					commitArgv.push(argument);
+				}
+			}
 			aicommits(
 				argv.flags.generate,
 				argv.flags.exclude,
@@ -130,7 +148,8 @@ cli(
 				argv.flags.noVerify,
 				argv.flags.description,
 				argv.flags.prompt,
-				rawArgv.filter((argument) => argument !== '--description')
+				commitArgv,
+				argv.flags.promptFile
 			);
 		}
 	},

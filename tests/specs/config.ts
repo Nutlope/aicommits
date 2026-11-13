@@ -72,6 +72,68 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
+		await test('rejects removed inline prompt and description config settings', async () => {
+			const { fixture, aicommits } = await createFixture();
+			try {
+				for (const assignment of ['prompt=Inline rules', 'description=on']) {
+					const result = await aicommits(['config', 'set', assignment], { reject: false });
+					expect(result.exitCode).toBe(1);
+					expect(result.stderr).toMatch('Invalid config property');
+				}
+			} finally {
+				await fixture.rm();
+			}
+		});
+
+		await test('rejects malformed assignments without resetting settings', async () => {
+			const { fixture, aicommits } = await createFixture();
+			try {
+				await aicommits(['config', 'set', 'locale=zh-CN']);
+				const { stderr, exitCode } = await aicommits(['config', 'set', 'locale'], { reject: false });
+				expect(exitCode).toBe(1);
+				expect(stderr).toMatch('Expected key=value');
+				expect((await aicommits(['config', 'get', 'locale'])).stdout).toBe('locale=zh-CN');
+			} finally {
+				await fixture.rm();
+			}
+		});
+
+		await test('stores, displays and clears a prompt file without reading it', async () => {
+			const { fixture, aicommits } = await createFixture();
+			try {
+				await aicommits(['config', 'set', 'prompt-file=~/prompts/commit.md']);
+				expect((await aicommits(['config', 'get', 'prompt-file'])).stdout)
+					.toBe('prompt-file=~/prompts/commit.md');
+				expect((await aicommits(['config'])).stdout).toMatch('Prompt file: ~/prompts/commit.md');
+				await aicommits(['config', 'set', 'prompt-file=']);
+				expect(await fs.readFile(path.join(fixture.path, '.aicommits'), 'utf8'))
+					.not.toMatch('prompt-file=');
+			} finally {
+				await fixture.rm();
+			}
+		});
+
+		await test('ignores obsolete stored prompt settings instead of using them', async () => {
+			const { fixture, aicommits } = await createFixture();
+			try {
+				await fs.writeFile(path.join(fixture.path, '.aicommits'), 'prompt=Obsolete instructions\ndescription=on\n');
+				expect((await aicommits(['config', 'get', 'prompt', 'description'])).stdout).toBe('');
+				expect((await aicommits(['config'])).stdout).not.toMatch('Obsolete instructions');
+			} finally {
+				await fixture.rm();
+			}
+		});
+
+		await test('accepts type=custom', async () => {
+			const { fixture, aicommits } = await createFixture();
+			try {
+				await aicommits(['config', 'set', 'type=custom']);
+				expect((await aicommits(['config', 'get', 'type'])).stdout).toBe('type=custom');
+			} finally {
+				await fixture.rm();
+			}
+		});
+
 		await test('accepts type=conventional+body', async () => {
 			await aicommits(['config', 'set', 'OPENAI_API_KEY=abc']);
 			await aicommits(['config', 'set', 'type=conventional+body']);
@@ -169,8 +231,13 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('defaults to enabled', async () => {
-				const get = await aicommits(['config', 'get', 'thinking']);
-				expect(get.stdout).toBe('thinking=enabled');
+				const { fixture, aicommits } = await createFixture();
+				try {
+					const get = await aicommits(['config', 'get', 'thinking']);
+					expect(get.stdout).toBe('thinking=enabled');
+				} finally {
+					await fixture.rm();
+				}
 			});
 
 			test('updates config', async () => {

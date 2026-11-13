@@ -16,18 +16,22 @@ export const generateWithAgentSdk = (
 		? generateWithClaudeAgent(options)
 		: generateWithCodex(options);
 
-export const commitMessageSchema = (includeBody: boolean) => ({
+export const commitMessageSchema = (includeBody: boolean | 'optional') => ({
 	type: 'object',
 	properties: {
 		subject: {
 			type: 'string',
-			description: 'The commit subject line, without a trailing period.',
+			description: includeBody === 'optional'
+				? 'The non-empty first line of the custom commit message.'
+				: 'The commit subject line, without a trailing period.',
 		},
 		body: {
 			type: 'string',
-			description: includeBody
-				? 'A concise, non-empty commit body.'
-				: 'Leave empty.',
+			description: includeBody === 'optional'
+				? 'Follow the custom prompt for the body and grouping; leave empty if no body is needed.'
+				: includeBody
+					? 'A concise, non-empty commit body.'
+					: 'Leave empty.',
 		},
 	},
 	// OpenAI strict schemas require every property; an empty body means none.
